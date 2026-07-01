@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Game (g++)",
+            "type": "shell",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/C"
+                    ]
+                }
+            },
+            "command": "g++",
+            "args": [
+                "-g",
+                "src/*.cpp",
+                "-o",
+                "ChickenInvader.exe",
+                "-O2",
+                "-static",
+                "-Iinclude",
+                "-Llib",
+                "-lraylib",
+                "-lopengl32",
+                "-lgdi32",
+                "-lwinmm",
+                "-Wl,--subsystem,windows"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },  
+            "problemMatcher": [
+                "$gcc"
+            ]
+        }
+    ]
+}
