@@ -7,6 +7,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <string>
 
 // Lớp Phi Thuyền chính
 class Spaceship : public Character, public ISubject {
@@ -35,20 +36,32 @@ public:
           critChance(critC), critDamage(critD), maxMana(mana), currentMana(0), attackSpeed(atkSpd),
           level(1), currentExp(0), maxExp(100) {}
 
-    // Implement ISubject
-    void AddObserver(IObserver* observer) override {
+    virtual ~Spaceship() = default;
+
+    // Implement ISubject (Sử dụng virtual để Decorator có thể forward)
+    virtual void AddObserver(IObserver* observer) override {
         observers.push_back(observer);
     }
 
-    void RemoveObserver(IObserver* observer) override {
+    virtual void RemoveObserver(IObserver* observer) override {
         observers.erase(std::remove(observers.begin(), observers.end(), observer), observers.end());
     }
 
-    void Notify(EventType event, const std::string& data) override {
+    virtual void Notify(EventType event, const std::string& data) override {
         for (auto observer : observers) {
             observer->OnNotify(event, data);
         }
     }
+
+    // Getters cho các chỉ số riêng của phi thuyền
+    virtual float GetCritChance() const { return critChance; }
+    virtual float GetCritDamage() const { return critDamage; }
+    virtual float GetMaxMana() const { return maxMana; }
+    virtual float GetCurrentMana() const { return currentMana; }
+    virtual float GetAttackSpeed() const { return attackSpeed; }
+    virtual int GetLevel() const { return level; }
+    virtual float GetCurrentExp() const { return currentExp; }
+    virtual float GetMaxExp() const { return maxExp; }
 
     // Các hàm chính
     void Init() override {
@@ -69,11 +82,11 @@ public:
     }
 
     // Hành vi thay đổi súng (Strategy Pattern)
-    void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) {
+    virtual void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) {
         shootingBehavior = std::move(behavior);
     }
 
-    void Fire() {
+    virtual void Fire() {
         if (shootingBehavior) {
             shootingBehavior->Shoot(position);
             
@@ -83,7 +96,7 @@ public:
     }
 
     // Cơ chế Exp và Mana
-    void GainExp(float amount) {
+    virtual void GainExp(float amount) {
         currentExp += amount;
         Notify(EventType::PLAYER_EXP_GAINED, std::to_string(currentExp));
         if (currentExp >= maxExp) {
@@ -91,7 +104,7 @@ public:
         }
     }
 
-    void GainMana(float amount) {
+    virtual void GainMana(float amount) {
         if (currentMana < maxMana) {
             currentMana += amount;
             if (currentMana > maxMana) currentMana = maxMana;
@@ -99,7 +112,7 @@ public:
         }
     }
 
-    void LevelUp() {
+    virtual void LevelUp() {
         level++;
         currentExp -= maxExp;
         maxExp *= 1.2f; // Tăng yêu cầu exp cho level tiếp theo

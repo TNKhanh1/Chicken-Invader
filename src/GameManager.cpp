@@ -8,6 +8,10 @@ GameManager::GameManager()
     : currentState(GameState::MAIN_MENU), screenWidth(1280), screenHeight(720), isRunning(false) {
 }
 
+GameManager::~GameManager() {
+    CleanUp();
+}
+
 GameManager* GameManager::GetInstance() {
     if (instance == nullptr) {
         instance = new GameManager();
@@ -87,5 +91,7 @@ void GameManager::Draw() {
 }
 
 void GameManager::CleanUp() {
-    CloseWindow(); // Đóng cửa sổ Raylib
+    if (IsWindowReady()) {
+        CloseWindow(); // Đóng cửa sổ Raylib an toàn
+    }
 }

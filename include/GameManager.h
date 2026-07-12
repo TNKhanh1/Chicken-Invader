@@ -16,8 +16,9 @@ private:
     int screenHeight;
     bool isRunning;
 
-    // Private constructor để chặn việc tạo instance bên ngoài
+    // Private constructor/destructor để chặn việc tạo instance bên ngoài
     GameManager();
+    ~GameManager();
 
 public:
     // Ngăn chặn copy và assignment
