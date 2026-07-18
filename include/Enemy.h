@@ -14,6 +14,8 @@ public:
     Enemy(Vector2 pos, float hp, float dmg, float arm, float spd, int points)
         : Character(pos, hp, dmg, arm, spd), pointValue(points) {}
 
+    int GetPointValue() const { return pointValue; }
+
     void Init() override {
         // Tải texture quái vật
     }

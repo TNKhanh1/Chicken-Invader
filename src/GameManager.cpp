@@ -10,7 +10,7 @@
 GameManager* GameManager::instance = nullptr;
 
 GameManager::GameManager() 
-    : currentState(GameState::PLAYING), screenWidth(1280), screenHeight(720), isRunning(false), spawnTimer(2.0f) {
+    : currentState(GameState::PLAYING), screenWidth(1280), screenHeight(720), isRunning(false), spawnTimer(2.0f), score(0) {
 }
 
 GameManager::~GameManager() {
@@ -111,6 +111,10 @@ void GameManager::Update(float deltaTime) {
             if (CheckCollisionRecs(bullet->GetHitbox(), enemy->GetHitbox())) {
                 bullet->SetActive(false);
                 enemy->TakeDamage(bullet->GetDamage()); // Assume this checks if HP <= 0 and calls Die()
+                
+                if (!enemy->IsActive()) {
+                    AddScore(enemy->GetPointValue());
+                }
             }
         }
     }
@@ -157,8 +161,18 @@ void GameManager::Draw() {
         }
         
         DrawText("WASD: Move | SPACE: Shoot", 10, 10, 20, DARKGRAY);
+        DrawText(TextFormat("Score: %d", score), screenWidth - 150, 10, 20, DARKGRAY);
+
         if (player) {
-            DrawText(TextFormat("Player HP: %.0f", player->GetHp()), 10, 40, 20, RED);
+            float hpRatio = player->GetHp() / player->GetMaxHp();
+            if (hpRatio < 0.0f) hpRatio = 0.0f;
+            
+            DrawRectangle(10, 40, 200, 20, GRAY);
+            Color hpColor = (hpRatio > 0.5f) ? GREEN : ((hpRatio > 0.2f) ? YELLOW : RED);
+            DrawRectangle(10, 40, (int)(200 * hpRatio), 20, hpColor);
+            DrawRectangleLines(10, 40, 200, 20, DARKGRAY);
+            
+            DrawText(TextFormat("HP: %.0f/%.0f", player->GetHp(), player->GetMaxHp()), 15, 42, 16, BLACK);
         }
     }
 

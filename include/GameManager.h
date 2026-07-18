@@ -17,6 +17,7 @@ private:
     int screenWidth;
     int screenHeight;
     bool isRunning;
+    int score;
 
     // Private constructor/destructor để chặn việc tạo instance bên ngoài
     GameManager();
@@ -53,6 +54,10 @@ public:
     // Getter/Setter trạng thái
     void ChangeState(GameState newState) { currentState = newState; }
     GameState GetCurrentState() const { return currentState; }
+    
+    // Score management
+    int GetScore() const { return score; }
+    void AddScore(int value) { score += value; }
     
     // Entity management
     void AddBullet(std::shared_ptr<class Bullet> bullet) { activeBullets.push_back(bullet); }
