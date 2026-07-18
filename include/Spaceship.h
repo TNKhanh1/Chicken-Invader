@@ -62,6 +62,10 @@ public:
     virtual int GetLevel() const { return level; }
     virtual float GetCurrentExp() const { return currentExp; }
     virtual float GetMaxExp() const { return maxExp; }
+    
+    virtual Rectangle GetHitbox() const {
+        return {position.x - 20, position.y - 20, 40, 40};
+    }
 
     // Các hàm chính
     void Init() override {

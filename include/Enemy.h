@@ -46,6 +46,10 @@ public:
         // + Bom
         // + % rơi 1 level trực tiếp cho phi thuyền
     }
+
+    Rectangle GetHitbox() const {
+        return {position.x - 15, position.y - 15, 30, 30};
+    }
 };
 
 #endif // ENEMY_H

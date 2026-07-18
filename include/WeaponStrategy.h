@@ -12,6 +12,19 @@ public:
     virtual void Shoot(Vector2 position) = 0;
 };
 
-// Các class cụ thể triển khai IShootingBehavior sẽ được thêm vào sau (VD: SingleShot, SpreadShot, LaserShot)
+#include "Bullet.h"
+#include "GameManager.h"
+#include <memory>
+
+// Các class cụ thể triển khai IShootingBehavior
+class SingleShot : public IShootingBehavior {
+public:
+    void Shoot(Vector2 position) override {
+        // Tạo 1 viên đạn bay thẳng lên trên (isPlayerBullet = true)
+        // Dame = 10, Speed = 400
+        auto bullet = std::make_shared<Bullet>(position, 10.0f, 400.0f, true);
+        GameManager::GetInstance()->AddBullet(bullet);
+    }
+};
 
 #endif // WEAPON_STRATEGY_H

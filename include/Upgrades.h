@@ -31,6 +31,7 @@ public:
     virtual int GetLevel() const override { return coreShip->GetLevel(); }
     virtual float GetCurrentExp() const override { return coreShip->GetCurrentExp(); }
     virtual float GetMaxExp() const override { return coreShip->GetMaxExp(); }
+    virtual Rectangle GetHitbox() const override { return coreShip->GetHitbox(); }
 
     virtual void TakeDamage(float incomingDamage) override { coreShip->TakeDamage(incomingDamage); }
 

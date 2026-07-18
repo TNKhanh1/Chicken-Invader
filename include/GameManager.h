@@ -3,6 +3,8 @@
 
 #include "raylib.h"
 #include "GameState.h"
+#include <vector>
+#include <memory>
 
 // Singleton Pattern
 class GameManager {
@@ -19,6 +21,14 @@ private:
     // Private constructor/destructor để chặn việc tạo instance bên ngoài
     GameManager();
     ~GameManager();
+
+    // Entity lists
+    std::vector<std::shared_ptr<class Bullet>> activeBullets;
+    std::vector<std::shared_ptr<class Enemy>> activeEnemies;
+    std::shared_ptr<class Spaceship> player;
+    
+    // Spawner variables
+    float spawnTimer;
 
 public:
     // Ngăn chặn copy và assignment
@@ -43,6 +53,11 @@ public:
     // Getter/Setter trạng thái
     void ChangeState(GameState newState) { currentState = newState; }
     GameState GetCurrentState() const { return currentState; }
+    
+    // Entity management
+    void AddBullet(std::shared_ptr<class Bullet> bullet) { activeBullets.push_back(bullet); }
+    void AddEnemy(std::shared_ptr<class Enemy> enemy) { activeEnemies.push_back(enemy); }
+    std::shared_ptr<class Spaceship> GetPlayer() const { return player; }
     
     // Yêu cầu thoát game
     void QuitGame() { isRunning = false; }
