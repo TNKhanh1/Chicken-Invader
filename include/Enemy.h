@@ -20,16 +20,11 @@ public:
         // Tải texture quái vật
     }
 
-    void Update(float deltaTime) override {
-        // Áp dụng Strategy di chuyển
-        if (movementBehavior) {
-            movementBehavior->Move(position, moveSpeed, deltaTime);
-        }
-    }
+    float shootTimer = 0.0f;
 
-    void Draw() override {
-        // Render quái vật
-    }
+    void Update(float deltaTime) override;
+
+    void Draw() override;
 
     void Die() override {
         isActive = false;
@@ -50,7 +45,7 @@ public:
     }
 
     Rectangle GetHitbox() const {
-        return {position.x - 15, position.y - 15, 30, 30};
+        return {position.x - 25, position.y - 25, 50, 50};
     }
 };
 

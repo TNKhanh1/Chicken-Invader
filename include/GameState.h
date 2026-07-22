@@ -8,7 +8,14 @@ enum class GameState {
     PAUSED,
     SHOP,
     ENCYCLOPEDIA, // Sách bách khoa toàn thư
-    GAME_OVER
+    GAME_OVER,
+    
+    // Test states
+    TEST_MENU,
+    TEST_ENEMY,
+    TEST_SPACESHIP,
+    TEST_GAMEPLAY,
+    COMING_SOON
 };
 
 #endif // GAME_STATE_H

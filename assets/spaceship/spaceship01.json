@@ -1,0 +1,27 @@
+{
+  "frames": [
+    {
+      "filename": "spaceship",
+      "frame": {"x":36, "y":201, "w":108, "h":95},
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {"x":0, "y":0, "w":108, "h":95},
+      "sourceSize": {"w":108, "h":95}
+    },
+    {
+      "filename": "bullet",
+      "frame": {"x":36, "y":18, "w":108, "h":102},
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {"x":0, "y":0, "w":108, "h":102},
+      "sourceSize": {"w":108, "h":102}
+    }
+  ],
+  "meta": {
+    "app": "Antigravity Image Scanner",
+    "image": "SpaceShip01.png",
+    "format": "RGBA8888",
+    "size": {"w":180, "h":320},
+    "scale": "1"
+  }
+}

@@ -33,11 +33,7 @@ public:
         }
     }
     
-    void Draw() override {
-        if (!isActive) return;
-        Color bulletColor = isPlayerBullet ? YELLOW : RED;
-        DrawCircleV(position, 5.0f, bulletColor);
-    }
+    void Draw() override;
     
     float GetDamage() const { return damage; }
     bool IsPlayerBullet() const { return isPlayerBullet; }

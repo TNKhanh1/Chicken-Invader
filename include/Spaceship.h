@@ -64,7 +64,7 @@ public:
     virtual float GetMaxExp() const { return maxExp; }
     
     virtual Rectangle GetHitbox() const {
-        return {position.x - 20, position.y - 20, 40, 40};
+        return {position.x - 30, position.y - 30, 60, 60};
     }
 
     // Các hàm chính
@@ -77,9 +77,7 @@ public:
         // Cập nhật vị trí
     }
 
-    void Draw() override {
-        // Vẽ phi thuyền
-    }
+    void Draw() override;
 
     void Die() override {
         // Xử lý GameOver

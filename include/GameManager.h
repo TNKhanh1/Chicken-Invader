@@ -23,6 +23,13 @@ private:
     GameManager();
     ~GameManager();
 
+    // Textures
+    Texture2D texBackground;
+    Texture2D texSpaceship;
+    Texture2D texEnemy;
+    Texture2D texBulletPlayer;
+    Texture2D texEnemyBullet;
+
     // Entity lists
     std::vector<std::shared_ptr<class Bullet>> activeBullets;
     std::vector<std::shared_ptr<class Enemy>> activeEnemies;
@@ -50,10 +57,19 @@ public:
     // Các hàm cho vòng lặp
     void Update(float deltaTime);
     void Draw();
+    
+    // UI Helpers
+    bool DrawButton(Rectangle bounds, const char* text);
 
     // Getter/Setter trạng thái
     void ChangeState(GameState newState) { currentState = newState; }
     GameState GetCurrentState() const { return currentState; }
+    
+    // Texture Getters
+    Texture2D GetTexSpaceship() const { return texSpaceship; }
+    Texture2D GetTexEnemy() const { return texEnemy; }
+    Texture2D GetTexBulletPlayer() const { return texBulletPlayer; }
+    Texture2D GetTexEnemyBullet() const { return texEnemyBullet; }
     
     // Score management
     int GetScore() const { return score; }
