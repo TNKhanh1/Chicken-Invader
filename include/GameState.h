@@ -15,6 +15,7 @@ enum class GameState {
     TEST_ENEMY,
     TEST_SPACESHIP,
     TEST_GAMEPLAY,
+    SETTINGS,
     COMING_SOON
 };
 

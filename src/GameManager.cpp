@@ -5,6 +5,7 @@
 #include "../include/MovementStrategy.h"
 #include "../include/Bullet.h"
 #include <iostream>
+#include <cmath>
 
 // Khởi tạo instance của Singleton bằng nullptr
 GameManager* GameManager::instance = nullptr;
@@ -64,7 +65,7 @@ void Spaceship::Draw() {
 // -------------------------------------------
 
 GameManager::GameManager() 
-    : currentState(GameState::MAIN_MENU), screenWidth(1280), screenHeight(720), isRunning(false), score(0), spawnTimer(2.0f) {
+    : currentState(GameState::MAIN_MENU), previousState(GameState::MAIN_MENU), screenWidth(1280), screenHeight(720), isRunning(false), score(0), spawnTimer(2.0f) {
 }
 
 GameManager::~GameManager() {
@@ -93,12 +94,19 @@ void GameManager::Init(int width, int height, const char* title) {
     InitWindow(screenWidth, screenHeight, title);
     SetTargetFPS(60); // Đặt tốc độ khung hình 60 FPS
     
-    // Tải Assets
-    texBackground = LoadTexture("assets/gbackground.png");
+    // Khởi tạo các textures
+    texBackgrounds[0] = LoadTexture("assets/background.jpg");
+    texBackgrounds[1] = LoadTexture("assets/background.png");
+    texBackgrounds[2] = LoadTexture("assets/background1.png");
+    texBackgrounds[3] = LoadTexture("assets/background2.png");
+    texSettingIcon = LoadTexture("assets/setting.png");
     texSpaceship = LoadTexture("assets/spaceship/SpaceShip01.png");
     texEnemy = LoadTexture("assets/enemy/chicken03.png"); 
     texBulletPlayer = LoadTexture("assets/spaceship/Bullet01_1.png");
-    texEnemyBullet = LoadTexture("assets/bullet4.png"); 
+    texEnemyBullet = LoadTexture("assets/egg.png"); 
+    texMeat = LoadTexture("assets/meat.png");
+    bgY = 0.0f;
+    currentBgIndex = 0;
     
     // Khởi tạo Player
     player = SpaceshipFactory::CreateSpaceship(SpaceshipFactory::ShipType::FIGHTER, {(float)screenWidth/2, (float)screenHeight - 100});
@@ -149,6 +157,7 @@ void GameManager::Update(float deltaTime) {
         case GameState::MAIN_MENU:
         case GameState::TEST_MENU:
         case GameState::GAME_OVER:
+        case GameState::SETTINGS:
             // Transition logic is handled in Draw() via DrawButton
             break;
 
@@ -156,6 +165,10 @@ void GameManager::Update(float deltaTime) {
         case GameState::TEST_ENEMY:
         case GameState::TEST_SPACESHIP:
         {
+            // --- Background Scrolling ---
+            bgY += 20.0f * deltaTime; // Giảm tốc độ xuống 20
+            if (bgY >= 2.0f * screenHeight) bgY -= 2.0f * screenHeight;
+            
             // --- Player Logic ---
             if (currentState != GameState::TEST_ENEMY) {
                 if (player && player->IsActive()) {
@@ -191,6 +204,16 @@ void GameManager::Update(float deltaTime) {
             }
 
             // --- Update Entities ---
+            for (auto& meat : activeMeats) {
+                if (meat.active) {
+                    meat.time += deltaTime;
+                    meat.velocity.y += 400.0f * deltaTime; // Gravity
+                    meat.position.y += meat.velocity.y * deltaTime;
+                    meat.position.x += meat.velocity.x * deltaTime + sin(meat.time * 5.0f) * 60.0f * deltaTime;
+                    if (meat.position.y > screenHeight + 50) meat.active = false;
+                }
+            }
+
             for (auto& enemy : activeEnemies) {
                 if (enemy->IsActive()) enemy->Update(deltaTime);
             }
@@ -214,6 +237,7 @@ void GameManager::Update(float deltaTime) {
                                 
                                 if (!enemy->IsActive()) {
                                     AddScore(enemy->GetPointValue());
+                                    activeMeats.push_back({enemy->GetPosition(), { (float)GetRandomValue(-100, 100), -200.0f }, 0.0f, true});
                                 }
                             }
                         }
@@ -238,6 +262,18 @@ void GameManager::Update(float deltaTime) {
                     }
                 }
                 
+                // Va chạm Meat và Player
+                if (player && player->IsActive()) {
+                    for (auto& meat : activeMeats) {
+                        if (!meat.active) continue;
+                        Rectangle meatRect = {meat.position.x - 20, meat.position.y - 20, 40, 40};
+                        if (CheckCollisionRecs(meatRect, player->GetHitbox())) {
+                            meat.active = false;
+                            AddScore(50); // Ăn đùi gà được 50 điểm
+                        }
+                    }
+                }
+
                 // Game Over Check
                 if (player && player->GetHp() <= 0) {
                     currentState = GameState::GAME_OVER;
@@ -250,6 +286,9 @@ void GameManager::Update(float deltaTime) {
                 
             activeEnemies.erase(std::remove_if(activeEnemies.begin(), activeEnemies.end(),
                 [](const std::shared_ptr<Enemy>& e) { return !e->IsActive(); }), activeEnemies.end());
+                
+            activeMeats.erase(std::remove_if(activeMeats.begin(), activeMeats.end(),
+                [](const MeatItem& m) { return !m.active; }), activeMeats.end());
             break;
         }
         default:
@@ -260,7 +299,23 @@ void GameManager::Update(float deltaTime) {
 void GameManager::Draw() {
     BeginDrawing();
     
-    ClearBackground(RAYWHITE);
+    ClearBackground(BLACK);
+    
+    // Draw scrolling background (Mirrored seamless)
+    float texW = (float)texBackgrounds[currentBgIndex].width;
+    float texH = (float)texBackgrounds[currentBgIndex].height;
+
+    // Tile 0 (Normal)
+    DrawTexturePro(texBackgrounds[currentBgIndex], {0, 0, texW, texH}, 
+                   {0, bgY, (float)screenWidth, (float)screenHeight}, {0,0}, 0.0f, WHITE);
+    
+    // Tile 1 (Flipped vertically - âm texH để lật ngược hình, giúp liền mạch)
+    DrawTexturePro(texBackgrounds[currentBgIndex], {0, 0, texW, -texH}, 
+                   {0, bgY - screenHeight, (float)screenWidth, (float)screenHeight}, {0,0}, 0.0f, WHITE);
+                   
+    // Tile 2 (Normal)
+    DrawTexturePro(texBackgrounds[currentBgIndex], {0, 0, texW, texH}, 
+                   {0, bgY - 2.0f * screenHeight, (float)screenWidth, (float)screenHeight}, {0,0}, 0.0f, WHITE);
 
     switch (currentState) {
         case GameState::MAIN_MENU:
@@ -274,6 +329,42 @@ void GameManager::Draw() {
             if (DrawButton({(float)screenWidth/2 - 100, 380, 200, 50}, "TEST")) {
                 currentState = GameState::TEST_MENU;
             }
+            
+            // Nút Settings (góc trên phải)
+            Rectangle settingRect = {(float)screenWidth - 80, 20, 60, 60};
+            DrawTexturePro(texSettingIcon, {0, 0, (float)texSettingIcon.width, (float)texSettingIcon.height}, settingRect, {0,0}, 0.0f, WHITE);
+            if (CheckCollisionPointRec(GetMousePosition(), settingRect)) {
+                DrawRectangleLinesEx(settingRect, 2, RED);
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    previousState = currentState;
+                    currentState = GameState::SETTINGS;
+                }
+            }
+            break;
+        }
+        
+        case GameState::SETTINGS:
+        {
+            DrawText("SETTINGS", screenWidth/2 - 80, 100, 40, DARKBLUE);
+            DrawText("Backgrounds:", screenWidth/2 - 350, 200, 25, GRAY);
+            
+            if (DrawButton({(float)screenWidth/2 - 350, 250, 150, 50}, "Default")) currentBgIndex = 0;
+            if (DrawButton({(float)screenWidth/2 - 150, 250, 150, 50}, "Bg 1")) currentBgIndex = 1;
+            if (DrawButton({(float)screenWidth/2 + 50, 250, 150, 50}, "Bg 2")) currentBgIndex = 2;
+            if (DrawButton({(float)screenWidth/2 + 250, 250, 150, 50}, "Bg 3")) currentBgIndex = 3;
+            
+            if (DrawButton({(float)screenWidth/2 - 100, 450, 200, 50}, "BACK")) {
+                currentState = previousState;
+            }
+            
+            // Vẽ border đỏ bao quanh nút đang chọn
+            Rectangle selectedRect;
+            if (currentBgIndex == 0) selectedRect = {(float)screenWidth/2 - 350, 250, 150, 50};
+            else if (currentBgIndex == 1) selectedRect = {(float)screenWidth/2 - 150, 250, 150, 50};
+            else if (currentBgIndex == 2) selectedRect = {(float)screenWidth/2 + 50, 250, 150, 50};
+            else if (currentBgIndex == 3) selectedRect = {(float)screenWidth/2 + 250, 250, 150, 50};
+            
+            DrawRectangleLinesEx(selectedRect, 3, RED);
             break;
         }
         
@@ -297,6 +388,7 @@ void GameManager::Draw() {
                 score = 0;
                 activeEnemies.clear();
                 activeBullets.clear();
+                activeMeats.clear();
                 player = SpaceshipFactory::CreateSpaceship(SpaceshipFactory::ShipType::FIGHTER, {(float)screenWidth/2, (float)screenHeight - 100});
                 player->SetShootingBehavior(std::make_unique<SingleShot>());
             }
@@ -327,6 +419,18 @@ void GameManager::Draw() {
             if (DrawButton({(float)screenWidth/2 - 150, 480, 300, 50}, "BACK TO MAIN")) {
                 currentState = GameState::MAIN_MENU;
             }
+            
+            // Nút Settings (góc trên phải) trong TEST_MENU
+            Rectangle settingRect = {(float)screenWidth - 80, 20, 60, 60};
+            DrawTexturePro(texSettingIcon, {0, 0, (float)texSettingIcon.width, (float)texSettingIcon.height}, settingRect, {0,0}, 0.0f, WHITE);
+            if (CheckCollisionPointRec(GetMousePosition(), settingRect)) {
+                DrawRectangleLinesEx(settingRect, 2, RED);
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    previousState = currentState;
+                    currentState = GameState::SETTINGS;
+                }
+            }
+            
             break;
         }
 
@@ -359,18 +463,41 @@ void GameManager::Draw() {
                 }
             }
             
+            // Vẽ Meats
+            if (currentState == GameState::TEST_GAMEPLAY) {
+                for (const auto& meat : activeMeats) {
+                    if (meat.active) {
+                        DrawTexturePro(texMeat, {0, 0, (float)texMeat.width, (float)texMeat.height},
+                                       {meat.position.x, meat.position.y, 40.0f, 40.0f}, {20.0f, 20.0f}, 0.0f, WHITE);
+                    }
+                }
+            }
+            
             // Nút BACK
             if (DrawButton({20, 20, 100, 40}, "BACK")) {
                 currentState = GameState::TEST_MENU;
                 activeEnemies.clear();
                 activeBullets.clear();
+                activeMeats.clear();
                 if (player) {
                     player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
                 }
             }
             
+            // Thêm nút Settings cho các màn TEST_GAMEPLAY
+            Rectangle settingRect2 = {(float)screenWidth - 80, 20, 60, 60};
+            DrawTexturePro(texSettingIcon, {0, 0, (float)texSettingIcon.width, (float)texSettingIcon.height}, settingRect2, {0,0}, 0.0f, WHITE);
+            if (CheckCollisionPointRec(GetMousePosition(), settingRect2)) {
+                DrawRectangleLinesEx(settingRect2, 2, RED);
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    previousState = currentState;
+                    currentState = GameState::SETTINGS;
+                }
+            }
+            
             if (currentState == GameState::TEST_GAMEPLAY) {
-                DrawText(TextFormat("Score: %d", score), screenWidth - 150, 20, 20, DARKGRAY);
+                // Di chuyển Score sang bên trái một chút để tránh đè lên nút Setting
+                DrawText(TextFormat("Score: %d", score), screenWidth - 250, 40, 20, WHITE);
 
                 if (player) {
                     float hpRatio = player->GetHp() / player->GetMaxHp();
@@ -395,12 +522,16 @@ void GameManager::Draw() {
 }
 
 void GameManager::CleanUp() {
+    for (int i = 0; i < 4; i++) {
+        UnloadTexture(texBackgrounds[i]);
+    }
     if (IsWindowReady()) {
-        UnloadTexture(texBackground);
+        UnloadTexture(texSettingIcon);
         UnloadTexture(texSpaceship);
         UnloadTexture(texEnemy);
         UnloadTexture(texBulletPlayer);
         UnloadTexture(texEnemyBullet);
+        UnloadTexture(texMeat);
         CloseWindow();
     }
 }

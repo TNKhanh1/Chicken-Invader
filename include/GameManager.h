@@ -6,6 +6,13 @@
 #include <vector>
 #include <memory>
 
+struct MeatItem {
+    Vector2 position;
+    Vector2 velocity;
+    float time;
+    bool active;
+};
+
 // Singleton Pattern
 class GameManager {
 private:
@@ -18,21 +25,30 @@ private:
     int screenHeight;
     bool isRunning;
     int score;
+    
+    // Background Scrolling
+    float bgY;
+    int currentBgIndex;
+    
+    GameState previousState;
 
     // Private constructor/destructor để chặn việc tạo instance bên ngoài
     GameManager();
     ~GameManager();
 
     // Textures
-    Texture2D texBackground;
+    Texture2D texBackgrounds[4];
+    Texture2D texSettingIcon;
     Texture2D texSpaceship;
     Texture2D texEnemy;
     Texture2D texBulletPlayer;
     Texture2D texEnemyBullet;
+    Texture2D texMeat;
 
     // Entity lists
     std::vector<std::shared_ptr<class Bullet>> activeBullets;
     std::vector<std::shared_ptr<class Enemy>> activeEnemies;
+    std::vector<MeatItem> activeMeats;
     std::shared_ptr<class Spaceship> player;
     
     // Spawner variables
