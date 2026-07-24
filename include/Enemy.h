@@ -20,7 +20,17 @@ public:
         // Tải texture quái vật
     }
 
-    float shootTimer = 0.0f;
+    int enemyType = 0;
+    int currentFrame = 0;
+    float frameTimer = 0.0f;
+    int asteroidVariant = 1; // Loại thiên thạch (1 hoặc 2)
+
+    float eggDropTimer = 0.0f;
+    bool canShoot = true;
+
+    void ResetEggTimer() {
+        eggDropTimer = (GetRandomValue(20, 60)) / 10.0f;
+    }
 
     void Update(float deltaTime) override;
 

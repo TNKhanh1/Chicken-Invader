@@ -1,8 +1,8 @@
 #include "../include/GameManager.h"
 
 int main() {
-    // Khởi tạo Game (Kích thước cửa sổ mặc định 1280x720)
-    GameManager::GetInstance()->Init(1280, 720, "Chicken Invaders - OOP");
+    // Khởi tạo Game (Kích thước cửa sổ 1600x900)
+    GameManager::GetInstance()->Init(1600, 900, "Chicken Invaders - OOP");
 
     // Chạy vòng lặp game chính
     GameManager::GetInstance()->Run();

@@ -41,6 +41,8 @@ private:
     Texture2D texSettingIcon;
     Texture2D texSpaceship;
     Texture2D texEnemy;
+    Texture2D texAsteroid1;
+    Texture2D texAsteroid2;
     Texture2D texBulletPlayer;
     Texture2D texEnemyBullet;
     Texture2D texMeat;
@@ -51,8 +53,15 @@ private:
     std::vector<MeatItem> activeMeats;
     std::shared_ptr<class Spaceship> player;
     
-    // Spawner variables
-    float spawnTimer;
+    // Wave variables
+    int currentWave;
+    int currentBatch;
+    float waveTimer;
+    bool isWaveTransitioning;
+
+    // Test selection
+    int testSelectedWave = 1;
+    int testSelectedBatch = 1;
 
 public:
     // Ngăn chặn copy và assignment
@@ -69,6 +78,7 @@ public:
     void Init(int width, int height, const char* title);
     void Run();
     void CleanUp();
+    void StartWave(int waveIndex);
 
     // Các hàm cho vòng lặp
     void Update(float deltaTime);
@@ -78,12 +88,21 @@ public:
     bool DrawButton(Rectangle bounds, const char* text);
 
     // Getter/Setter trạng thái
-    void ChangeState(GameState newState) { currentState = newState; }
+    void ChangeState(GameState newState) {
+        previousState = currentState;
+        currentState = newState;
+    }
     GameState GetCurrentState() const { return currentState; }
+
+    // Screen info getters
+    int GetScreenWidth() const { return screenWidth; }
+    int GetScreenHeight() const { return screenHeight; }
     
     // Texture Getters
     Texture2D GetTexSpaceship() const { return texSpaceship; }
     Texture2D GetTexEnemy() const { return texEnemy; }
+    Texture2D GetTexAsteroid1() const { return texAsteroid1; }
+    Texture2D GetTexAsteroid2() const { return texAsteroid2; }
     Texture2D GetTexBulletPlayer() const { return texBulletPlayer; }
     Texture2D GetTexEnemyBullet() const { return texEnemyBullet; }
     

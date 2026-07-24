@@ -8,21 +8,20 @@ class IShootingBehavior {
 public:
     virtual ~IShootingBehavior() = default;
     
-    // Hàm bắn, nhận vào vị trí hiện tại của phi thuyền
-    virtual void Shoot(Vector2 position) = 0;
+    // Hàm bắn, nhận vào vị trí và sát thương
+    virtual void Shoot(Vector2 position, float damage = 10.0f) = 0;
 };
 
 #include "Bullet.h"
 #include "GameManager.h"
 #include <memory>
 
-// Các class cụ thể triển khai IShootingBehavior
 class SingleShot : public IShootingBehavior {
 public:
-    void Shoot(Vector2 position) override {
+    void Shoot(Vector2 position, float damage = 10.0f) override {
         // Tạo 1 viên đạn bay thẳng lên trên (isPlayerBullet = true)
-        // Dame = 10, Speed = 400
-        auto bullet = std::make_shared<Bullet>(position, 10.0f, 400.0f, true);
+        // Tốc độ đạn tăng 20% (400 -> 480)
+        auto bullet = std::make_shared<Bullet>(position, damage, 480.0f, true);
         GameManager::GetInstance()->AddBullet(bullet);
     }
 };

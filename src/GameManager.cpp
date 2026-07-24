@@ -14,15 +14,28 @@ GameManager* GameManager::instance = nullptr;
 void Enemy::Update(float deltaTime) {
     // Áp dụng Strategy di chuyển
     if (movementBehavior) {
-        movementBehavior->Move(position, moveSpeed, deltaTime);
+        auto gm = GameManager::GetInstance();
+        movementBehavior->Move(position, moveSpeed, deltaTime, gm->GetScreenWidth(), gm->GetScreenHeight());
+    }
+
+    // Cập nhật animation
+    if (enemyType == 4) { // ASTEROID
+        frameTimer += deltaTime;
+        if (frameTimer >= 0.03f) { // Nhanh hơn 1 chút cho animation mượt hơn
+            frameTimer = 0.0f;
+            if (asteroidVariant == 1) currentFrame = (currentFrame + 1) % 30; // 30 frames (15 cột x 2 hàng)
+            else currentFrame = (currentFrame + 1) % 15; // 15 frames (5 cột x 3 hàng)
+        }
     }
     
     // Logic thả trứng (bắn đạn)
-    shootTimer += deltaTime;
-    if (shootTimer >= 1.5f) { // Thả trứng mỗi 1.5 giây
-        shootTimer = 0.0f;
-        auto egg = std::make_shared<Bullet>(position, damage, 150.0f, false);
-        GameManager::GetInstance()->AddBullet(egg);
+    if (canShoot) {
+        eggDropTimer -= deltaTime;
+        if (eggDropTimer <= 0.0f) {
+            ResetEggTimer();
+            auto egg = std::make_shared<Bullet>(position, damage, 150.0f, false);
+            GameManager::GetInstance()->AddBullet(egg);
+        }
     }
 }
 
@@ -37,11 +50,44 @@ void Bullet::Draw() {
 }
 
 void Enemy::Draw() {
-    if (!isActive) return;
-    Texture2D tex = GameManager::GetInstance()->GetTexEnemy();
-    // Tăng kích thước 50% (lên 80x80)
-    DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
-                   {position.x, position.y, 80.0f, 80.0f}, {40.0f, 40.0f}, 0.0f, WHITE);
+    auto gm = GameManager::GetInstance();
+    
+    if (enemyType == 4) { // ASTEROID
+        Texture2D tex = (asteroidVariant == 1) ? gm->GetTexAsteroid1() : gm->GetTexAsteroid2();
+        int columns = (asteroidVariant == 1) ? 15 : 5;
+        int rows = (asteroidVariant == 1) ? 2 : 3;
+        float frameWidth = (float)tex.width / columns;
+        float frameHeight = (float)tex.height / rows;
+        
+        int row = currentFrame / columns;
+        int col = currentFrame % columns;
+        
+        Rectangle sourceRec = { col * frameWidth, row * frameHeight, frameWidth, frameHeight };
+        
+        if (asteroidVariant == 1) {
+            // Khung hình thật là 512x1024 (tỉ lệ 1:2). Cục đá nằm ở dưới đáy.
+            // Vẽ với kích thước 100x200 để cục đá có size ~100x100
+            Rectangle destRec = { position.x, position.y, 100.0f, 200.0f }; 
+            // Tâm va chạm đặt ở dưới đáy (khoảng 80% chiều cao) để khớp với cục đá
+            Vector2 origin = { 50.0f, 160.0f };
+            DrawTexturePro(tex, sourceRec, destRec, origin, 0.0f, WHITE);
+        } else {
+            Rectangle destRec = { position.x, position.y, 100.0f, 100.0f };
+            Vector2 origin = { 50.0f, 50.0f };
+            DrawTexturePro(tex, sourceRec, destRec, origin, 0.0f, WHITE);
+        }
+    } else {
+        Texture2D tex = gm->GetTexEnemy();
+        
+        // Tính toán origin để căn giữa texture
+        Vector2 origin = { (float)tex.width / 2, (float)tex.height / 2 };
+        
+        Rectangle sourceRec = { 0.0f, 0.0f, (float)tex.width, (float)tex.height };
+        Rectangle destRec = { position.x, position.y, (float)tex.width, (float)tex.height };
+        
+        // Vẽ texture với vị trí đã căn giữa
+        DrawTexturePro(tex, sourceRec, destRec, origin, 0.0f, WHITE);
+    }
                    
     // Hiện thanh máu nếu chuột di vào hitbox
     if (CheckCollisionPointRec(GetMousePosition(), GetHitbox())) {
@@ -65,7 +111,7 @@ void Spaceship::Draw() {
 // -------------------------------------------
 
 GameManager::GameManager() 
-    : currentState(GameState::MAIN_MENU), previousState(GameState::MAIN_MENU), screenWidth(1280), screenHeight(720), isRunning(false), score(0), spawnTimer(2.0f) {
+    : currentState(GameState::MAIN_MENU), previousState(GameState::MAIN_MENU), screenWidth(1600), screenHeight(900), isRunning(false), score(0), currentWave(0), currentBatch(0), waveTimer(0.0f), isWaveTransitioning(false) {
 }
 
 GameManager::~GameManager() {
@@ -86,6 +132,13 @@ void GameManager::DestroyInstance() {
     }
 }
 
+void GameManager::StartWave(int waveIndex) {
+    currentWave = waveIndex;
+    currentBatch = 1;
+    isWaveTransitioning = true;
+    waveTimer = 3.0f; // 3 seconds delay before wave starts
+}
+
 void GameManager::Init(int width, int height, const char* title) {
     screenWidth = width;
     screenHeight = height;
@@ -101,7 +154,9 @@ void GameManager::Init(int width, int height, const char* title) {
     texBackgrounds[3] = LoadTexture("assets/background2.png");
     texSettingIcon = LoadTexture("assets/setting.png");
     texSpaceship = LoadTexture("assets/spaceship/SpaceShip01.png");
-    texEnemy = LoadTexture("assets/enemy/chicken03.png"); 
+    texEnemy = LoadTexture("assets/enemy/chicken03.png");
+    texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
+    texAsteroid2 = LoadTexture("assets/asteroidType2.png");
     texBulletPlayer = LoadTexture("assets/spaceship/Bullet01_1.png");
     texEnemyBullet = LoadTexture("assets/egg.png"); 
     texMeat = LoadTexture("assets/meat.png");
@@ -185,20 +240,107 @@ void GameManager::Update(float deltaTime) {
                     
                     player->SetPosition(pos);
 
-                    if (IsKeyPressed(KEY_SPACE)) {
-                        player->Fire();
+                    // Player input & update
+                    player->Update(deltaTime); // Cập nhật thời gian hồi chiêu
+                    if (IsKeyDown(KEY_SPACE)) {
+                        if (player->CanFire()) {
+                            player->Fire();
+                        }
                     }
                 }
             }
 
-            // --- Spawner Logic ---
-            if (currentState != GameState::TEST_SPACESHIP) {
-                spawnTimer -= deltaTime;
-                if (spawnTimer <= 0.0f) {
-                    spawnTimer = 2.0f; 
-                    float randomX = GetRandomValue(50, screenWidth - 50);
-                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {randomX, -50.0f});
-                    enemy->SetMovementBehavior(std::make_unique<StraightMovement>());
+            // --- Wave Logic ---
+            if (currentState == GameState::TEST_GAMEPLAY) {
+                if (isWaveTransitioning) {
+                    waveTimer -= deltaTime;
+                    if (waveTimer <= 0.0f) {
+                        isWaveTransitioning = false;
+                        if (currentWave == 1) { 
+                            if (currentBatch == 1) {
+                                for (int i = 0; i < 10; ++i) {
+                                    float x = screenWidth + 100.0f + i * 150.0f; // Bắt đầu từ rìa Phải
+                                    float y = 150.0f + (i % 2) * 100.0f; // Ở giữa màn hình
+                                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y});
+                                    enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(-1.0f)); // Bay sang Trái
+                                    enemy->ResetEggTimer();
+                                    AddEnemy(std::move(enemy));
+                                }
+                            } else if (currentBatch == 2) {
+                                for (int i = 0; i < 15; ++i) {
+                                    float x = -100.0f - i * 150.0f; // Bắt đầu từ rìa Trái
+                                    float y = 150.0f + (i % 3) * 100.0f; 
+                                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y});
+                                    enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(1.0f)); // Bay sang Phải
+                                    enemy->ResetEggTimer();
+                                    AddEnemy(std::move(enemy));
+                                }
+                            } else if (currentBatch == 3) {
+                                float startX = screenWidth / 2.0f;
+                                for (int r = 0; r < 3; ++r) {
+                                    for (int c = 0; c < 5; ++c) {
+                                        float offsetX = (c - 2) * 150.0f;
+                                        float x = startX + offsetX;
+                                        float y = -300.0f + r * 100.0f; 
+                                        float targetY = 100.0f + r * 100.0f; // Vị trí đứng của từng hàng
+                                        auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y});
+                                        enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(targetY, 300.0f, 1.0f));
+                                        enemy->ResetEggTimer();
+                                        AddEnemy(std::move(enemy));
+                                    }
+                                }
+                            }
+                        } else if (currentWave == 2) { 
+                            if (currentBatch == 1) {
+                                for (int i = 0; i < 15; ++i) {
+                                    float x = 150.0f + (i % 5) * 250.0f;
+                                    float y = -100.0f - (i / 5) * 150.0f;
+                                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y});
+                                    enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>());
+                                    enemy->ResetEggTimer();
+                                    AddEnemy(std::move(enemy));
+                                }
+                            }
+                        } else if (currentWave == 3) { 
+                            if (currentBatch == 1) {
+                                for (int i = 0; i < 20; i++) {
+                                    float x = GetRandomValue(100, screenWidth - 100);
+                                    float y = -100.0f - i * 150.0f; 
+                                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {x, y});
+                                    enemy->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
+                                    enemy->asteroidVariant = 1; // Trở lại loại thiên thạch 1
+                                    enemy->canShoot = false; // Chặn chức năng xả trứng cho thiên thạch
+                                    activeEnemies.push_back(std::move(enemy));
+                                }
+                            }
+                        }
+                    }
+                } else if (activeEnemies.empty()) {
+                    if (currentWave == 1) {
+                        if (currentBatch == 1) {
+                            currentBatch = 2;
+                            isWaveTransitioning = true;
+                            waveTimer = 3.0f;
+                        } else if (currentBatch == 2) {
+                            currentBatch = 3;
+                            isWaveTransitioning = true;
+                            waveTimer = 3.0f;
+                        } else {
+                            StartWave(2);
+                        }
+                    } else if (currentWave == 2) {
+                        StartWave(3);
+                    } else if (currentWave == 3) {
+                        StartWave(1); // Lặp lại từ đầu
+                    }
+                }
+            } else if (currentState == GameState::TEST_ENEMY) {
+                // Spawner đơn giản cho TEST_ENEMY (để người chơi test bắn gà)
+                if (activeEnemies.empty()) {
+                    float x = GetRandomValue(50, screenWidth - 50);
+                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, 100.0f});
+                    enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(1.0f));
+                    enemy->ResetEggTimer();
                     AddEnemy(std::move(enemy));
                 }
             }
@@ -256,9 +398,14 @@ void GameManager::Update(float deltaTime) {
                 for (auto& enemy : activeEnemies) {
                     if (!enemy->IsActive() || !player || !player->IsActive()) continue;
                     
-                    if (CheckCollisionRecs(enemy->GetHitbox(), player->GetHitbox())) {
-                        player->TakeDamage(10.0f); 
-                        enemy->SetActive(false);
+                    // Va chạm Player vs Enemy
+                    if (CheckCollisionRecs(player->GetHitbox(), enemy->GetHitbox())) {
+                        enemy->TakeDamage(100); // Gà/Thiên thạch cũng mất máu khi đụng tàu
+                        if (enemy->enemyType == 4) { // ASTEROID
+                            player->TakeDamage(50); // Thiên thạch đâm mất nhiều máu hơn
+                        } else {
+                            player->TakeDamage(20);
+                        }
                     }
                 }
                 
@@ -403,20 +550,15 @@ void GameManager::Draw() {
                 currentState = GameState::TEST_ENEMY;
             }
             
-            if (DrawButton({(float)screenWidth/2 - 150, 320, 300, 50}, "TEST SPACESHIP")) {
+            if (DrawButton({(float)screenWidth/2 - 320, 320, 300, 50}, "TEST SPACESHIP")) {
                 currentState = GameState::TEST_SPACESHIP;
             }
             
-            if (DrawButton({(float)screenWidth/2 - 150, 390, 300, 50}, "TEST GAMEPLAY")) {
-                currentState = GameState::TEST_GAMEPLAY;
-                // Reset máu để chắc chắn không chết ngay
-                if (player) {
-                    player = SpaceshipFactory::CreateSpaceship(SpaceshipFactory::ShipType::FIGHTER, {(float)screenWidth/2, (float)screenHeight - 100});
-                    player->SetShootingBehavior(std::make_unique<SingleShot>());
-                }
+            if (DrawButton({ (float)screenWidth/2 + 20, 320, 300, 50 }, "TEST GAMEPLAY")) {
+                ChangeState(GameState::WAVE_SELECTION);
             }
             
-            if (DrawButton({(float)screenWidth/2 - 150, 480, 300, 50}, "BACK TO MAIN")) {
+            if (DrawButton({(float)screenWidth/2 - 150, 460, 300, 50}, "BACK TO MAIN")) {
                 currentState = GameState::MAIN_MENU;
             }
             
@@ -431,6 +573,50 @@ void GameManager::Draw() {
                 }
             }
             
+            break;
+        }
+
+        case GameState::WAVE_SELECTION: {
+            DrawText("WAVE SELECTION", screenWidth/2 - MeasureText("WAVE SELECTION", 40)/2, 200, 40, YELLOW);
+            
+            // Buttons to select Wave
+            DrawText(TextFormat("WAVE: %d", testSelectedWave), screenWidth/2 - 70, 300, 30, WHITE);
+            if (DrawButton({ (float)screenWidth/2 - 150, 290, 50, 50 }, "<")) {
+                if (testSelectedWave > 1) { testSelectedWave--; testSelectedBatch = 1; }
+            }
+            if (DrawButton({ (float)screenWidth/2 + 100, 290, 50, 50 }, ">")) {
+                if (testSelectedWave < 3) { testSelectedWave++; testSelectedBatch = 1; }
+            }
+
+            // Buttons to select Batch
+            DrawText(TextFormat("BATCH: %d", testSelectedBatch), screenWidth/2 - 70, 400, 30, WHITE);
+            if (DrawButton({ (float)screenWidth/2 - 150, 390, 50, 50 }, "<")) {
+                if (testSelectedBatch > 1) testSelectedBatch--;
+            }
+            if (DrawButton({ (float)screenWidth/2 + 100, 390, 50, 50 }, ">")) {
+                int maxBatch = (testSelectedWave == 1) ? 3 : 1; // Wave 1 has 3 batches, Wave 2/3 have 1
+                if (testSelectedBatch < maxBatch) testSelectedBatch++;
+            }
+
+            if (DrawButton({ (float)screenWidth/2 - 100, 500, 200, 50 }, "START TEST")) {
+                currentWave = testSelectedWave;
+                currentBatch = testSelectedBatch;
+                isWaveTransitioning = true;
+                waveTimer = 3.0f; 
+                activeEnemies.clear();
+                activeBullets.clear();
+                
+                // Initialize player for testing
+                if (player) {
+                    player = SpaceshipFactory::CreateSpaceship(SpaceshipFactory::ShipType::FIGHTER, {(float)screenWidth/2, (float)screenHeight - 100});
+                    player->SetShootingBehavior(std::make_unique<SingleShot>());
+                }
+
+                ChangeState(GameState::TEST_GAMEPLAY);
+            }
+            if (DrawButton({ (float)screenWidth/2 - 100, 600, 200, 50 }, "BACK")) {
+                ChangeState(GameState::TEST_MENU);
+            }
             break;
         }
 
@@ -496,6 +682,10 @@ void GameManager::Draw() {
             }
             
             if (currentState == GameState::TEST_GAMEPLAY) {
+                if (isWaveTransitioning) {
+                    DrawText(TextFormat("WAVE %d - BATCH %d", currentWave, currentBatch), screenWidth/2 - 200, screenHeight/2, 50, YELLOW);
+                }
+                
                 // Di chuyển Score sang bên trái một chút để tránh đè lên nút Setting
                 DrawText(TextFormat("Score: %d", score), screenWidth - 250, 40, 20, WHITE);
 
@@ -527,9 +717,11 @@ void GameManager::CleanUp() {
     }
     if (IsWindowReady()) {
         UnloadTexture(texSettingIcon);
-        UnloadTexture(texSpaceship);
-        UnloadTexture(texEnemy);
-        UnloadTexture(texBulletPlayer);
+    UnloadTexture(texSpaceship);
+    UnloadTexture(texEnemy);
+    UnloadTexture(texAsteroid1);
+    UnloadTexture(texAsteroid2);
+    UnloadTexture(texBulletPlayer);
         UnloadTexture(texEnemyBullet);
         UnloadTexture(texMeat);
         CloseWindow();

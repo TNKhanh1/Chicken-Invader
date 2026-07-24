@@ -9,29 +9,36 @@ class EnemyFactory {
 public:
     enum class EnemyType {
         NORMAL_CHICKEN,
-        SWARM_CHICKEN, // Máu ít, xuất hiện nhiều
-        TANK_CHICKEN,  // Máu nhiều, đi chậm
-        BOSS
+        SWARM_CHICKEN,
+        TANK_CHICKEN,
+        BOSS,
+        ASTEROID
     };
 
     static std::unique_ptr<Enemy> CreateEnemy(EnemyType type, Vector2 startPos) {
+        std::unique_ptr<Enemy> enemy;
         switch (type) {
             case EnemyType::NORMAL_CHICKEN:
-                // pos, hp, dmg, armor, spd, points
-                return std::make_unique<Enemy>(startPos, 50.0f, 10.0f, 5.0f, 100.0f, 10);
-                
+                enemy = std::make_unique<Enemy>(startPos, 50.0f, 10.0f, 5.0f, 100.0f, 10);
+                break;
             case EnemyType::SWARM_CHICKEN:
-                return std::make_unique<Enemy>(startPos, 10.0f, 5.0f, 0.0f, 200.0f, 5);
-                
+                enemy = std::make_unique<Enemy>(startPos, 10.0f, 5.0f, 0.0f, 200.0f, 5);
+                break;
             case EnemyType::TANK_CHICKEN:
-                return std::make_unique<Enemy>(startPos, 200.0f, 30.0f, 20.0f, 50.0f, 50);
-                
+                enemy = std::make_unique<Enemy>(startPos, 200.0f, 30.0f, 20.0f, 50.0f, 50);
+                break;
             case EnemyType::BOSS:
-                return std::make_unique<Enemy>(startPos, 5000.0f, 100.0f, 50.0f, 80.0f, 1000);
-                
+                enemy = std::make_unique<Enemy>(startPos, 5000.0f, 100.0f, 50.0f, 80.0f, 1000);
+                break;
+            case EnemyType::ASTEROID:
+                enemy = std::make_unique<Enemy>(startPos, 300.0f, 50.0f, 20.0f, 250.0f, 50);
+                break;
             default:
-                return std::make_unique<Enemy>(startPos, 50.0f, 10.0f, 5.0f, 100.0f, 10);
+                enemy = std::make_unique<Enemy>(startPos, 50.0f, 10.0f, 5.0f, 100.0f, 10);
+                break;
         }
+        enemy->enemyType = static_cast<int>(type);
+        return enemy;
     }
 };
 

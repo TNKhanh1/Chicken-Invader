@@ -26,6 +26,8 @@ private:
     // Strategy Pattern
     std::unique_ptr<IShootingBehavior> shootingBehavior;
 
+    float fireTimer = 0.0f; // Bộ đếm hồi chiêu
+
     // Observer Pattern
     std::vector<IObserver*> observers;
 
@@ -38,22 +40,19 @@ public:
 
     virtual ~Spaceship() = default;
 
-    // Implement ISubject (Sử dụng virtual để Decorator có thể forward)
+    // ... [Bỏ qua các hàm observer, Getters không đổi] ...
     virtual void AddObserver(IObserver* observer) override {
         observers.push_back(observer);
     }
-
     virtual void RemoveObserver(IObserver* observer) override {
         observers.erase(std::remove(observers.begin(), observers.end(), observer), observers.end());
     }
-
     virtual void Notify(EventType event, const std::string& data) override {
         for (auto observer : observers) {
             observer->OnNotify(event, data);
         }
     }
 
-    // Getters cho các chỉ số riêng của phi thuyền
     virtual float GetCritChance() const { return critChance; }
     virtual float GetCritDamage() const { return critDamage; }
     virtual float GetMaxMana() const { return maxMana; }
@@ -64,35 +63,42 @@ public:
     virtual float GetMaxExp() const { return maxExp; }
     
     virtual Rectangle GetHitbox() const {
-        return {position.x - 30, position.y - 30, 60, 60};
+        return {position.x - 20, position.y - 20, 40, 40};
     }
 
-    // Các hàm chính
     void Init() override {
-        // Tải texture, set active...
     }
 
     void Update(float deltaTime) override {
-        // Xử lý Input di chuyển (WASD / Mouse)
-        // Cập nhật vị trí
+        if (fireTimer > 0.0f) {
+            fireTimer -= deltaTime;
+        }
     }
 
     void Draw() override;
 
     void Die() override {
-        // Xử lý GameOver
     }
 
-    // Hành vi thay đổi súng (Strategy Pattern)
     virtual void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) {
         shootingBehavior = std::move(behavior);
     }
 
+    virtual bool CanFire() const {
+        return fireTimer <= 0.0f;
+    }
+
     virtual void Fire() {
         if (shootingBehavior) {
-            shootingBehavior->Shoot(position);
+            shootingBehavior->Shoot(position, damage);
             
-            // Mỗi lần bắn tích 1 lượng mana (Theo doc)
+            // Cập nhật lại thời gian hồi chiêu
+            // attackSpeed là số viên đạn bắn được trong 1 giây (ví dụ: 5 -> 0.2s hồi)
+            if (attackSpeed > 0) {
+                fireTimer = 1.0f / attackSpeed;
+            }
+            
+            // Mỗi lần bắn tích 1 lượng mana
             GainMana(10.0f);
         }
     }
