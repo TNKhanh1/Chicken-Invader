@@ -8,10 +8,17 @@ private:
     float speed;
     float damage;
     bool isPlayerBullet;
+    Vector2 velocity;
+    bool hasCustomVelocity;
 
 public:
     Bullet(Vector2 startPos, float dmg, float spd, bool playerBullet = true) 
-        : GameObject(startPos), speed(spd), damage(dmg), isPlayerBullet(playerBullet) {}
+        : GameObject(startPos), speed(spd), damage(dmg), isPlayerBullet(playerBullet), velocity({0, 0}), hasCustomVelocity(false) {}
+    
+    void SetVelocity(Vector2 vel) {
+        velocity = vel;
+        hasCustomVelocity = true;
+    }
     
     void Init() override {
         // Init properties if needed
@@ -20,11 +27,16 @@ public:
     void Update(float deltaTime) override {
         if (!isActive) return;
 
-        // Move bullet (up if player bullet, down if enemy bullet)
-        if (isPlayerBullet) {
-            position.y -= speed * deltaTime;
+        // Move bullet
+        if (hasCustomVelocity) {
+            position.x += velocity.x * deltaTime;
+            position.y += velocity.y * deltaTime;
         } else {
-            position.y += speed * deltaTime;
+            if (isPlayerBullet) {
+                position.y -= speed * deltaTime;
+            } else {
+                position.y += speed * deltaTime;
+            }
         }
 
         // Deactivate if off-screen

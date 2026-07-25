@@ -6,12 +6,7 @@
 #include <vector>
 #include <memory>
 
-struct MeatItem {
-    Vector2 position;
-    Vector2 velocity;
-    float time;
-    bool active;
-};
+// (struct MeatItem đã được chuyển thành class Meat trong Item.h)
 
 // Singleton Pattern
 class GameManager {
@@ -56,7 +51,7 @@ private:
     // Entity lists
     std::vector<std::shared_ptr<class Bullet>> activeBullets;
     std::vector<std::shared_ptr<class Enemy>> activeEnemies;
-    std::vector<MeatItem> activeMeats;
+    std::vector<std::shared_ptr<class Item>> activeItems;
     std::shared_ptr<class Spaceship> player;
     
     // Wave variables
@@ -111,6 +106,7 @@ public:
     Texture2D GetTexAsteroid2() const { return texAsteroid2; }
     Texture2D GetTexBulletPlayer() const { return texBulletPlayer; }
     Texture2D GetTexEnemyBullet() const { return texEnemyBullet; }
+    Texture2D GetTexMeat() const { return texMeat; }
     
     // Score management
     int GetScore() const { return score; }

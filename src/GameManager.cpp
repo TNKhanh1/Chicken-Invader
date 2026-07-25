@@ -4,6 +4,7 @@
 #include "../include/WeaponStrategy.h"
 #include "../include/MovementStrategy.h"
 #include "../include/Bullet.h"
+#include "../include/Item.h"
 #include <iostream>
 #include <cmath>
 
@@ -355,14 +356,8 @@ void GameManager::Update(float deltaTime) {
             }
 
             // --- Update Entities ---
-            for (auto& meat : activeMeats) {
-                if (meat.active) {
-                    meat.time += deltaTime;
-                    meat.velocity.y += 400.0f * deltaTime; // Gravity
-                    meat.position.y += meat.velocity.y * deltaTime;
-                    meat.position.x += meat.velocity.x * deltaTime + sin(meat.time * 5.0f) * 60.0f * deltaTime;
-                    if (meat.position.y > screenHeight + 50) meat.active = false;
-                }
+            for (auto& item : activeItems) {
+                if (item->IsActive()) item->Update(deltaTime);
             }
 
             for (auto& enemy : activeEnemies) {
@@ -389,7 +384,8 @@ void GameManager::Update(float deltaTime) {
                                 if (!enemy->IsActive()) {
                                     AddScore(enemy->GetPointValue());
                                     PlayExplosionSound();
-                                    activeMeats.push_back({enemy->GetPosition(), { (float)GetRandomValue(-100, 100), -200.0f }, 0.0f, true});
+                                    auto meat = std::make_shared<Meat>(enemy->GetPosition(), Vector2{(float)GetRandomValue(-100, 100), -200.0f});
+                                    activeItems.push_back(meat);
                                 }
                             }
                         }
@@ -419,16 +415,18 @@ void GameManager::Update(float deltaTime) {
                     }
                 }
                 
-                // Va chạm Meat và Player
+                // Va chạm Item và Player
                 if (player && player->IsActive()) {
-                    for (auto& meat : activeMeats) {
-                        if (!meat.active) continue;
-                        Rectangle meatRect = {meat.position.x - 20, meat.position.y - 20, 40, 40};
-                        if (CheckCollisionRecs(meatRect, player->GetHitbox())) {
-                            meat.active = false;
-                            AddScore(50); // Ăn đùi gà được 50 điểm
-                            player->GainExp(10.0f);
-                            PlayPickupSound();
+                    for (auto& item : activeItems) {
+                        if (!item->IsActive()) continue;
+                        Rectangle itemRect = {item->GetPosition().x - 20, item->GetPosition().y - 20, 40, 40};
+                        if (CheckCollisionRecs(itemRect, player->GetHitbox())) {
+                            item->SetActive(false);
+                            if (item->GetType() == ItemType::DRUMSTICK) {
+                                AddScore(50); // Ăn đùi gà được 50 điểm
+                                player->GainExp(10.0f);
+                                PlayPickupSound();
+                            }
                         }
                     }
                 }
@@ -446,8 +444,8 @@ void GameManager::Update(float deltaTime) {
             activeEnemies.erase(std::remove_if(activeEnemies.begin(), activeEnemies.end(),
                 [](const std::shared_ptr<Enemy>& e) { return !e->IsActive(); }), activeEnemies.end());
                 
-            activeMeats.erase(std::remove_if(activeMeats.begin(), activeMeats.end(),
-                [](const MeatItem& m) { return !m.active; }), activeMeats.end());
+            activeItems.erase(std::remove_if(activeItems.begin(), activeItems.end(),
+                [](const std::shared_ptr<Item>& i) { return !i->IsActive(); }), activeItems.end());
             break;
         }
         default:
@@ -547,7 +545,7 @@ void GameManager::Draw() {
                 score = 0;
                 activeEnemies.clear();
                 activeBullets.clear();
-                activeMeats.clear();
+                activeItems.clear();
                 player = SpaceshipFactory::CreateSpaceship(SpaceshipFactory::ShipType::FIGHTER, {(float)screenWidth/2, (float)screenHeight - 100});
                 player->SetShootingBehavior(std::make_unique<SingleShot>());
             }
@@ -564,6 +562,7 @@ void GameManager::Draw() {
             
             if (DrawButton({(float)screenWidth/2 - 320, 320, 300, 50}, "TEST SPACESHIP")) {
                 currentState = GameState::TEST_SPACESHIP;
+                if (player) player->SetShootingBehavior(std::make_unique<SpreadShot>());
             }
             
             if (DrawButton({ (float)screenWidth/2 + 20, 320, 300, 50 }, "TEST GAMEPLAY")) {
@@ -661,12 +660,11 @@ void GameManager::Draw() {
                 }
             }
             
-            // Vẽ Meats
+            // Vẽ Items
             if (currentState == GameState::TEST_GAMEPLAY) {
-                for (const auto& meat : activeMeats) {
-                    if (meat.active) {
-                        DrawTexturePro(texMeat, {0, 0, (float)texMeat.width, (float)texMeat.height},
-                                       {meat.position.x, meat.position.y, 40.0f, 40.0f}, {20.0f, 20.0f}, 0.0f, WHITE);
+                for (const auto& item : activeItems) {
+                    if (item->IsActive()) {
+                        item->Draw();
                     }
                 }
             }
@@ -676,7 +674,7 @@ void GameManager::Draw() {
                 currentState = GameState::TEST_MENU;
                 activeEnemies.clear();
                 activeBullets.clear();
-                activeMeats.clear();
+                activeItems.clear();
                 if (player) {
                     player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
                 }
@@ -719,6 +717,14 @@ void GameManager::Draw() {
                     DrawRectangle(20, 110, (int)(200 * expRatio), 15, BLUE);
                     DrawRectangleLines(20, 110, 200, 15, DARKGRAY);
                     DrawText(TextFormat("LVL: %d  EXP: %.0f/%.0f", player->GetLevel(), player->GetCurrentExp(), player->GetMaxExp()), 25, 112, 12, WHITE);
+                    
+                    // Draw Mana Bar
+                    float manaRatio = player->GetCurrentMana() / player->GetMaxMana();
+                    if (manaRatio > 1.0f) manaRatio = 1.0f;
+                    DrawRectangle(20, 135, 200, 15, GRAY);
+                    DrawRectangle(20, 135, (int)(200 * manaRatio), 15, PURPLE);
+                    DrawRectangleLines(20, 135, 200, 15, DARKGRAY);
+                    DrawText(TextFormat("MANA: %.0f/%.0f", player->GetCurrentMana(), player->GetMaxMana()), 25, 137, 12, WHITE);
                 }
             }
             break;
