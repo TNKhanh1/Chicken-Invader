@@ -23,6 +23,7 @@ public:
         // Tốc độ đạn tăng 20% (400 -> 480)
         auto bullet = std::make_shared<Bullet>(position, damage, 480.0f, true);
         GameManager::GetInstance()->AddBullet(bullet);
+        GameManager::GetInstance()->PlayShootSound();
     }
 };
 

@@ -148,6 +148,13 @@ void GameManager::Init(int width, int height, const char* title) {
     SetTargetFPS(60); // Đặt tốc độ khung hình 60 FPS
     
     // Khởi tạo các textures
+    InitAudioDevice();
+    sfxShoot = LoadSound("assets/shoot.wav");
+    sfxExplosion = LoadSound("assets/explosion.wav");
+    sfxPickup = LoadSound("assets/pickup.wav");
+    bgMusic = LoadMusicStream("assets/bgm.mp3");
+    PlayMusicStream(bgMusic);
+    
     texBackgrounds[0] = LoadTexture("assets/background.jpg");
     texBackgrounds[1] = LoadTexture("assets/background.png");
     texBackgrounds[2] = LoadTexture("assets/background1.png");
@@ -207,6 +214,8 @@ bool GameManager::DrawButton(Rectangle bounds, const char* text) {
 }
 
 void GameManager::Update(float deltaTime) {
+    UpdateMusicStream(bgMusic);
+
     // Handle State Transitions and specific state logic
     switch (currentState) {
         case GameState::MAIN_MENU:
@@ -337,9 +346,9 @@ void GameManager::Update(float deltaTime) {
             } else if (currentState == GameState::TEST_ENEMY) {
                 // Spawner đơn giản cho TEST_ENEMY (để người chơi test bắn gà)
                 if (activeEnemies.empty()) {
-                    float x = GetRandomValue(50, screenWidth - 50);
+                    float x = GetRandomValue(200, screenWidth - 200);
                     auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, 100.0f});
-                    enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(1.0f));
+                    enemy->SetMovementBehavior(std::make_unique<SineZigzagMovement>());
                     enemy->ResetEggTimer();
                     AddEnemy(std::move(enemy));
                 }
@@ -379,6 +388,7 @@ void GameManager::Update(float deltaTime) {
                                 
                                 if (!enemy->IsActive()) {
                                     AddScore(enemy->GetPointValue());
+                                    PlayExplosionSound();
                                     activeMeats.push_back({enemy->GetPosition(), { (float)GetRandomValue(-100, 100), -200.0f }, 0.0f, true});
                                 }
                             }
@@ -417,6 +427,8 @@ void GameManager::Update(float deltaTime) {
                         if (CheckCollisionRecs(meatRect, player->GetHitbox())) {
                             meat.active = false;
                             AddScore(50); // Ăn đùi gà được 50 điểm
+                            player->GainExp(10.0f);
+                            PlayPickupSound();
                         }
                     }
                 }
@@ -699,6 +711,14 @@ void GameManager::Draw() {
                     DrawRectangleLines(20, 80, 200, 20, DARKGRAY);
                     
                     DrawText(TextFormat("HP: %.0f/%.0f", player->GetHp(), player->GetMaxHp()), 25, 82, 16, BLACK);
+                    
+                    // Draw EXP Bar
+                    float expRatio = player->GetCurrentExp() / player->GetMaxExp();
+                    if (expRatio > 1.0f) expRatio = 1.0f;
+                    DrawRectangle(20, 110, 200, 15, GRAY);
+                    DrawRectangle(20, 110, (int)(200 * expRatio), 15, BLUE);
+                    DrawRectangleLines(20, 110, 200, 15, DARKGRAY);
+                    DrawText(TextFormat("LVL: %d  EXP: %.0f/%.0f", player->GetLevel(), player->GetCurrentExp(), player->GetMaxExp()), 25, 112, 12, WHITE);
                 }
             }
             break;
@@ -724,6 +744,13 @@ void GameManager::CleanUp() {
     UnloadTexture(texBulletPlayer);
         UnloadTexture(texEnemyBullet);
         UnloadTexture(texMeat);
+        
+        UnloadSound(sfxShoot);
+        UnloadSound(sfxExplosion);
+        UnloadSound(sfxPickup);
+        UnloadMusicStream(bgMusic);
+        CloseAudioDevice();
+        
         CloseWindow();
     }
 }

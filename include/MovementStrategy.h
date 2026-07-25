@@ -114,6 +114,30 @@ public:
     }
 };
 
+class SineZigzagMovement : public IMovementBehavior {
+private:
+    float startX;
+    float time = 0.0f;
+    float amplitude = 150.0f;
+    float frequency = 3.0f;
+    bool initialized = false;
+public:
+    void Move(Vector2& position, float moveSpeed, float deltaTime, int screenWidth, int screenHeight) override {
+        if (!initialized) {
+            startX = position.x;
+            initialized = true;
+        }
+        time += deltaTime;
+        
+        position.y += moveSpeed * 0.5f * deltaTime;
+        position.x = startX + sin(time * frequency) * amplitude;
+        
+        if (position.y > screenHeight + 100) {
+            position.y = -100;
+        }
+    }
+};
+
 class SpiralMovement : public IMovementBehavior {
 private:
     float time = 0.0f;

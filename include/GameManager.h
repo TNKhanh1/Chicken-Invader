@@ -47,6 +47,12 @@ private:
     Texture2D texEnemyBullet;
     Texture2D texMeat;
 
+    // Audio
+    Sound sfxShoot;
+    Sound sfxExplosion;
+    Sound sfxPickup;
+    Music bgMusic;
+
     // Entity lists
     std::vector<std::shared_ptr<class Bullet>> activeBullets;
     std::vector<std::shared_ptr<class Enemy>> activeEnemies;
@@ -109,6 +115,11 @@ public:
     // Score management
     int GetScore() const { return score; }
     void AddScore(int value) { score += value; }
+    
+    // Audio wrappers
+    void PlayShootSound() { PlaySound(sfxShoot); }
+    void PlayExplosionSound() { PlaySound(sfxExplosion); }
+    void PlayPickupSound() { PlaySound(sfxPickup); }
     
     // Entity management
     void AddBullet(std::shared_ptr<class Bullet> bullet) { activeBullets.push_back(bullet); }
