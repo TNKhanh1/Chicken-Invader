@@ -11,8 +11,8 @@ protected:
     bool isActive;
 
 public:
-    GameObject() : position({0.0f, 0.0f}), isActive(true) {}
-    GameObject(Vector2 pos) : position(pos), isActive(true) {}
+    GameObject();
+    GameObject(Vector2 pos);
     
     virtual ~GameObject() = default;
 
@@ -22,11 +22,11 @@ public:
     virtual void Draw() = 0;
 
     // Getters / Setters
-    Vector2 GetPosition() const { return position; }
-    void SetPosition(Vector2 pos) { position = pos; }
+    Vector2 GetPosition() const;
+    void SetPosition(Vector2 pos);
     
-    bool IsActive() const { return isActive; }
-    void SetActive(bool active) { isActive = active; }
+    bool IsActive() const;
+    void SetActive(bool active);
 };
 
 #endif // GAMEOBJECT_H

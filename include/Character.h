@@ -15,34 +15,22 @@ protected:
     float moveSpeed;
 
 public:
-    Character(Vector2 pos, float hp, float dmg, float arm, float spd) 
-        : GameObject(pos), maxHp(hp), currentHp(hp), damage(dmg), armor(arm), moveSpeed(spd) {}
+    Character(Vector2 pos, float hp, float dmg, float arm, float spd);
 
     virtual ~Character() = default;
 
     // Hàm nhận sát thương áp dụng công thức giảm trừ theo Giáp (Armor)
-    virtual void TakeDamage(float incomingDamage) {
-        // Công thức f(X, Y): Sát thương thực tế = incomingDamage * (100 / (100 + armor))
-        // Đây là công thức phổ biến trong các game (như LMHT/Dota)
-        float damageMultiplier = 100.0f / (100.0f + armor);
-        float actualDamage = incomingDamage * damageMultiplier;
-        
-        currentHp -= actualDamage;
-        if (currentHp <= 0) {
-            currentHp = 0;
-            Die();
-        }
-    }
+    virtual void TakeDamage(float incomingDamage);
 
     // Hàm xử lý khi máu <= 0
     virtual void Die() = 0;
 
     // Getters (Sử dụng virtual để Decorator Pattern có thể Override)
-    virtual float GetHp() const { return currentHp; }
-    virtual float GetMaxHp() const { return maxHp; }
-    virtual float GetDamage() const { return damage; }
-    virtual float GetArmor() const { return armor; }
-    virtual float GetMoveSpeed() const { return moveSpeed; }
+    virtual float GetHp() const;
+    virtual float GetMaxHp() const;
+    virtual float GetDamage() const;
+    virtual float GetArmor() const;
+    virtual float GetMoveSpeed() const;
 };
 
 #endif // CHARACTER_H

@@ -34,10 +34,15 @@ private:
     // Textures
     Texture2D texBackgrounds[4];
     Texture2D texSettingIcon;
+    
+    // Player resources
     Texture2D texSpaceship;
+    Texture2D texSpaceshipHypergun;
     Texture2D texEnemy;
     Texture2D texAsteroid1;
     Texture2D texAsteroid2;
+    Texture2D texBulletStrong;
+    Texture2D texBulletWeak;
     Texture2D texBulletPlayer;
     Texture2D texEnemyBullet;
     Texture2D texMeat;
@@ -101,9 +106,12 @@ public:
     
     // Texture Getters
     Texture2D GetTexSpaceship() const { return texSpaceship; }
+    Texture2D GetTexSpaceshipHypergun() const { return texSpaceshipHypergun; }
     Texture2D GetTexEnemy() const { return texEnemy; }
     Texture2D GetTexAsteroid1() const { return texAsteroid1; }
     Texture2D GetTexAsteroid2() const { return texAsteroid2; }
+    Texture2D GetTexBulletStrong() const { return texBulletStrong; }
+    Texture2D GetTexBulletWeak() const { return texBulletWeak; }
     Texture2D GetTexBulletPlayer() const { return texBulletPlayer; }
     Texture2D GetTexEnemyBullet() const { return texEnemyBullet; }
     Texture2D GetTexMeat() const { return texMeat; }

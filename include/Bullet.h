@@ -11,48 +11,25 @@ private:
     Vector2 velocity;
     bool hasCustomVelocity;
 
+    int bulletType; // 0: Normal, 1: Strong, 2: Weak
+
 public:
-    Bullet(Vector2 startPos, float dmg, float spd, bool playerBullet = true) 
-        : GameObject(startPos), speed(spd), damage(dmg), isPlayerBullet(playerBullet), velocity({0, 0}), hasCustomVelocity(false) {}
+    Bullet(Vector2 startPos, float dmg, float spd, bool playerBullet = true, int type = 0);
     
-    void SetVelocity(Vector2 vel) {
-        velocity = vel;
-        hasCustomVelocity = true;
-    }
+    void SetVelocity(Vector2 vel);
     
-    void Init() override {
-        // Init properties if needed
-    }
+    void Init() override;
 
-    void Update(float deltaTime) override {
-        if (!isActive) return;
-
-        // Move bullet
-        if (hasCustomVelocity) {
-            position.x += velocity.x * deltaTime;
-            position.y += velocity.y * deltaTime;
-        } else {
-            if (isPlayerBullet) {
-                position.y -= speed * deltaTime;
-            } else {
-                position.y += speed * deltaTime;
-            }
-        }
-
-        // Deactivate if off-screen
-        if (position.y < -50 || position.y > 800) {
-            isActive = false;
-        }
-    }
+    void Update(float deltaTime) override;
     
     void Draw() override;
     
-    float GetDamage() const { return damage; }
-    bool IsPlayerBullet() const { return isPlayerBullet; }
+    float GetDamage() const;
+    bool IsPlayerBullet() const;
     
-    Rectangle GetHitbox() const {
-        return {position.x - 5, position.y - 5, 10, 10};
-    }
+    int GetBulletType() const { return bulletType; }
+    
+    Rectangle GetHitbox() const;
 };
 
 #endif // BULLET_H

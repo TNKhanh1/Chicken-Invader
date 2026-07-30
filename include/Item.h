@@ -17,58 +17,17 @@ private:
     ItemType type;
 
 public:
-    Item(Vector2 pos, ItemType itemType) : GameObject(pos), type(itemType) {}
+    Item(Vector2 pos, ItemType itemType);
 
-    void Init() override {
-        // Load asset tương ứng với ItemType
-    }
+    void Init() override;
 
-    void Update(float deltaTime) override {
-        // Logic rơi tự do từ trên xuống
-        position.y += 100.0f * deltaTime; 
-        
-        // Vượt quá màn hình thì hủy
-        if (position.y > 720.0f) { // Giả sử chiều cao màn hình là 720
-            isActive = false;
-        }
-    }
+    void Update(float deltaTime) override;
 
-    void Draw() override {
-        // Lớp cơ sở không vẽ gì cả
-    }
+    void Draw() override;
 
-    ItemType GetType() const { return type; }
+    ItemType GetType() const;
 };
 
-#include "GameManager.h"
-#include <cmath>
 
-class Meat : public Item {
-private:
-    Vector2 velocity;
-    float time;
-public:
-    Meat(Vector2 pos, Vector2 initialVelocity) 
-        : Item(pos, ItemType::DRUMSTICK), velocity(initialVelocity), time(0.0f) {}
-
-    void Update(float deltaTime) override {
-        time += deltaTime;
-        velocity.y += 400.0f * deltaTime; // Gravity
-        position.y += velocity.y * deltaTime;
-        position.x += velocity.x * deltaTime + sin(time * 5.0f) * 60.0f * deltaTime;
-        
-        auto gm = GameManager::GetInstance();
-        if (position.y > gm->GetScreenHeight() + 50) {
-            isActive = false;
-        }
-    }
-
-    void Draw() override {
-        if (!isActive) return;
-        Texture2D texMeat = GameManager::GetInstance()->GetTexMeat();
-        DrawTexturePro(texMeat, {0, 0, (float)texMeat.width, (float)texMeat.height},
-                       {position.x, position.y, 40.0f, 40.0f}, {20.0f, 20.0f}, 0.0f, WHITE);
-    }
-};
 
 #endif // ITEM_H

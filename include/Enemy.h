@@ -2,7 +2,7 @@
 #define ENEMY_H
 
 #include "Character.h"
-#include "MovementStrategy.h"
+#include "IMovementBehavior.h"
 #include <memory>
 
 class Enemy : public Character {
@@ -11,14 +11,11 @@ private:
     int pointValue; // Điểm số khi bị giết
 
 public:
-    Enemy(Vector2 pos, float hp, float dmg, float arm, float spd, int points)
-        : Character(pos, hp, dmg, arm, spd), pointValue(points) {}
+    Enemy(Vector2 pos, float hp, float dmg, float arm, float spd, int points);
 
-    int GetPointValue() const { return pointValue; }
+    int GetPointValue() const;
 
-    void Init() override {
-        // Tải texture quái vật
-    }
+    void Init() override;
 
     int enemyType = 0;
     int currentFrame = 0;
@@ -28,35 +25,19 @@ public:
     float eggDropTimer = 0.0f;
     bool canShoot = true;
 
-    void ResetEggTimer() {
-        eggDropTimer = (GetRandomValue(20, 60)) / 10.0f;
-    }
+    void ResetEggTimer();
 
     void Update(float deltaTime) override;
 
     void Draw() override;
 
-    void Die() override {
-        isActive = false;
-        DropItem();
-        // Thông báo hệ thống cộng điểm, cộng exp cho người chơi
-    }
+    void Die() override;
 
-    void SetMovementBehavior(std::unique_ptr<IMovementBehavior> behavior) {
-        movementBehavior = std::move(behavior);
-    }
+    void SetMovementBehavior(std::unique_ptr<IMovementBehavior> behavior);
 
-    void DropItem() {
-        // Logic rơi vật phẩm:
-        // + Trái tim hồi máu
-        // + Đùi gà (Exp)
-        // + Bom
-        // + % rơi 1 level trực tiếp cho phi thuyền
-    }
+    void DropItem();
 
-    Rectangle GetHitbox() const {
-        return {position.x - 25, position.y - 25, 50, 50};
-    }
+    Rectangle GetHitbox() const;
 };
 
 #endif // ENEMY_H

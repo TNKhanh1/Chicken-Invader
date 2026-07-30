@@ -1,10 +1,23 @@
 #include "../include/GameManager.h"
 #include "../include/SpaceshipFactory.h"
 #include "../include/EnemyFactory.h"
+#include "../include/SingleShot.h"
+#include "../include/SpreadShot.h"
+#include "../include/DamageStoneDecorator.h"
 #include "../include/WeaponStrategy.h"
-#include "../include/MovementStrategy.h"
+#include "../include/IMovementBehavior.h"
+#include "../include/StraightMovement.h"
+#include "../include/HorizontalSweepMovement.h"
+#include "../include/VerticalZigzagMovement.h"
+#include "../include/HorizontalBounceMovement.h"
+#include "../include/MeteorDiveMovement.h"
+#include "../include/SineZigzagMovement.h"
+#include "../include/SpiralMovement.h"
 #include "../include/Bullet.h"
 #include "../include/Item.h"
+#include "../include/Meat.h"
+#include "../include/SpaceshipDataManager.h"
+#include "../include/HypergunShootingBehavior.h"
 #include <iostream>
 #include <cmath>
 
@@ -42,12 +55,40 @@ void Enemy::Update(float deltaTime) {
 
 void Bullet::Draw() {
     if (!isActive) return;
-    Texture2D tex = isPlayerBullet ? GameManager::GetInstance()->GetTexBulletPlayer() : GameManager::GetInstance()->GetTexEnemyBullet();
-    // Vẽ đạn với kích thước phù hợp (viên đạn/trứng thường nhỏ)
-    float width = isPlayerBullet ? 10.0f : 20.0f;
-    float height = isPlayerBullet ? 30.0f : 25.0f;
-    DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
-                   {position.x, position.y, width, height}, {width/2, height/2}, 0.0f, WHITE);
+    
+    if (isPlayerBullet) {
+        if (bulletType == 1) { // Strong
+            Texture2D tex = GameManager::GetInstance()->GetTexBulletStrong();
+            if (tex.id != 0) {
+                DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height},
+                               {position.x, position.y, 20.0f, 40.0f}, {10.0f, 20.0f}, 0.0f, WHITE);
+                return;
+            } else {
+                DrawCircle(position.x, position.y, 8, ORANGE);
+                return;
+            }
+        } else if (bulletType == 2) { // Weak
+            Texture2D tex = GameManager::GetInstance()->GetTexBulletWeak();
+            if (tex.id != 0) {
+                DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height},
+                               {position.x, position.y, 10.0f, 20.0f}, {5.0f, 10.0f}, 0.0f, WHITE);
+                return;
+            } else {
+                DrawCircle(position.x, position.y, 4, YELLOW);
+                return;
+            }
+        }
+        
+        // Default Player Bullet
+        Texture2D tex = GameManager::GetInstance()->GetTexBulletPlayer();
+        DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
+                       {position.x, position.y, 10.0f, 30.0f}, {5.0f, 15.0f}, 0.0f, WHITE);
+    } else {
+        // Enemy Bullet
+        Texture2D tex = GameManager::GetInstance()->GetTexEnemyBullet();
+        DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
+                       {position.x, position.y, 20.0f, 25.0f}, {10.0f, 12.5f}, 0.0f, WHITE);
+    }
 }
 
 void Enemy::Draw() {
@@ -103,6 +144,16 @@ void Enemy::Draw() {
 
 void Spaceship::Draw() {
     if (!isActive) return;
+    
+    if (GetName() == "Hypergun") {
+        Texture2D tex = GameManager::GetInstance()->GetTexSpaceshipHypergun();
+        if (tex.id != 0) {
+            DrawTexturePro(tex, {36.0f, 201.0f, 108.0f, 95.0f}, 
+                           {position.x, position.y, 90.0f, 90.0f}, {45.0f, 45.0f}, 0.0f, WHITE);
+            return;
+        }
+    }
+
     Texture2D tex = GameManager::GetInstance()->GetTexSpaceship();
     // Phần chứa phi thuyền thực chất nằm ở nửa dưới của ảnh (y: 201, height: 95)
     // Tăng kích thước khoảng 50% lên 90x90
@@ -161,7 +212,12 @@ void GameManager::Init(int width, int height, const char* title) {
     texBackgrounds[2] = LoadTexture("assets/background1.png");
     texBackgrounds[3] = LoadTexture("assets/background2.png");
     texSettingIcon = LoadTexture("assets/setting.png");
-    texSpaceship = LoadTexture("assets/spaceship/SpaceShip01.png");
+    SpaceshipDataManager::GetInstance()->LoadCSV("assets/spaceship/spaceship.csv");
+
+    texSpaceship = LoadTexture("assets/spaceship/spaceship01.png");
+    texSpaceshipHypergun = LoadTexture("assets/spaceship/hypergun_spaceship.png");
+    texBulletStrong = LoadTexture("assets/spaceship/hypergun_strong.png");
+    texBulletWeak = LoadTexture("assets/spaceship/hypergun_weak.png");
     texEnemy = LoadTexture("assets/enemy/chicken03.png");
     texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
     texAsteroid2 = LoadTexture("assets/asteroidType2.png");
@@ -172,8 +228,8 @@ void GameManager::Init(int width, int height, const char* title) {
     currentBgIndex = 0;
     
     // Khởi tạo Player
-    player = SpaceshipFactory::CreateSpaceship(SpaceshipFactory::ShipType::FIGHTER, {(float)screenWidth/2, (float)screenHeight - 100});
-    player->SetShootingBehavior(std::make_unique<SingleShot>());
+    player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
+    player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
     
     isRunning = true;
     currentState = GameState::MAIN_MENU; // Bắt đầu ở MAIN_MENU
@@ -242,6 +298,10 @@ void GameManager::Update(float deltaTime) {
                     if (IsKeyDown(KEY_S)) pos.y += player->GetMoveSpeed() * deltaTime;
                     if (IsKeyDown(KEY_A)) pos.x -= player->GetMoveSpeed() * deltaTime;
                     if (IsKeyDown(KEY_D)) pos.x += player->GetMoveSpeed() * deltaTime;
+                    
+                    if (IsKeyPressed(KEY_L)) {
+                        player->LevelUp();
+                    }
                     
                     if (pos.x < 0) pos.x = 0;
                     if (pos.x > screenWidth) pos.x = screenWidth;
@@ -546,8 +606,8 @@ void GameManager::Draw() {
                 activeEnemies.clear();
                 activeBullets.clear();
                 activeItems.clear();
-                player = SpaceshipFactory::CreateSpaceship(SpaceshipFactory::ShipType::FIGHTER, {(float)screenWidth/2, (float)screenHeight - 100});
-                player->SetShootingBehavior(std::make_unique<SingleShot>());
+                player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
+                player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
             }
             break;
         }
@@ -619,8 +679,18 @@ void GameManager::Draw() {
                 
                 // Initialize player for testing
                 if (player) {
-                    player = SpaceshipFactory::CreateSpaceship(SpaceshipFactory::ShipType::FIGHTER, {(float)screenWidth/2, (float)screenHeight - 100});
-                    player->SetShootingBehavior(std::make_unique<SingleShot>());
+                    player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
+                    player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
+                }
+                
+                if (IsKeyPressed(KEY_L)) {
+                    if (player) {
+                        player->LevelUp();
+                        if (player->GetLevel() > 11) {
+                            // Capping at 11 for Hypergun
+                            // We can just keep it or reset it
+                        }
+                    }
                 }
 
                 ChangeState(GameState::TEST_GAMEPLAY);
@@ -744,6 +814,7 @@ void GameManager::CleanUp() {
     if (IsWindowReady()) {
         UnloadTexture(texSettingIcon);
     UnloadTexture(texSpaceship);
+    UnloadTexture(texSpaceshipHypergun);
     UnloadTexture(texEnemy);
     UnloadTexture(texAsteroid1);
     UnloadTexture(texAsteroid2);

@@ -1,0 +1,16 @@
+{
+  "textures": {
+    "ship": "assets/spaceship/hypergun_spaceship.png",
+    "bullet_strong": "assets/spaceship/hypergun_strong.png",
+    "bullet_weak": "assets/spaceship/hypergun_weak.png"
+  },
+  "pods": {
+    "tip": {"x": 0, "y": -45},
+    "front_left": {"x": -20, "y": -20},
+    "front_right": {"x": 20, "y": -20},
+    "rear_left": {"x": -20, "y": 45},
+    "rear_right": {"x": 20, "y": 45},
+    "wing_left": {"x": -40, "y": 10},
+    "wing_right": {"x": 40, "y": 10}
+  }
+}

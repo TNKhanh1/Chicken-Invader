@@ -22,6 +22,7 @@ private:
     int level;
     float currentExp;
     float maxExp;
+    std::string name;
 
     // Strategy Pattern
     std::unique_ptr<IShootingBehavior> shootingBehavior;
@@ -32,106 +33,48 @@ private:
     std::vector<IObserver*> observers;
 
 public:
-    Spaceship(Vector2 pos, float hp, float dmg, float arm, float spd, 
-              float critC, float critD, float mana, float atkSpd)
-        : Character(pos, hp, dmg, arm, spd), 
-          critChance(critC), critDamage(critD), maxMana(mana), currentMana(0), attackSpeed(atkSpd),
-          level(1), currentExp(0), maxExp(100) {}
+    Spaceship(std::string name, Vector2 pos, float hp, float dmg, float arm, float spd, 
+              float critC, float critD, float mana, float atkSpd);
 
     virtual ~Spaceship() = default;
 
     // ... [Bỏ qua các hàm observer, Getters không đổi] ...
-    virtual void AddObserver(IObserver* observer) override {
-        observers.push_back(observer);
-    }
-    virtual void RemoveObserver(IObserver* observer) override {
-        observers.erase(std::remove(observers.begin(), observers.end(), observer), observers.end());
-    }
-    virtual void Notify(EventType event, const std::string& data) override {
-        for (auto observer : observers) {
-            observer->OnNotify(event, data);
-        }
-    }
+    virtual void AddObserver(IObserver* observer) override;
+    virtual void RemoveObserver(IObserver* observer) override;
+    virtual void Notify(EventType event, const std::string& data) override;
 
-    virtual float GetCritChance() const { return critChance; }
-    virtual float GetCritDamage() const { return critDamage; }
-    virtual float GetMaxMana() const { return maxMana; }
-    virtual float GetCurrentMana() const { return currentMana; }
-    virtual float GetAttackSpeed() const { return attackSpeed; }
-    virtual int GetLevel() const { return level; }
-    virtual float GetCurrentExp() const { return currentExp; }
-    virtual float GetMaxExp() const { return maxExp; }
+    virtual float GetCritChance() const;
+    virtual float GetCritDamage() const;
+    virtual float GetMaxMana() const;
+    virtual float GetCurrentMana() const;
+    virtual float GetAttackSpeed() const;
+    virtual int GetLevel() const;
+    virtual float GetCurrentExp() const;
+    virtual float GetMaxExp() const;
+    virtual std::string GetName() const;
     
-    virtual Rectangle GetHitbox() const {
-        return {position.x - 20, position.y - 20, 40, 40};
-    }
+    virtual Rectangle GetHitbox() const;
 
-    void Init() override {
-    }
+    void Init() override;
 
-    void Update(float deltaTime) override {
-        if (fireTimer > 0.0f) {
-            fireTimer -= deltaTime;
-        }
-    }
+    void Update(float deltaTime) override;
 
     void Draw() override;
 
-    void Die() override {
-    }
+    void Die() override;
 
-    virtual void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) {
-        shootingBehavior = std::move(behavior);
-    }
+    virtual void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior);
 
-    virtual bool CanFire() const {
-        return fireTimer <= 0.0f;
-    }
+    virtual bool CanFire() const;
 
-    virtual void Fire() {
-        if (shootingBehavior) {
-            shootingBehavior->Shoot(position, damage);
-            
-            // Cập nhật lại thời gian hồi chiêu
-            // attackSpeed là số viên đạn bắn được trong 1 giây (ví dụ: 5 -> 0.2s hồi)
-            if (attackSpeed > 0) {
-                fireTimer = 1.0f / attackSpeed;
-            }
-            
-            // Mỗi lần bắn tích 1 lượng mana
-            GainMana(10.0f);
-        }
-    }
+    virtual void Fire();
 
     // Cơ chế Exp và Mana
-    virtual void GainExp(float amount) {
-        currentExp += amount;
-        Notify(EventType::PLAYER_EXP_GAINED, std::to_string(currentExp));
-        if (currentExp >= maxExp) {
-            LevelUp();
-        }
-    }
+    virtual void GainExp(float amount);
 
-    virtual void GainMana(float amount) {
-        if (currentMana < maxMana) {
-            currentMana += amount;
-            if (currentMana > maxMana) currentMana = maxMana;
-            Notify(EventType::PLAYER_MANA_CHANGED, std::to_string(currentMana));
-        }
-    }
+    virtual void GainMana(float amount);
 
-    virtual void LevelUp() {
-        level++;
-        currentExp -= maxExp;
-        maxExp *= 1.2f; // Tăng yêu cầu exp cho level tiếp theo
-        
-        // Tăng chỉ số khi lên cấp
-        maxHp += 10.0f;
-        currentHp = maxHp; // Hồi đầy máu
-        damage += 2.0f;
-        
-        Notify(EventType::PLAYER_LEVEL_UP, std::to_string(level));
-    }
+    virtual void LevelUp();
 };
 
 #endif // SPACESHIP_H

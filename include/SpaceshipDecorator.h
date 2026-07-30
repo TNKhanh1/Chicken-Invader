@@ -1,0 +1,50 @@
+#ifndef SPACESHIP_DECORATOR_H
+#define SPACESHIP_DECORATOR_H
+
+#include "Spaceship.h"
+#include <memory>
+
+class SpaceshipDecorator : public Spaceship {
+protected:
+    std::shared_ptr<Spaceship> coreShip;
+
+public:
+    SpaceshipDecorator(std::shared_ptr<Spaceship> ship);
+
+    virtual ~SpaceshipDecorator() = default;
+
+    virtual float GetHp() const override;
+    virtual float GetMaxHp() const override;
+    virtual float GetDamage() const override;
+    virtual float GetArmor() const override;
+    virtual float GetMoveSpeed() const override;
+    virtual float GetCritChance() const override;
+    virtual float GetCritDamage() const override;
+    virtual float GetMaxMana() const override;
+    virtual float GetCurrentMana() const override;
+    virtual float GetAttackSpeed() const override;
+    virtual int GetLevel() const override;
+    virtual float GetCurrentExp() const override;
+    virtual float GetMaxExp() const override;
+    std::string GetName() const override;
+    virtual Rectangle GetHitbox() const override;
+
+    virtual void TakeDamage(float incomingDamage) override;
+
+    virtual void AddObserver(IObserver* observer) override;
+    virtual void RemoveObserver(IObserver* observer) override;
+    virtual void Notify(EventType event, const std::string& data) override;
+
+    virtual void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) override;
+    virtual void Fire() override;
+    virtual void GainExp(float amount) override;
+    virtual void GainMana(float amount) override;
+    virtual void LevelUp() override;
+
+    void Init() override;
+    void Update(float deltaTime) override;
+    void Draw() override;
+    void Die() override;
+};
+
+#endif // SPACESHIP_DECORATOR_H
