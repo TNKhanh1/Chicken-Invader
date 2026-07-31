@@ -59,3 +59,23 @@ SpaceshipStats SpaceshipDataManager::GetStats(const std::string& name, int level
     std::cerr << "Stats not found for " << name << " level " << level << std::endl;
     return SpaceshipStats{"", 0, 100, 10, 10, 1.0f, 200, 100, 0, 150};
 }
+
+void SpaceshipDataManager::LoadJSON(const std::string& name, const std::string& filepath) {
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open " << filepath << std::endl;
+        return;
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    jsonCache[name] = buffer.str();
+    file.close();
+}
+
+std::string SpaceshipDataManager::GetJSON(const std::string& name) const {
+    auto it = jsonCache.find(name);
+    if (it != jsonCache.end()) {
+        return it->second;
+    }
+    return "{}";
+}

@@ -1,6 +1,7 @@
 #include "Spaceship.h"
 
 #include "SpaceshipDataManager.h"
+#include "GameManager.h"
 
 Spaceship::Spaceship(std::string n, Vector2 pos, float hp, float dmg, float arm, float spd, 
                      float critC, float critD, float mana, float atkSpd)
@@ -54,14 +55,10 @@ bool Spaceship::CanFire() const {
     return fireTimer <= 0.0f;
 }
 
+
+
 void Spaceship::Fire() {
     if (shootingBehavior) {
-        // Change from shoot(position, damage) to shoot(this) as requested in task
-        // We will update IShootingBehavior shortly. For now, since IShootingBehavior still has (Vector2, float), 
-        // I will wait to change it or change it now.
-        // The user asked to change IShootingBehavior interface.
-        // shootingBehavior->Shoot(this); 
-        // I'll update it along with WeaponStrategy.h
         shootingBehavior->Shoot(this);
         
         if (attackSpeed > 0) {
@@ -72,6 +69,7 @@ void Spaceship::Fire() {
 }
 
 void Spaceship::GainExp(float amount) {
+    if (level >= 10) return; // Level tối đa là 10, không nhận thêm exp
     currentExp += amount;
     Notify(EventType::PLAYER_EXP_GAINED, std::to_string(currentExp));
     if (currentExp >= maxExp) {
@@ -81,6 +79,7 @@ void Spaceship::GainExp(float amount) {
 
 void Spaceship::GainMana(float amount) {
     if (currentMana < maxMana) {
+
         currentMana += amount;
         if (currentMana > maxMana) currentMana = maxMana;
         Notify(EventType::PLAYER_MANA_CHANGED, std::to_string(currentMana));
@@ -88,9 +87,10 @@ void Spaceship::GainMana(float amount) {
 }
 
 void Spaceship::LevelUp() {
+    if (level >= 10) return; // Đã đạt max level
     level++;
     currentExp -= maxExp;
-    maxExp *= 1.2f; 
+    maxExp *= 1.2f;
     
     // Đọc chỉ số mới từ CSV
     SpaceshipStats stats = SpaceshipDataManager::GetInstance()->GetStats(name, level);
@@ -103,6 +103,11 @@ void Spaceship::LevelUp() {
     critDamage = stats.critDamage;
     maxMana = stats.maxMana;
     attackSpeed = stats.attackSpeed;
+    this->currentMana = this->maxMana;
     
+    if (level >= 10) {
+        currentExp = 0; // Đặt exp về 0 khi max level
+    }
+
     Notify(EventType::PLAYER_LEVEL_UP, std::to_string(level));
 }

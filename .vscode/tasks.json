@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Game (g++)",
+            "label": "Build Game (Makefile)",
             "type": "shell",
             "options": {
                 "shell": {
@@ -12,29 +12,15 @@
                     ]
                 }
             },
-            "command": "g++",
+            "command": "mingw32-make",
             "args": [
-                "-g",
-                "src/*.cpp",
-                "-o",
-                "ChickenInvader.exe",
-                "-O2",
-                "-static",
-                "-Iinclude",
-                "-Llib",
-                "-lraylib",
-                "-lopengl32",
-                "-lgdi32",
-                "-lwinmm",
-                "-Wl,--subsystem,windows"
+                "game"
             ],
             "group": {
                 "kind": "build",
                 "isDefault": true
-            },  
-            "problemMatcher": [
-                "$gcc"
-            ]
+            },
+            "problemMatcher": []
         }
     ]
 }

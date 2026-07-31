@@ -145,20 +145,12 @@ void Enemy::Draw() {
 void Spaceship::Draw() {
     if (!isActive) return;
     
-    if (GetName() == "Hypergun") {
-        Texture2D tex = GameManager::GetInstance()->GetTexSpaceshipHypergun();
-        if (tex.id != 0) {
-            DrawTexturePro(tex, {36.0f, 201.0f, 108.0f, 95.0f}, 
-                           {position.x, position.y, 90.0f, 90.0f}, {45.0f, 45.0f}, 0.0f, WHITE);
-            return;
-        }
+    // Mặc định luôn vẽ Hypergun vì ảnh cũ đã bị xóa
+    Texture2D tex = GameManager::GetInstance()->GetTexSpaceshipHypergun();
+    if (tex.id != 0) {
+        DrawTexturePro(tex, {36.0f, 201.0f, 108.0f, 95.0f}, 
+                       {position.x, position.y, 90.0f, 90.0f}, {45.0f, 45.0f}, 0.0f, WHITE);
     }
-
-    Texture2D tex = GameManager::GetInstance()->GetTexSpaceship();
-    // Phần chứa phi thuyền thực chất nằm ở nửa dưới của ảnh (y: 201, height: 95)
-    // Tăng kích thước khoảng 50% lên 90x90
-    DrawTexturePro(tex, {36.0f, 201.0f, 108.0f, 95.0f}, 
-                   {position.x, position.y, 90.0f, 90.0f}, {45.0f, 45.0f}, 0.0f, WHITE);
 }
 // -------------------------------------------
 
@@ -200,48 +192,58 @@ void GameManager::Init(int width, int height, const char* title) {
     SetTargetFPS(60); // Đặt tốc độ khung hình 60 FPS
     
     // Khởi tạo các textures
-    InitAudioDevice();
-    sfxShoot = LoadSound("assets/shoot.wav");
-    sfxExplosion = LoadSound("assets/explosion.wav");
-    sfxPickup = LoadSound("assets/pickup.wav");
-    bgMusic = LoadMusicStream("assets/bgm.mp3");
-    PlayMusicStream(bgMusic);
+    // InitAudioDevice();
+    // sfxShoot = LoadSound("assets/shoot.wav");
+    // sfxExplosion = LoadSound("assets/explosion.wav");
+    // sfxPickup = LoadSound("assets/pickup.wav");
+    // bgMusic = LoadMusicStream("assets/bgm.mp3");
+    // PlayMusicStream(bgMusic);
     
     texBackgrounds[0] = LoadTexture("assets/background.jpg");
     texBackgrounds[1] = LoadTexture("assets/background.png");
     texBackgrounds[2] = LoadTexture("assets/background1.png");
     texBackgrounds[3] = LoadTexture("assets/background2.png");
     texSettingIcon = LoadTexture("assets/setting.png");
+    
+    // Tải dữ liệu phi thuyền
     SpaceshipDataManager::GetInstance()->LoadCSV("assets/spaceship/spaceship.csv");
+    SpaceshipDataManager::GetInstance()->LoadJSON("Hypergun", "assets/spaceship/hypergun.json");
 
-    texSpaceship = LoadTexture("assets/spaceship/spaceship01.png");
+    // Bỏ load spaceship01.png cũ đã bị xóa
     texSpaceshipHypergun = LoadTexture("assets/spaceship/hypergun_spaceship.png");
     texBulletStrong = LoadTexture("assets/spaceship/hypergun_strong.png");
     texBulletWeak = LoadTexture("assets/spaceship/hypergun_weak.png");
     texEnemy = LoadTexture("assets/enemy/chicken03.png");
     texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
     texAsteroid2 = LoadTexture("assets/asteroidType2.png");
-    texBulletPlayer = LoadTexture("assets/spaceship/Bullet01_1.png");
+    // Bỏ load Bullet01_1.png đã bị xóa
     texEnemyBullet = LoadTexture("assets/egg.png"); 
     texMeat = LoadTexture("assets/meat.png");
     bgY = 0.0f;
     currentBgIndex = 0;
     
+    printf("Initializing Player...\n"); fflush(stdout);
     // Khởi tạo Player
     player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
+    printf("Setting shooting behavior...\n"); fflush(stdout);
     player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
     
+    printf("GameManager::Init finished.\n"); fflush(stdout);
     isRunning = true;
     currentState = GameState::MAIN_MENU; // Bắt đầu ở MAIN_MENU
 }
 
 void GameManager::Run() {
-    // Vòng lặp game chính
+    printf("GameManager::Run started\n"); fflush(stdout);
+    int frameCount = 0;
     while (isRunning && !WindowShouldClose()) {
+        if (frameCount < 5) { printf("Frame %d\n", frameCount); fflush(stdout); }
+        frameCount++;
         float deltaTime = GetFrameTime();
         Update(deltaTime);
         Draw();
     }
+    printf("GameManager::Run ended. isRunning=%d, WindowShouldClose=%d\n", isRunning, WindowShouldClose());
 }
 
 bool GameManager::DrawButton(Rectangle bounds, const char* text) {
@@ -271,7 +273,7 @@ bool GameManager::DrawButton(Rectangle bounds, const char* text) {
 }
 
 void GameManager::Update(float deltaTime) {
-    UpdateMusicStream(bgMusic);
+    // UpdateMusicStream(bgMusic);
 
     // Handle State Transitions and specific state logic
     switch (currentState) {
@@ -287,7 +289,7 @@ void GameManager::Update(float deltaTime) {
         case GameState::TEST_SPACESHIP:
         {
             // --- Background Scrolling ---
-            bgY += 20.0f * deltaTime; // Giảm tốc độ xuống 20
+            bgY += 23.0f * deltaTime; // Tăng tốc độ background lên 15%
             if (bgY >= 2.0f * screenHeight) bgY -= 2.0f * screenHeight;
             
             // --- Player Logic ---
@@ -622,7 +624,7 @@ void GameManager::Draw() {
             
             if (DrawButton({(float)screenWidth/2 - 320, 320, 300, 50}, "TEST SPACESHIP")) {
                 currentState = GameState::TEST_SPACESHIP;
-                if (player) player->SetShootingBehavior(std::make_unique<SpreadShot>());
+                if (player) player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
             }
             
             if (DrawButton({ (float)screenWidth/2 + 20, 320, 300, 50 }, "TEST GAMEPLAY")) {
@@ -813,20 +815,18 @@ void GameManager::CleanUp() {
     }
     if (IsWindowReady()) {
         UnloadTexture(texSettingIcon);
-    UnloadTexture(texSpaceship);
     UnloadTexture(texSpaceshipHypergun);
     UnloadTexture(texEnemy);
     UnloadTexture(texAsteroid1);
     UnloadTexture(texAsteroid2);
-    UnloadTexture(texBulletPlayer);
         UnloadTexture(texEnemyBullet);
         UnloadTexture(texMeat);
         
-        UnloadSound(sfxShoot);
-        UnloadSound(sfxExplosion);
-        UnloadSound(sfxPickup);
-        UnloadMusicStream(bgMusic);
-        CloseAudioDevice();
+        // UnloadSound(sfxShoot);
+        // UnloadSound(sfxExplosion);
+        // UnloadSound(sfxPickup);
+        // UnloadMusicStream(bgMusic);
+        // CloseAudioDevice();
         
         CloseWindow();
     }

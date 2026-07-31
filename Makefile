@@ -199,7 +199,7 @@ CFLAGS += -Wall -std=c++14 -D_DEFAULT_SOURCE -Wno-missing-braces
 ifeq ($(BUILD_MODE),DEBUG)
     CFLAGS += -g -O0
 else
-    CFLAGS += -s -O1
+    CFLAGS += -g -O1
 endif
 
 # Additional flags for compiler (if desired)
@@ -392,7 +392,7 @@ $(PROJECT_NAME): $(OBJS)
 # Compile source files
 # NOTE: This pattern will compile every module defined on $(OBJS)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	@if not exist $(OBJ_DIR) mkdir $(OBJ_DIR)
+	@if not exist $(OBJ_DIR)\ mkdir $(OBJ_DIR)
 	$(CC) -c $< -o $@ $(CFLAGS) $(INCLUDE_PATHS) -D$(PLATFORM)
 
 # Clean everything

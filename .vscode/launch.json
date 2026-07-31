@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
 
-            "program": "${workspaceFolder}/ChickenInvader.exe",
+            "program": "${workspaceFolder}/game.exe",
 
             "args": [],
             "stopAtEntry": false,
@@ -17,7 +17,7 @@
 
             "miDebuggerPath": "gdb",
             
-            "preLaunchTask": "Build Game (g++)"
+            "preLaunchTask": "Build Game (Makefile)"
         }
     ]
 }

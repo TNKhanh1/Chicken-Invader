@@ -121,9 +121,9 @@ public:
     void AddScore(int value) { score += value; }
     
     // Audio wrappers
-    void PlayShootSound() { PlaySound(sfxShoot); }
-    void PlayExplosionSound() { PlaySound(sfxExplosion); }
-    void PlayPickupSound() { PlaySound(sfxPickup); }
+    void PlayShootSound() { /*PlaySound(sfxShoot);*/ }
+    void PlayExplosionSound() { /*PlaySound(sfxExplosion);*/ }
+    void PlayPickupSound() { /*PlaySound(sfxPickup);*/ }
     
     // Entity management
     void AddBullet(std::shared_ptr<class Bullet> bullet) { activeBullets.push_back(bullet); }
