@@ -14,8 +14,7 @@ public:
         BOSS,
         ASTEROID
     };
-
-    static std::unique_ptr<Enemy> CreateEnemy(EnemyType type, Vector2 startPos);
+    static std::unique_ptr<Enemy> CreateEnemy(EnemyType type, Vector2 startPos, int wave = 1);
 };
 
 #endif // ENEMY_FACTORY_H

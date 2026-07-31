@@ -85,6 +85,7 @@ public:
     void Run();
     void CleanUp();
     void StartWave(int waveIndex);
+    bool SpawnWaveBatch(int wave, int batch);
 
     // Các hàm cho vòng lặp
     void Update(float deltaTime);

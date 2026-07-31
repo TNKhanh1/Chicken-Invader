@@ -3,7 +3,7 @@
 
 int main() {
     InitWindow(100, 100, "Invisible");
-    Image img = LoadImage("thamkhao/Sprite_References/ChickenEnemy.png");
+    Image img = LoadImage("assets/asteroidNormal.png");
     if (img.data == nullptr) {
         std::cerr << "Failed to load image!" << std::endl;
         CloseWindow();

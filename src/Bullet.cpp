@@ -25,7 +25,7 @@ void Bullet::Update(float deltaTime) {
         }
     }
 
-    if (position.y < -50 || position.y > 800) {
+    if (position.y < -100 || position.y > 1100) {
         isActive = false;
     }
 }

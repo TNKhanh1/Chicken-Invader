@@ -20,6 +20,7 @@
 #include "../include/HypergunShootingBehavior.h"
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 // Khởi tạo instance của Singleton bằng nullptr
 GameManager* GameManager::instance = nullptr;
@@ -32,14 +33,37 @@ void Enemy::Update(float deltaTime) {
         movementBehavior->Move(position, moveSpeed, deltaTime, gm->GetScreenWidth(), gm->GetScreenHeight());
     }
 
-    // Cập nhật animation
-    if (enemyType == 4) { // ASTEROID
+    // Cập nhật animation và trail của ASTEROID
+    if (enemyType == 4) {
+        // --- Cập nhật frame (có 30 frames, chỉ lấy từ hàng 1 - thân thiên thạch) ---
         frameTimer += deltaTime;
-        if (frameTimer >= 0.03f) { // Nhanh hơn 1 chút cho animation mượt hơn
+        if (frameTimer >= 0.04f) { // ~25 FPS animation
             frameTimer = 0.0f;
-            if (asteroidVariant == 1) currentFrame = (currentFrame + 1) % 30; // 30 frames (15 cột x 2 hàng)
-            else currentFrame = (currentFrame + 1) % 15; // 15 frames (5 cột x 3 hàng)
+            currentFrame = (currentFrame + 1) % 30; // 30 frames trong hàng 1
         }
+
+        // --- Spawn trail point tại vị trí hiện tại (mỗi 40ms) ---
+        trailSpawnTimer += deltaTime;
+        if (trailSpawnTimer >= 0.04f) {
+            trailSpawnTimer = 0.0f;
+            TrailPoint tp;
+            tp.pos   = position;
+            tp.alpha = 1.0f;
+            tp.frame = currentFrame;
+            trailPoints.push_back(std::move(tp));
+        }
+
+        // --- Fade các trail point, xóa những cái đã biến mất ---
+        // fade speed = 2.0f (biến mất sau 0.5 giây)
+        const float fadeSpeed = 2.0f;
+        for (auto& tp : trailPoints) {
+            tp.alpha -= fadeSpeed * deltaTime;
+        }
+        trailPoints.erase(
+            std::remove_if(trailPoints.begin(), trailPoints.end(),
+                [](const Enemy::TrailPoint& t) { return t.alpha <= 0.0f; }),
+            trailPoints.end()
+        );
     }
     
     // Logic thả trứng (bắn đạn)
@@ -50,6 +74,13 @@ void Enemy::Update(float deltaTime) {
             auto egg = std::make_shared<Bullet>(position, damage, 150.0f, false);
             GameManager::GetInstance()->AddBullet(egg);
         }
+    }
+    
+    // Hủy enemy nếu đi quá xa khỏi màn hình
+    if (position.y > GameManager::GetInstance()->GetScreenHeight() + 300.0f ||
+        position.x > GameManager::GetInstance()->GetScreenWidth() + 300.0f ||
+        position.x < -1000.0f) {
+        isActive = false;
     }
 }
 
@@ -96,38 +127,47 @@ void Enemy::Draw() {
     
     if (enemyType == 4) { // ASTEROID
         Texture2D tex = (asteroidVariant == 1) ? gm->GetTexAsteroid1() : gm->GetTexAsteroid2();
-        int columns = (asteroidVariant == 1) ? 15 : 5;
-        int rows = (asteroidVariant == 1) ? 2 : 3;
-        float frameWidth = (float)tex.width / columns;
-        float frameHeight = (float)tex.height / rows;
-        
-        int row = currentFrame / columns;
-        int col = currentFrame % columns;
-        
-        Rectangle sourceRec = { col * frameWidth, row * frameHeight, frameWidth, frameHeight };
-        
-        if (asteroidVariant == 1) {
-            // Khung hình thật là 512x1024 (tỉ lệ 1:2). Cục đá nằm ở dưới đáy.
-            // Vẽ với kích thước 100x200 để cục đá có size ~100x100
-            Rectangle destRec = { position.x, position.y, 100.0f, 200.0f }; 
-            // Tâm va chạm đặt ở dưới đáy (khoảng 80% chiều cao) để khớp với cục đá
-            Vector2 origin = { 50.0f, 160.0f };
-            DrawTexturePro(tex, sourceRec, destRec, origin, 0.0f, WHITE);
-        } else {
-            Rectangle destRec = { position.x, position.y, 100.0f, 100.0f };
-            Vector2 origin = { 50.0f, 50.0f };
-            DrawTexturePro(tex, sourceRec, destRec, origin, 0.0f, WHITE);
+        // Layout: 7680x2048, 30 cột x 2 hàng. Mỗi frame = 256x1024 px.
+        // Hàng 0 (trên, y=0..1023): trail/lửa phía trên thiên thạch
+        // Hàng 1 (dưới, y=1024..2047): thân thiên thạch
+        const int   COLS    = 30;
+        const float FRAME_W = (float)tex.width  / COLS;  // 256 px
+        const float FULL_H  = (float)tex.height;           // 2048 px (cả 2 hàng)
+        const int   bodyCol = currentFrame % COLS;
+
+        // Khi vẽ 100px rộng: mỗi hàng cao 100*(1024/256)=400px, tổng 800px
+        // Thân đá ở 400px dưới, trail lửa ở 400px trên → tự nhiên
+        const float DEST_W      = 100.0f;
+        const float DEST_ROW_H  = DEST_W * (FULL_H * 0.5f / FRAME_W); // 400px
+        const float DEST_FULL_H = DEST_ROW_H * 2.0f;                   // 800px
+        // Neo ở đáy (cuối hàng 1) → trail lửa bay lên trên tự nhiên
+        Vector2 fullOrigin = { DEST_W * 0.5f, DEST_FULL_H };
+
+        // 1) Particle motion echo tại các vị trí cũ: vòng tròn nhỏ xiu
+        //    THAY THẾP ghost sprite → loại bỏ hiệu ứng "tàng ảnh"
+        for (const auto& tp : trailPoints) {
+            float radius = 10.0f * tp.alpha;        // thu nhỏ dần
+            unsigned char a = (unsigned char)(tp.alpha * 160.0f);
+            if (asteroidVariant == 2) { // asteroidFlame: cam/lửa
+                DrawCircleGradient((int)tp.pos.x, (int)tp.pos.y,
+                                   radius, {255, 160, 30, a}, {255, 80, 0, 0});
+            } else {                    // asteroidNormal: xám/đá
+                DrawCircleGradient((int)tp.pos.x, (int)tp.pos.y,
+                                   radius, {200, 200, 210, a}, {120, 120, 130, 0});
+            }
         }
+
+        // 2) Vẽ toàn bộ sprite (hàng trail + hàng thân) gộp làm 1 draw call
+        //    Nguồn: cột bodyCol, từ y=0 đến hết (cả 2 hàng)
+        Rectangle fullSrc = { bodyCol * FRAME_W, 0.0f, FRAME_W, FULL_H };
+        Rectangle fullDst = { position.x, position.y, DEST_W, DEST_FULL_H };
+        DrawTexturePro(tex, fullSrc, fullDst, fullOrigin, 0.0f, WHITE);
+
     } else {
         Texture2D tex = gm->GetTexEnemy();
-        
-        // Tính toán origin để căn giữa texture
         Vector2 origin = { (float)tex.width / 2, (float)tex.height / 2 };
-        
         Rectangle sourceRec = { 0.0f, 0.0f, (float)tex.width, (float)tex.height };
         Rectangle destRec = { position.x, position.y, (float)tex.width, (float)tex.height };
-        
-        // Vẽ texture với vị trí đã căn giữa
         DrawTexturePro(tex, sourceRec, destRec, origin, 0.0f, WHITE);
     }
                    
@@ -135,7 +175,6 @@ void Enemy::Draw() {
     if (CheckCollisionPointRec(GetMousePosition(), GetHitbox())) {
         float hpRatio = GetHp() / GetMaxHp();
         if (hpRatio < 0.0f) hpRatio = 0.0f;
-        
         DrawRectangle(position.x - 25, position.y - 50, 50, 6, RED);
         DrawRectangle(position.x - 25, position.y - 50, 50 * hpRatio, 6, GREEN);
         DrawRectangleLines(position.x - 25, position.y - 50, 50, 6, BLACK);
@@ -183,6 +222,180 @@ void GameManager::StartWave(int waveIndex) {
     waveTimer = 3.0f; // 3 seconds delay before wave starts
 }
 
+bool GameManager::SpawnWaveBatch(int wave, int batch) {
+    if (wave == 1) {
+        if (batch == 1) {
+            for (int i = 0; i < 10; ++i) {
+                float x = screenWidth + 100.0f + i * 150.0f;
+                float y = 150.0f + (i % 2) * 100.0f;
+                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
+                enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(-1.0f));
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        } else if (batch == 2) {
+            for (int i = 0; i < 15; ++i) {
+                float x = -100.0f - i * 150.0f;
+                float y = 150.0f + (i % 3) * 100.0f; 
+                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
+                enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(1.0f));
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        } else if (batch == 3) {
+            float startX = screenWidth / 2.0f;
+            for (int r = 0; r < 3; ++r) {
+                for (int c = 0; c < 5; ++c) {
+                    float offsetX = (c - 2) * 150.0f;
+                    float x = startX + offsetX;
+                    float y = -300.0f + r * 100.0f; 
+                    float targetY = 100.0f + r * 100.0f;
+                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
+                    enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(targetY, 300.0f, 1.0f));
+                    enemy->ResetEggTimer();
+                    AddEnemy(std::move(enemy));
+                }
+            }
+            return true;
+        }
+    } else if (wave == 2) {
+        if (batch == 1) {
+            for (int i = 0; i < 15; ++i) {
+                float x = 150.0f + (i % 5) * 250.0f;
+                float y = -100.0f - (i / 5) * 150.0f;
+                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
+                enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>());
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        } else if (batch == 2) {
+            for (int i = 0; i < 10; ++i) {
+                float x = 200.0f + i * 120.0f;
+                float y = -100.0f - i * 50.0f;
+                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::SWARM_CHICKEN, {x, y}, wave);
+                enemy->SetMovementBehavior(std::make_unique<SineZigzagMovement>());
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        } else if (batch == 3) {
+            float startX = screenWidth / 2.0f;
+            for (int i = 0; i < 15; ++i) {
+                float offsetX = (i % 5 - 2) * 200.0f;
+                float offsetY = -200.0f - (i / 5) * 150.0f;
+                auto type = (i % 3 == 0) ? EnemyFactory::EnemyType::SWARM_CHICKEN : EnemyFactory::EnemyType::NORMAL_CHICKEN;
+                auto enemy = EnemyFactory::CreateEnemy(type, {startX + offsetX, offsetY}, wave);
+                enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>());
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        }
+    } else if (wave == 3) {
+        if (batch == 1) {
+            for (int i = 0; i < 20; i++) {
+                float x = GetRandomValue(100, screenWidth - 100);
+                float y = -100.0f - i * 150.0f; 
+                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {x, y}, wave);
+                enemy->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
+                enemy->asteroidVariant = 1;
+                enemy->canShoot = false;
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        } else if (batch == 2) {
+            for (int i = 0; i < 5; ++i) {
+                float x = 200.0f + i * 300.0f;
+                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::TANK_CHICKEN, {x, -100.0f}, wave);
+                enemy->SetMovementBehavior(std::make_unique<StraightMovement>());
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        } else if (batch == 3) {
+            // Mưa thiên thạch lửa (asteroidFlame) từ 2 góc + 3 Tank Chicken
+            // Spawn trong vùng hợp lý để không bị kẹt off-screen
+            // Cột trái: 5 asteroid
+            for (int i = 0; i < 5; ++i) {
+                float ax = 100.0f + i * 80.0f;
+                float ay = -200.0f - i * 120.0f; // max -680
+                auto asteroid = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {ax, ay}, wave);
+                asteroid->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
+                asteroid->asteroidVariant = 2;
+                asteroid->canShoot = false;
+                AddEnemy(std::move(asteroid));
+            }
+            // Cột phải: 5 asteroid
+            for (int i = 0; i < 5; ++i) {
+                float ax = (float)(screenWidth - 100) - i * 80.0f;
+                float ay = -300.0f - i * 120.0f; // max -780, lệch pha cột trái
+                auto asteroid = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {ax, ay}, wave);
+                asteroid->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
+                asteroid->asteroidVariant = 2;
+                asteroid->canShoot = false;
+                AddEnemy(std::move(asteroid));
+            }
+            // 3 Tank Chicken: dùng StraightMovement để không kẹt off-screen
+            for (int i = 0; i < 3; ++i) {
+                float tx = 250.0f + i * 450.0f;
+                float ty = -150.0f - i * 200.0f; // max -550, nhanh xuất hiện
+                auto tank = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::TANK_CHICKEN, {tx, ty}, wave);
+                tank->SetMovementBehavior(std::make_unique<StraightMovement>());
+                tank->ResetEggTimer();
+                AddEnemy(std::move(tank));
+            }
+            return true;
+
+        }
+    } else if (wave == 4) {
+        if (batch == 1) {
+            for (int i = 0; i < 20; ++i) {
+                auto type = (i % 2 == 0) ? EnemyFactory::EnemyType::NORMAL_CHICKEN : EnemyFactory::EnemyType::SWARM_CHICKEN;
+                float x = (i % 2 == 0) ? -100.0f - i * 100.0f : screenWidth + 100.0f + i * 100.0f;
+                float y = 100.0f + (i % 5) * 80.0f;
+                auto enemy = EnemyFactory::CreateEnemy(type, {x, y}, wave);
+                enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>((i % 2 == 0) ? 1.0f : -1.0f));
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        } else if (batch == 2) {
+            for (int i = 0; i < 8; ++i) {
+                float x = 200.0f + i * 170.0f;
+                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::TANK_CHICKEN, {x, -100.0f}, wave);
+                enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(150.0f, 100.0f, 1.0f));
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        } else if (batch == 3) {
+            for (int i = 0; i < 20; ++i) {
+                EnemyFactory::EnemyType type = EnemyFactory::EnemyType::NORMAL_CHICKEN;
+                if (i % 4 == 0) type = EnemyFactory::EnemyType::TANK_CHICKEN;
+                else if (i % 4 == 1) type = EnemyFactory::EnemyType::SWARM_CHICKEN;
+                
+                float x = GetRandomValue(100, screenWidth - 100);
+                float y = -100.0f - i * 100.0f;
+                auto enemy = EnemyFactory::CreateEnemy(type, {x, y}, wave);
+                if (type == EnemyFactory::EnemyType::TANK_CHICKEN) {
+                    enemy->SetMovementBehavior(std::make_unique<StraightMovement>());
+                } else {
+                    enemy->SetMovementBehavior(std::make_unique<SineZigzagMovement>());
+                }
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
+        }
+    }
+    
+    // Nếu wave > 4 hoặc batch > 3, trả về false để biết là wave này đã kết thúc
+    return false;
+}
+
 void GameManager::Init(int width, int height, const char* title) {
     screenWidth = width;
     screenHeight = height;
@@ -215,7 +428,7 @@ void GameManager::Init(int width, int height, const char* title) {
     texBulletWeak = LoadTexture("assets/spaceship/hypergun_weak.png");
     texEnemy = LoadTexture("assets/enemy/chicken03.png");
     texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
-    texAsteroid2 = LoadTexture("assets/asteroidType2.png");
+    texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
     // Bỏ load Bullet01_1.png đã bị xóa
     texEnemyBullet = LoadTexture("assets/egg.png"); 
     texMeat = LoadTexture("assets/meat.png");
@@ -289,7 +502,7 @@ void GameManager::Update(float deltaTime) {
         case GameState::TEST_SPACESHIP:
         {
             // --- Background Scrolling ---
-            bgY += 23.0f * deltaTime; // Tăng tốc độ background lên 15%
+            bgY += 30.0f * deltaTime; // Tăng tốc độ background lên 15%
             if (bgY >= 2.0f * screenHeight) bgY -= 2.0f * screenHeight;
             
             // --- Player Logic ---
@@ -328,83 +541,20 @@ void GameManager::Update(float deltaTime) {
                     waveTimer -= deltaTime;
                     if (waveTimer <= 0.0f) {
                         isWaveTransitioning = false;
-                        if (currentWave == 1) { 
-                            if (currentBatch == 1) {
-                                for (int i = 0; i < 10; ++i) {
-                                    float x = screenWidth + 100.0f + i * 150.0f; // Bắt đầu từ rìa Phải
-                                    float y = 150.0f + (i % 2) * 100.0f; // Ở giữa màn hình
-                                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y});
-                                    enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(-1.0f)); // Bay sang Trái
-                                    enemy->ResetEggTimer();
-                                    AddEnemy(std::move(enemy));
-                                }
-                            } else if (currentBatch == 2) {
-                                for (int i = 0; i < 15; ++i) {
-                                    float x = -100.0f - i * 150.0f; // Bắt đầu từ rìa Trái
-                                    float y = 150.0f + (i % 3) * 100.0f; 
-                                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y});
-                                    enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(1.0f)); // Bay sang Phải
-                                    enemy->ResetEggTimer();
-                                    AddEnemy(std::move(enemy));
-                                }
-                            } else if (currentBatch == 3) {
-                                float startX = screenWidth / 2.0f;
-                                for (int r = 0; r < 3; ++r) {
-                                    for (int c = 0; c < 5; ++c) {
-                                        float offsetX = (c - 2) * 150.0f;
-                                        float x = startX + offsetX;
-                                        float y = -300.0f + r * 100.0f; 
-                                        float targetY = 100.0f + r * 100.0f; // Vị trí đứng của từng hàng
-                                        auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y});
-                                        enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(targetY, 300.0f, 1.0f));
-                                        enemy->ResetEggTimer();
-                                        AddEnemy(std::move(enemy));
-                                    }
-                                }
-                            }
-                        } else if (currentWave == 2) { 
-                            if (currentBatch == 1) {
-                                for (int i = 0; i < 15; ++i) {
-                                    float x = 150.0f + (i % 5) * 250.0f;
-                                    float y = -100.0f - (i / 5) * 150.0f;
-                                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y});
-                                    enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>());
-                                    enemy->ResetEggTimer();
-                                    AddEnemy(std::move(enemy));
-                                }
-                            }
-                        } else if (currentWave == 3) { 
-                            if (currentBatch == 1) {
-                                for (int i = 0; i < 20; i++) {
-                                    float x = GetRandomValue(100, screenWidth - 100);
-                                    float y = -100.0f - i * 150.0f; 
-                                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {x, y});
-                                    enemy->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
-                                    enemy->asteroidVariant = 1; // Trở lại loại thiên thạch 1
-                                    enemy->canShoot = false; // Chặn chức năng xả trứng cho thiên thạch
-                                    activeEnemies.push_back(std::move(enemy));
-                                }
-                            }
+                        
+                        // Cố gắng spawn batch hiện tại
+                        bool batchSpawned = SpawnWaveBatch(currentWave, currentBatch);
+                        
+                        // Nếu spawn thất bại (hết batch của wave này), chuyển sang wave tiếp theo
+                        if (!batchSpawned) {
+                            StartWave(currentWave + 1);
                         }
                     }
                 } else if (activeEnemies.empty()) {
-                    if (currentWave == 1) {
-                        if (currentBatch == 1) {
-                            currentBatch = 2;
-                            isWaveTransitioning = true;
-                            waveTimer = 3.0f;
-                        } else if (currentBatch == 2) {
-                            currentBatch = 3;
-                            isWaveTransitioning = true;
-                            waveTimer = 3.0f;
-                        } else {
-                            StartWave(2);
-                        }
-                    } else if (currentWave == 2) {
-                        StartWave(3);
-                    } else if (currentWave == 3) {
-                        StartWave(1); // Lặp lại từ đầu
-                    }
+                    // Khi dọn sạch batch hiện tại, chuẩn bị sang batch tiếp theo
+                    currentBatch++;
+                    isWaveTransitioning = true;
+                    waveTimer = 3.0f;
                 }
             } else if (currentState == GameState::TEST_ENEMY) {
                 // Spawner đơn giản cho TEST_ENEMY (để người chơi test bắn gà)
@@ -658,7 +808,7 @@ void GameManager::Draw() {
                 if (testSelectedWave > 1) { testSelectedWave--; testSelectedBatch = 1; }
             }
             if (DrawButton({ (float)screenWidth/2 + 100, 290, 50, 50 }, ">")) {
-                if (testSelectedWave < 3) { testSelectedWave++; testSelectedBatch = 1; }
+                if (testSelectedWave < 4) { testSelectedWave++; testSelectedBatch = 1; }
             }
 
             // Buttons to select Batch
@@ -667,7 +817,7 @@ void GameManager::Draw() {
                 if (testSelectedBatch > 1) testSelectedBatch--;
             }
             if (DrawButton({ (float)screenWidth/2 + 100, 390, 50, 50 }, ">")) {
-                int maxBatch = (testSelectedWave == 1) ? 3 : 1; // Wave 1 has 3 batches, Wave 2/3 have 1
+                int maxBatch = 3; 
                 if (testSelectedBatch < maxBatch) testSelectedBatch++;
             }
 

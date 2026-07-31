@@ -5,6 +5,8 @@
 #include "IMovementBehavior.h"
 #include <memory>
 
+#include <vector>
+
 class Enemy : public Character {
 private:
     std::unique_ptr<IMovementBehavior> movementBehavior;
@@ -21,6 +23,16 @@ public:
     int currentFrame = 0;
     float frameTimer = 0.0f;
     int asteroidVariant = 1; // Loại thiên thạch (1 hoặc 2)
+
+    // Trail system for asteroid: stores fading trail positions
+    struct TrailPoint {
+        Vector2 pos;
+        float alpha;   // 0.0f = invisible, 1.0f = fully visible
+        int frame;     // animation frame for trail row
+    };
+    std::vector<TrailPoint> trailPoints;
+    float trailSpawnTimer = 0.0f;
+    // Interval và tốc độ fade được dùng trực tiếp trong GameManager.cpp
 
     float eggDropTimer = 0.0f;
     bool canShoot = true;
