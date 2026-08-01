@@ -65,11 +65,17 @@ void Spaceship::Fire() {
             fireTimer = 1.0f / attackSpeed;
         }
         GainMana(10.0f);
+        if (HasArgument(7)) { // 7: Energy Flow
+            GainMana(2.0f);
+        }
     }
 }
 
 void Spaceship::GainExp(float amount) {
     if (level >= 10) return; // Level tối đa là 10, không nhận thêm exp
+    if (HasArgument(0)) { // 0: EXP Amplifier
+        amount *= 1.5f;
+    }
     currentExp += amount;
     Notify(EventType::PLAYER_EXP_GAINED, std::to_string(currentExp));
     if (currentExp >= maxExp) {
@@ -111,3 +117,21 @@ void Spaceship::LevelUp() {
 
     Notify(EventType::PLAYER_LEVEL_UP, std::to_string(level));
 }
+
+void Spaceship::Heal(float amount) {
+    if (currentHp < maxHp) {
+        currentHp += amount;
+        if (currentHp > maxHp) currentHp = maxHp;
+    }
+}
+
+void Spaceship::AddArgument(int argId) {
+    if (std::find(activeArguments.begin(), activeArguments.end(), argId) == activeArguments.end()) {
+        activeArguments.push_back(argId);
+    }
+}
+
+bool Spaceship::HasArgument(int argId) const {
+    return std::find(activeArguments.begin(), activeArguments.end(), argId) != activeArguments.end();
+}
+

@@ -59,6 +59,15 @@ public:
 
     void Update(float deltaTime) override;
 
+    // --- ARGUMENT SYSTEM ---
+    std::vector<int> activeArguments;
+    virtual void AddArgument(int argId);
+    virtual bool HasArgument(int argId) const;
+
+    float permanentDamageBonus = 0.0f;
+    virtual void AddPermanentDamage(float amt) { permanentDamageBonus += amt; }
+    virtual float GetPermanentDamageBonus() const { return permanentDamageBonus; }
+
     void Draw() override;
 
     void Die() override;
@@ -75,6 +84,8 @@ public:
     virtual void GainMana(float amount);
 
     virtual void LevelUp();
+
+    virtual void Heal(float amount);
 };
 
 #endif // SPACESHIP_H

@@ -40,6 +40,12 @@ public:
     virtual void GainExp(float amount) override;
     virtual void GainMana(float amount) override;
     virtual void LevelUp() override;
+    virtual void Heal(float amount) override;
+
+    virtual void AddArgument(int argId) override;
+    virtual bool HasArgument(int argId) const override;
+    virtual void AddPermanentDamage(float amt) override;
+    virtual float GetPermanentDamageBonus() const override;
 
     void Init() override;
     void Update(float deltaTime) override;

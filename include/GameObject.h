@@ -14,7 +14,9 @@ public:
     GameObject();
     GameObject(Vector2 pos);
     
-    virtual ~GameObject() = default;
+    virtual ~GameObject() {
+        // printf("Destroying GameObject\n");
+    }
 
     // Các hàm vòng đời chính
     virtual void Init() = 0;

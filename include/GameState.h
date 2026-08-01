@@ -17,7 +17,10 @@ enum class GameState {
     TEST_GAMEPLAY,
     WAVE_SELECTION,
     SETTINGS,
-    COMING_SOON
+    COMING_SOON,
+    STAT_SELECTION,       // Màn hình chọn chỉ số - hiện trước mỗi wave
+    ARGUMENT_SELECTION    // Màn hình chọn argument (lõi) - hiện trước wave 5/10/15
+
 };
 
 #endif // GAME_STATE_H

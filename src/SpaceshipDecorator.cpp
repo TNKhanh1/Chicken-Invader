@@ -31,6 +31,12 @@ void SpaceshipDecorator::Fire() { coreShip->Fire(); }
 void SpaceshipDecorator::GainExp(float amount) { coreShip->GainExp(amount); }
 void SpaceshipDecorator::GainMana(float amount) { coreShip->GainMana(amount); }
 void SpaceshipDecorator::LevelUp() { coreShip->LevelUp(); }
+void SpaceshipDecorator::Heal(float amount) { coreShip->Heal(amount); }
+
+void SpaceshipDecorator::AddArgument(int argId) { coreShip->AddArgument(argId); }
+bool SpaceshipDecorator::HasArgument(int argId) const { return coreShip->HasArgument(argId); }
+void SpaceshipDecorator::AddPermanentDamage(float amt) { coreShip->AddPermanentDamage(amt); }
+float SpaceshipDecorator::GetPermanentDamageBonus() const { return coreShip->GetPermanentDamageBonus(); }
 
 void SpaceshipDecorator::Init() { coreShip->Init(); }
 void SpaceshipDecorator::Update(float deltaTime) { coreShip->Update(deltaTime); }

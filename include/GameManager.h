@@ -47,6 +47,17 @@ private:
     Texture2D texEnemyBullet;
     Texture2D texMeat;
 
+    // Selection screen textures
+    Texture2D texLoi;    // Argument card background (loi.png)
+    Texture2D texChiSo;  // Stat card background (chiso.png)
+
+    // Selection screen state
+    float  selectionAnimTimer     = 0.0f;
+    int    nextWaveAfterSelection = 1;
+    bool   pendingArgumentAfterStat = false;
+    bool   isStatSelection          = true; // true = stat, false = argument
+    int    shownCardIndices[3]    = {0, 1, 2};
+
     // Audio
     Sound sfxShoot;
     Sound sfxExplosion;
@@ -86,6 +97,7 @@ public:
     void CleanUp();
     void StartWave(int waveIndex);
     bool SpawnWaveBatch(int wave, int batch);
+    void EnterStatSelection(int nextWave); // Chuyển vào màn hình chọn chỉ số
 
     // Các hàm cho vòng lặp
     void Update(float deltaTime);

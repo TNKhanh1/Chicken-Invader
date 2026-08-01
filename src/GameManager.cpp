@@ -22,6 +22,54 @@
 #include <cmath>
 #include <algorithm>
 
+// ---------------------------------------------------------
+// Dữ liệu tĩnh cho màn hình chọn Argument (lõi) và Chỉ Số (stat)
+// ---------------------------------------------------------
+struct CardDef {
+    const char* name;
+    const char* description;
+};
+
+// 10 loại Argument (lõi) - Effect chưa code, chỉ lưu thông tin
+static const CardDef ALL_ARGUMENTS[10] = {
+    { "EXP Amplifier",
+      "Gain +50% EXP\nfrom all enemies\nthroughout the game." },
+    { "Stat Windfall",
+      "Immediately receive\n3 extra Stat\nSelections right now." },
+    { "Abundant Gifts",
+      "Future Stat Selections\nshow 4 choices\ninstead of 3." },
+    { "Boss Hunter",
+      "Deal +80% bonus\ndamage to all\nBoss enemies." },
+    { "Armor Crusher",
+      "Each hit deals bonus\ndmg = 3% of\ntarget's current HP." },
+    { "Blood Fury",
+      "Each enemy kill\ngrants +2 permanent\nflat Damage." },
+    { "Bloodthirst",
+      "Killing an enemy\nrestores 15 HP\nto your spaceship." },
+    { "Energy Flow",
+      "Each shot fired\nrestores 2 Mana\nto your reserves." },
+    { "Round Recovery",
+      "Restore 80 HP\nat the start\nof each new Wave." },
+    { "Fast Track",
+      "Immediately gain\n3 Levels." }
+};
+
+// 6 loại Chỉ Số (stat)
+static const CardDef ALL_STATS[6] = {
+    { "Max HP  +30",
+      "Your spaceship's\nmax health\ngrows permanently." },
+    { "Damage  +5",
+      "Your attack power\nincreases\npermanently." },
+    { "Armor  +3",
+      "Reduces incoming\ndamage by\n3 extra points." },
+    { "Fire Rate  +10%",
+      "Reduce weapon\ncooldown time\nfor faster shots." },
+    { "Crit Chance  +10%",
+      "Increases the\nchance to deal\ncritical damage." },
+    { "Crit Damage  +30%",
+      "Increases the\ndamage multiplier\nof critical hits." }
+};
+
 // Khởi tạo instance của Singleton bằng nullptr
 GameManager* GameManager::instance = nullptr;
 
@@ -112,13 +160,21 @@ void Bullet::Draw() {
         
         // Default Player Bullet
         Texture2D tex = GameManager::GetInstance()->GetTexBulletPlayer();
-        DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
-                       {position.x, position.y, 10.0f, 30.0f}, {5.0f, 15.0f}, 0.0f, WHITE);
+        if (tex.id != 0) {
+            DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
+                           {position.x, position.y, 10.0f, 30.0f}, {5.0f, 15.0f}, 0.0f, WHITE);
+        } else {
+            DrawCircle(position.x, position.y, 6, SKYBLUE);
+        }
     } else {
         // Enemy Bullet
         Texture2D tex = GameManager::GetInstance()->GetTexEnemyBullet();
-        DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
-                       {position.x, position.y, 20.0f, 25.0f}, {10.0f, 12.5f}, 0.0f, WHITE);
+        if (tex.id != 0) {
+            DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
+                           {position.x, position.y, 20.0f, 25.0f}, {10.0f, 12.5f}, 0.0f, WHITE);
+        } else {
+            DrawCircle(position.x, position.y, 8, RED);
+        }
     }
 }
 
@@ -194,7 +250,21 @@ void Spaceship::Draw() {
 // -------------------------------------------
 
 GameManager::GameManager() 
-    : currentState(GameState::MAIN_MENU), previousState(GameState::MAIN_MENU), screenWidth(1600), screenHeight(900), isRunning(false), score(0), currentWave(0), currentBatch(0), waveTimer(0.0f), isWaveTransitioning(false) {
+    : previousState(GameState::MAIN_MENU), currentState(GameState::MAIN_MENU), screenWidth(1600), screenHeight(900), isRunning(false), score(0), currentWave(0), currentBatch(0), waveTimer(0.0f), isWaveTransitioning(false) {
+    texSpaceship = {0};
+    texSpaceshipHypergun = {0};
+    texEnemy = {0};
+    texAsteroid1 = {0};
+    texAsteroid2 = {0};
+    texBulletStrong = {0};
+    texBulletWeak = {0};
+    texBulletPlayer = {0};
+    texEnemyBullet = {0};
+    texMeat = {0};
+    texLoi = {0};
+    texChiSo = {0};
+    texSettingIcon = {0};
+    for(int i=0; i<4; i++) texBackgrounds[i] = {0};
 }
 
 GameManager::~GameManager() {
@@ -220,6 +290,27 @@ void GameManager::StartWave(int waveIndex) {
     currentBatch = 1;
     isWaveTransitioning = true;
     waveTimer = 3.0f; // 3 seconds delay before wave starts
+    
+    // Round Recovery (Arg 8)
+    if (player && player->HasArgument(8)) {
+        player->Heal(80.0f);
+    }
+}
+
+void GameManager::EnterStatSelection(int nextWave) {
+    nextWaveAfterSelection  = nextWave;
+    pendingArgumentAfterStat = (nextWave == 5 || nextWave == 10 || nextWave == 15);
+    isStatSelection         = true;
+    selectionAnimTimer      = 0.0f;
+
+    // Chọn 3 stat ngẫu nhiên không trùng nhau
+    int pool[6] = {0, 1, 2, 3, 4, 5};
+    for (int i = 0; i < 3; i++) {
+        int j = i + GetRandomValue(0, 5 - i);
+        int tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+        shownCardIndices[i] = pool[i];
+    }
+    ChangeState(GameState::STAT_SELECTION);
 }
 
 bool GameManager::SpawnWaveBatch(int wave, int batch) {
@@ -432,6 +523,9 @@ void GameManager::Init(int width, int height, const char* title) {
     // Bỏ load Bullet01_1.png đã bị xóa
     texEnemyBullet = LoadTexture("assets/egg.png"); 
     texMeat = LoadTexture("assets/meat.png");
+    // Selection screen card backgrounds
+    texLoi   = LoadTexture("assets/loi.png");
+    texChiSo = LoadTexture("assets/chiso.png");
     bgY = 0.0f;
     currentBgIndex = 0;
     
@@ -527,7 +621,9 @@ void GameManager::Update(float deltaTime) {
 
                     // Player input & update
                     player->Update(deltaTime); // Cập nhật thời gian hồi chiêu
-                    if (IsKeyDown(KEY_SPACE)) {
+                    static int frameCountDebug = 0;
+                    frameCountDebug++;
+                    if (frameCountDebug == 5 || IsKeyDown(KEY_SPACE)) {
                         if (player->CanFire()) {
                             player->Fire();
                         }
@@ -545,16 +641,23 @@ void GameManager::Update(float deltaTime) {
                         // Cố gắng spawn batch hiện tại
                         bool batchSpawned = SpawnWaveBatch(currentWave, currentBatch);
                         
-                        // Nếu spawn thất bại (hết batch của wave này), chuyển sang wave tiếp theo
+                        // Nếu spawn thất bại (hết batch của wave này)
                         if (!batchSpawned) {
-                            StartWave(currentWave + 1);
+                            EnterStatSelection(currentWave + 1);
                         }
                     }
                 } else if (activeEnemies.empty()) {
-                    // Khi dọn sạch batch hiện tại, chuẩn bị sang batch tiếp theo
-                    currentBatch++;
-                    isWaveTransitioning = true;
-                    waveTimer = 3.0f;
+                    // Cấu trúc wave hiện tại đều có 3 batch (từ wave 1 đến wave 4)
+                    int maxBatch = 3; 
+                    if (currentBatch < maxBatch) {
+                        // Khi dọn sạch batch hiện tại, chuẩn bị sang batch tiếp theo
+                        currentBatch++;
+                        isWaveTransitioning = true;
+                        waveTimer = 3.0f;
+                    } else {
+                        // Nếu đã xong batch cuối của wave, chuyển sang chọn chỉ số ngay lập tức
+                        EnterStatSelection(currentWave + 1);
+                    }
                 }
             } else if (currentState == GameState::TEST_ENEMY) {
                 // Spawner đơn giản cho TEST_ENEMY (để người chơi test bắn gà)
@@ -571,38 +674,45 @@ void GameManager::Update(float deltaTime) {
             for (auto& item : activeItems) {
                 if (item->IsActive()) item->Update(deltaTime);
             }
-
             for (auto& enemy : activeEnemies) {
                 if (enemy->IsActive()) enemy->Update(deltaTime);
             }
-            
             for (auto& bullet : activeBullets) {
                 if (bullet->IsActive()) bullet->Update(deltaTime);
             }
 
-            // --- Collision Detection ---
+            // --- Collision Detection (chỉ khi đang gameplay thực sự) ---
             if (currentState == GameState::TEST_GAMEPLAY) {
                 for (auto& bullet : activeBullets) {
                     if (!bullet->IsActive()) continue;
-
                     if (bullet->IsPlayerBullet()) {
                         for (auto& enemy : activeEnemies) {
                             if (!enemy->IsActive()) continue;
-
                             if (CheckCollisionRecs(bullet->GetHitbox(), enemy->GetHitbox())) {
+                                float finalDamage = bullet->GetDamage() + player->GetPermanentDamageBonus();
+                                if (player->HasArgument(3) && enemy->enemyType == 4) { // 3: Boss Hunter (assume asteroid enemyType 4 is boss-like for now since no bosses yet)
+                                    finalDamage *= 1.8f;
+                                }
+                                if (player->HasArgument(4)) { // 4: Armor Crusher
+                                    finalDamage += enemy->GetHp() * 0.03f;
+                                }
                                 bullet->SetActive(false);
-                                enemy->TakeDamage(bullet->GetDamage()); 
-                                
+                                enemy->TakeDamage(finalDamage);
                                 if (!enemy->IsActive()) {
                                     AddScore(enemy->GetPointValue());
+                                    // Blood Fury (Arg 5)
+                                    if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
+                                    // Bloodthirst (Arg 6)
+                                    if (player->HasArgument(6)) player->Heal(15.0f);
+                                    
                                     PlayExplosionSound();
-                                    auto meat = std::make_shared<Meat>(enemy->GetPosition(), Vector2{(float)GetRandomValue(-100, 100), -200.0f});
+                                    auto meat = std::make_shared<Meat>(enemy->GetPosition(),
+                                        Vector2{(float)GetRandomValue(-100, 100), -200.0f});
                                     activeItems.push_back(meat);
                                 }
                             }
                         }
                     } else {
-                        // Đạn của quái bắn vào Player
                         if (player && player->IsActive()) {
                             if (CheckCollisionRecs(bullet->GetHitbox(), player->GetHitbox())) {
                                 bullet->SetActive(false);
@@ -615,18 +725,12 @@ void GameManager::Update(float deltaTime) {
                 // Va chạm trực tiếp quái và Player
                 for (auto& enemy : activeEnemies) {
                     if (!enemy->IsActive() || !player || !player->IsActive()) continue;
-                    
-                    // Va chạm Player vs Enemy
                     if (CheckCollisionRecs(player->GetHitbox(), enemy->GetHitbox())) {
-                        enemy->TakeDamage(100); // Gà/Thiên thạch cũng mất máu khi đụng tàu
-                        if (enemy->enemyType == 4) { // ASTEROID
-                            player->TakeDamage(50); // Thiên thạch đâm mất nhiều máu hơn
-                        } else {
-                            player->TakeDamage(20);
-                        }
+                        enemy->TakeDamage(100);
+                        player->TakeDamage(enemy->enemyType == 4 ? 50 : 20);
                     }
                 }
-                
+
                 // Va chạm Item và Player
                 if (player && player->IsActive()) {
                     for (auto& item : activeItems) {
@@ -635,7 +739,7 @@ void GameManager::Update(float deltaTime) {
                         if (CheckCollisionRecs(itemRect, player->GetHitbox())) {
                             item->SetActive(false);
                             if (item->GetType() == ItemType::DRUMSTICK) {
-                                AddScore(50); // Ăn đùi gà được 50 điểm
+                                AddScore(50);
                                 player->GainExp(10.0f);
                                 PlayPickupSound();
                             }
@@ -652,14 +756,104 @@ void GameManager::Update(float deltaTime) {
             // --- Cleanup Inactive Entities ---
             activeBullets.erase(std::remove_if(activeBullets.begin(), activeBullets.end(),
                 [](const std::shared_ptr<Bullet>& b) { return !b->IsActive(); }), activeBullets.end());
-                
             activeEnemies.erase(std::remove_if(activeEnemies.begin(), activeEnemies.end(),
                 [](const std::shared_ptr<Enemy>& e) { return !e->IsActive(); }), activeEnemies.end());
-                
             activeItems.erase(std::remove_if(activeItems.begin(), activeItems.end(),
                 [](const std::shared_ptr<Item>& i) { return !i->IsActive(); }), activeItems.end());
             break;
         }
+
+
+        // --- Xử lý màn hình chọn Chỉ Số ---
+        case GameState::STAT_SELECTION:
+        {
+            selectionAnimTimer += deltaTime;
+            if (selectionAnimTimer > 0.4f) selectionAnimTimer = 0.4f;
+
+            int numChoices = (player && player->HasArgument(2)) ? 4 : 3;
+            const float CARD_W   = 320.0f;
+            const float CARD_H   = 490.0f;
+            const float GAP      = 40.0f;
+            const float totalW   = numChoices * CARD_W + (numChoices - 1) * GAP;
+            const float startX   = (screenWidth  - totalW) / 2.0f;
+            const float finalY   = (screenHeight - CARD_H) / 2.0f;
+            float t = selectionAnimTimer / 0.4f;
+            t = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
+            float cardY = finalY + (1.0f - t) * 350.0f;
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                for (int i = 0; i < numChoices; i++) {
+                    Rectangle cardRect = { startX + i * (CARD_W + GAP), cardY, CARD_W, CARD_H };
+                    if (CheckCollisionPointRec(GetMousePosition(), cardRect)) {
+                        // Áp dụng chỉ số ở đây (nếu có logic cộng chỉ số, tuỳ ý)
+                        
+                        if (pendingArgumentAfterStat) {
+                            isStatSelection = false;
+                            selectionAnimTimer = 0.0f;
+                            int pool[10] = {0,1,2,3,4,5,6,7,8,9};
+                            int argChoices = (player && player->HasArgument(2)) ? 4 : 3;
+                            for (int k = 0; k < argChoices; k++) {
+                                int j = k + GetRandomValue(0, 9 - k);
+                                int tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
+                                shownCardIndices[k] = pool[k];
+                            }
+                            ChangeState(GameState::ARGUMENT_SELECTION);
+                        } else {
+                            StartWave(nextWaveAfterSelection);
+                            ChangeState(GameState::TEST_GAMEPLAY);
+                        }
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+
+        // --- Xử lý màn hình chọn Argument ---
+        case GameState::ARGUMENT_SELECTION:
+        {
+            selectionAnimTimer += deltaTime;
+            if (selectionAnimTimer > 0.4f) selectionAnimTimer = 0.4f;
+
+            int numChoices = (player && player->HasArgument(2)) ? 4 : 3;
+            const float CARD_W = 320.0f;
+            const float CARD_H = 490.0f;
+            const float GAP    = 40.0f;
+            const float totalW = numChoices * CARD_W + (numChoices - 1) * GAP;
+            const float startX = (screenWidth  - totalW) / 2.0f;
+            const float finalY = (screenHeight - CARD_H) / 2.0f;
+            float t = selectionAnimTimer / 0.4f;
+            t = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
+            float cardY = finalY + (1.0f - t) * 350.0f;
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                for (int i = 0; i < numChoices; i++) {
+                    Rectangle cardRect = { startX + i * (CARD_W + GAP), cardY, CARD_W, CARD_H };
+                    if (CheckCollisionPointRec(GetMousePosition(), cardRect)) {
+                        int argId = shownCardIndices[i];
+                        if (player) {
+                            player->AddArgument(argId);
+                            if (argId == 9) { // Fast Track
+                                player->LevelUp();
+                                player->LevelUp();
+                                player->LevelUp();
+                            } else if (argId == 1) { // Stat Windfall
+                                // Thay vì quay lại màn hình chọn stat (phức tạp logic vòng lặp),
+                                // Nhận ngay 3 level hoặc 3 exp/hp bonus để bù
+                                player->Heal(100.0f);
+                                player->GainMana(100.0f);
+                                player->LevelUp();
+                            }
+                        }
+                        StartWave(nextWaveAfterSelection);
+                        ChangeState(GameState::TEST_GAMEPLAY);
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+
         default:
             break;
     }
@@ -951,7 +1145,122 @@ void GameManager::Draw() {
             }
             break;
         }
-        
+
+        // --- Vẽ màn hình chọn Chỉ Số (STAT) và Argument (ARGUMENT) ---
+        case GameState::STAT_SELECTION:
+        case GameState::ARGUMENT_SELECTION:
+        {
+            // 1. Vẽ game entities phía sau (đã đóng băng)
+            if (player && player->IsActive()) player->Draw();
+            for (const auto& enemy : activeEnemies) {
+                if (enemy->IsActive()) enemy->Draw();
+            }
+            for (const auto& bullet : activeBullets) {
+                if (bullet->IsActive()) bullet->Draw();
+            }
+
+            // 2. Lớp phủ tối mờ
+            DrawRectangle(0, 0, screenWidth, screenHeight, {0, 0, 0, 170});
+
+            // 3. Tính toán layout và animation
+            int numChoices = (player && player->HasArgument(2)) ? 4 : 3;
+            const float CARD_W  = 320.0f;
+            const float CARD_H  = 490.0f;
+            const float GAP     = 40.0f;
+            const float totalW  = numChoices * CARD_W + (numChoices - 1) * GAP;
+            const float startX  = (screenWidth  - totalW) / 2.0f;
+            const float finalY  = (screenHeight - CARD_H) / 2.0f;
+
+            float t = selectionAnimTimer / 0.4f;
+            t = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t); // ease-out cubic
+            float cardY = finalY + (1.0f - t) * 350.0f;
+
+            // 4. Tiêu đề màn hình
+            bool isStat = (currentState == GameState::STAT_SELECTION);
+            const char* titleText = isStat ? "CHOOSE A STAT UPGRADE" : "CHOOSE AN ARGUMENT";
+            Color titleColor = isStat ? (Color){80, 200, 120, 255} : (Color){255, 180, 50, 255};
+            int titleW = MeasureText(titleText, 34);
+            // Vẽ bóng đổ nhẹ
+            DrawText(titleText, screenWidth/2 - titleW/2 + 2, (int)(cardY - 72), 34, {0, 0, 0, 120});
+            DrawText(titleText, screenWidth/2 - titleW/2, (int)(cardY - 74), 34, titleColor);
+
+            // Phụ đề
+            const char* subText = isStat ? "Choose 1 option to power up your spaceship"
+                                         : "Choose a special Argument that will shape your journey";
+            int subW = MeasureText(subText, 16);
+            DrawText(subText, screenWidth/2 - subW/2, (int)(cardY - 38), 16, (Color){200, 200, 200, 200});
+
+            // 5. Vẽ thẻ card
+            Texture2D& cardTex = isStat ? texChiSo : texLoi;
+            Vector2 mouse = GetMousePosition();
+
+            for (int i = 0; i < numChoices; i++) {
+                float cx = startX + i * (CARD_W + GAP);
+                Rectangle cardRect = { cx, cardY, CARD_W, CARD_H };
+                bool hovered = CheckCollisionPointRec(mouse, cardRect);
+
+                // 5a. Nền card (ảnh loi.png / chiso.png lấy phần khung)
+                // Cắt phần khung thực sự của ảnh (dựa trên bounding box)
+                Rectangle srcRect = { 244, 29, 186, 287 }; 
+                
+                // Phân biệt vùng viền bên ngoài và vùng nội dung text (để text không đè lên viền kim loại)
+                Rectangle borderArea = cardRect;
+                // Vùng viết chữ được định vị theo tỉ lệ mới của thẻ 320x490
+                Rectangle textArea = {
+                    cardRect.x + 40.0f,
+                    cardRect.y + 110.0f,
+                    cardRect.width - 80.0f,
+                    cardRect.height - 180.0f
+                };
+
+                DrawTexturePro(cardTex,
+                    srcRect,
+                    borderArea,
+                    {0, 0}, 0.0f,
+                    hovered ? WHITE : (Color){200, 200, 200, 255});
+
+                // 5c. Dữ liệu card
+                int idx = shownCardIndices[i];
+                const CardDef& def = isStat ? ALL_STATS[idx] : ALL_ARGUMENTS[idx];
+
+                // Số thứ tự card (góc trên trái nhỏ) - đưa vào trong một chút để không nằm ở vùng viền bị vát
+                DrawText(TextFormat("%d", i + 1), (int)(cx + 35), (int)(cardY + 35), 16, (Color){180, 180, 180, 180});
+
+                // Tên card (dòng đầu, lớn, tô đậm bằng double draw)
+                int nameFontSize = 20; // Giảm lại font 20 theo yêu cầu
+                int nameW = MeasureText(def.name, nameFontSize);
+                float nameX = textArea.x + textArea.width / 2.0f - nameW / 2.0f;
+                float nameY = textArea.y + 10.0f;
+                DrawText(def.name, (int)nameX + 1, (int)nameY + 1, nameFontSize, {0, 0, 0, 100}); // shadow
+                DrawText(def.name, (int)nameX, (int)nameY, nameFontSize,
+                         isStat ? (Color){120, 240, 150, 255} : (Color){255, 210, 80, 255});
+
+                // Đường phân cách
+                DrawLineEx(
+                    {textArea.x + 15, nameY + 35},
+                    {textArea.x + textArea.width - 15, nameY + 35},
+                    2.0f,
+                    isStat ? (Color){120, 240, 150, 100} : (Color){255, 210, 80, 100}
+                );
+
+                // Mô tả (font nhỏ, nhiều dòng bằng \n trong chuỗi)
+                // Căn lề trái của mô tả thụt vào sâu hơn (textArea.x + 25) để né hoàn toàn phần cánh trang trí
+                DrawText(def.description, (int)(textArea.x + 25), (int)(nameY + 50), 16, (Color){220, 220, 220, 230});
+
+                // 5d. Hiệu ứng hover: viền vàng/xanh sáng
+                if (hovered) {
+                    DrawRectangleLinesEx(cardRect, 4,
+                        isStat ? (Color){80, 255, 130, 255} : (Color){255, 200, 50, 255});
+                    // Text gợi ý bấm
+                    const char* clickHint = "Click to select";
+                    int hintW = MeasureText(clickHint, 14);
+                    DrawText(clickHint, (int)(cx + CARD_W/2 - hintW/2), (int)(cardY + CARD_H - 28), 14,
+                             isStat ? (Color){80, 255, 130, 220} : (Color){255, 200, 50, 220});
+                }
+            }
+            break;
+        }
+
         default:
             break;
     }
@@ -971,6 +1280,8 @@ void GameManager::CleanUp() {
     UnloadTexture(texAsteroid2);
         UnloadTexture(texEnemyBullet);
         UnloadTexture(texMeat);
+        UnloadTexture(texLoi);
+        UnloadTexture(texChiSo);
         
         // UnloadSound(sfxShoot);
         // UnloadSound(sfxExplosion);
