@@ -46,6 +46,15 @@ private:
     Texture2D texBulletPlayer;
     Texture2D texEnemyBullet;
     Texture2D texMeat;
+    
+    // Weapon project assets
+    Texture2D texPlasmaRifle;
+    Texture2D texAbsolverBeam[5];
+    Texture2D texNeutronGun[3];
+    Texture2D texRiddler;
+    Texture2D texLightningFryer;
+    Texture2D texIonBlaster[2];
+    Texture2D texUtensilPoker[2];
 
     // Selection screen textures
     Texture2D texLoi;    // Argument card background (loi.png)
@@ -79,6 +88,14 @@ private:
     // Test selection
     int testSelectedWave = 1;
     int testSelectedBatch = 1;
+
+    // Debug & Weapon Sandbox Observation
+    bool showDebugHitboxes = false;
+    bool debugSandboxMode = false;
+    int currentWeaponType = 1; // 1: Hypergun, etc.
+    Vector2 autoLockTargetPos = {0, 0};
+    bool isAutoLocked = false;
+    float beamAnimTimer = 0.0f;
 
 public:
     // Ngăn chặn copy và assignment
@@ -128,6 +145,15 @@ public:
     Texture2D GetTexBulletPlayer() const { return texBulletPlayer; }
     Texture2D GetTexEnemyBullet() const { return texEnemyBullet; }
     Texture2D GetTexMeat() const { return texMeat; }
+    
+    // Weapon Asset Getters
+    Texture2D GetTexPlasmaRifle() const { return texPlasmaRifle; }
+    Texture2D GetTexAbsolverBeam(int idx) const { return texAbsolverBeam[idx >= 0 && idx < 5 ? idx : 0]; }
+    Texture2D GetTexNeutronGun(int idx) const { return texNeutronGun[idx >= 0 && idx < 3 ? idx : 0]; }
+    Texture2D GetTexRiddler() const { return texRiddler; }
+    Texture2D GetTexLightningFryer() const { return texLightningFryer; }
+    Texture2D GetTexIonBlaster(int idx) const { return texIonBlaster[idx >= 0 && idx < 2 ? idx : 0]; }
+    Texture2D GetTexUtensilPoker(int idx) const { return texUtensilPoker[idx >= 0 && idx < 2 ? idx : 0]; }
     
     // Score management
     int GetScore() const { return score; }

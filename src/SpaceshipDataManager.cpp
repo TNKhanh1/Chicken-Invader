@@ -26,25 +26,29 @@ void SpaceshipDataManager::LoadCSV(const std::string& filepath) {
     std::getline(file, line);
 
     while (std::getline(file, line)) {
-        if (line.empty()) continue;
+        if (line.empty() || line.find(',') == std::string::npos) continue;
 
         std::stringstream ss(line);
         std::string token;
         SpaceshipStats stats;
 
-        std::getline(ss, stats.name, ',');
-        
-        std::getline(ss, token, ','); stats.level = std::stoi(token);
-        std::getline(ss, token, ','); stats.hp = std::stof(token);
-        std::getline(ss, token, ','); stats.damage = std::stof(token);
-        std::getline(ss, token, ','); stats.armor = std::stof(token);
-        std::getline(ss, token, ','); stats.attackSpeed = std::stof(token);
-        std::getline(ss, token, ','); stats.moveSpeed = std::stof(token);
-        std::getline(ss, token, ','); stats.maxMana = std::stof(token);
-        std::getline(ss, token, ','); stats.critChance = std::stof(token);
-        std::getline(ss, token, ','); stats.critDamage = std::stof(token);
+        try {
+            std::getline(ss, stats.name, ',');
+            
+            std::getline(ss, token, ','); stats.level = std::stoi(token);
+            std::getline(ss, token, ','); stats.hp = std::stof(token);
+            std::getline(ss, token, ','); stats.damage = std::stof(token);
+            std::getline(ss, token, ','); stats.armor = std::stof(token);
+            std::getline(ss, token, ','); stats.attackSpeed = std::stof(token);
+            std::getline(ss, token, ','); stats.moveSpeed = std::stof(token);
+            std::getline(ss, token, ','); stats.maxMana = std::stof(token);
+            std::getline(ss, token, ','); stats.critChance = std::stof(token);
+            std::getline(ss, token, ','); stats.critDamage = std::stof(token);
 
-        statsMap[{stats.name, stats.level}] = stats;
+            statsMap[{stats.name, stats.level}] = stats;
+        } catch (const std::exception& e) {
+            std::cerr << "Error parsing CSV line: " << line << " - Exception: " << e.what() << std::endl;
+        }
     }
     
     file.close();

@@ -15,6 +15,7 @@ float SpaceshipDecorator::GetMaxMana() const { return coreShip->GetMaxMana(); }
 float SpaceshipDecorator::GetCurrentMana() const { return coreShip->GetCurrentMana(); }
 float SpaceshipDecorator::GetAttackSpeed() const { return coreShip->GetAttackSpeed(); }
 int SpaceshipDecorator::GetLevel() const { return coreShip->GetLevel(); }
+void SpaceshipDecorator::SetLevel(int newLevel) { coreShip->SetLevel(newLevel); }
 float SpaceshipDecorator::GetCurrentExp() const { return coreShip->GetCurrentExp(); }
 float SpaceshipDecorator::GetMaxExp() const { return coreShip->GetMaxExp(); }
 std::string SpaceshipDecorator::GetName() const { return coreShip->GetName(); }
@@ -27,6 +28,8 @@ void SpaceshipDecorator::RemoveObserver(IObserver* observer) { coreShip->RemoveO
 void SpaceshipDecorator::Notify(EventType event, const std::string& data) { coreShip->Notify(event, data); }
 
 void SpaceshipDecorator::SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) { coreShip->SetShootingBehavior(std::move(behavior)); }
+void SpaceshipDecorator::SetWeapon(const std::string& weaponName) { coreShip->SetWeapon(weaponName); }
+std::string SpaceshipDecorator::GetWeapon() const { return coreShip->GetWeapon(); }
 void SpaceshipDecorator::Fire() { coreShip->Fire(); }
 void SpaceshipDecorator::GainExp(float amount) { coreShip->GainExp(amount); }
 void SpaceshipDecorator::GainMana(float amount) { coreShip->GainMana(amount); }

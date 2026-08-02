@@ -24,6 +24,7 @@ public:
     virtual float GetCurrentMana() const override;
     virtual float GetAttackSpeed() const override;
     virtual int GetLevel() const override;
+    virtual void SetLevel(int newLevel) override;
     virtual float GetCurrentExp() const override;
     virtual float GetMaxExp() const override;
     std::string GetName() const override;
@@ -36,6 +37,8 @@ public:
     virtual void Notify(EventType event, const std::string& data) override;
 
     virtual void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) override;
+    virtual void SetWeapon(const std::string& weaponName) override;
+    virtual std::string GetWeapon() const override;
     virtual void Fire() override;
     virtual void GainExp(float amount) override;
     virtual void GainMana(float amount) override;

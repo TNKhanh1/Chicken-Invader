@@ -18,6 +18,8 @@
 #include "../include/Meat.h"
 #include "../include/SpaceshipDataManager.h"
 #include "../include/HypergunShootingBehavior.h"
+#include "../include/BeamWeapon.h"
+#include "../include/AllWeaponBehaviors.h"
 #include <iostream>
 #include <cmath>
 #include <algorithm>
@@ -136,35 +138,39 @@ void Bullet::Draw() {
     if (!isActive) return;
     
     if (isPlayerBullet) {
-        if (bulletType == 1) { // Strong
-            Texture2D tex = GameManager::GetInstance()->GetTexBulletStrong();
-            if (tex.id != 0) {
-                DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height},
-                               {position.x, position.y, 20.0f, 40.0f}, {10.0f, 20.0f}, 0.0f, WHITE);
-                return;
-            } else {
-                DrawCircle(position.x, position.y, 8, ORANGE);
-                return;
-            }
-        } else if (bulletType == 2) { // Weak
-            Texture2D tex = GameManager::GetInstance()->GetTexBulletWeak();
-            if (tex.id != 0) {
-                DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height},
-                               {position.x, position.y, 10.0f, 20.0f}, {5.0f, 10.0f}, 0.0f, WHITE);
-                return;
-            } else {
-                DrawCircle(position.x, position.y, 4, YELLOW);
-                return;
-            }
-        }
+        GameManager* gm = GameManager::GetInstance();
+        Texture2D tex = {0};
+        float width = 16.0f, height = 32.0f;
+        float rot = angle;
         
-        // Default Player Bullet
-        Texture2D tex = GameManager::GetInstance()->GetTexBulletPlayer();
+        switch(bulletType) {
+            case 1: tex = gm->GetTexBulletStrong(); width = 20.0f; height = 40.0f; break; // Hypergun Strong
+            case 2: tex = gm->GetTexBulletWeak(); width = 12.0f; height = 24.0f; break; // Hypergun Weak
+            case 3: tex = gm->GetTexNeutronGun(0); width = 14.0f; height = 30.0f; break; // Neutron Weak
+            case 4: tex = gm->GetTexNeutronGun(1); width = 18.0f; height = 40.0f; break; // Neutron Med
+            case 5: tex = gm->GetTexNeutronGun(2); width = 24.0f; height = 52.0f; break; // Neutron Strong
+            case 6: tex = gm->GetTexRiddler(); width = 16.0f; height = 28.0f; break; // Riddler
+            case 7: tex = gm->GetTexIonBlaster(0); width = 18.0f; height = 28.0f; break; // Ion Single
+            case 8: tex = gm->GetTexIonBlaster(1); width = 26.0f; height = 38.0f; break; // Ion Double
+            case 9: { // Utensil Poker Fork (quay nĩa)
+                tex = gm->GetTexUtensilPoker(0); width = 22.0f; height = 44.0f;
+                rot = (float)GetTime() * 720.0f;
+                break;
+            }
+            case 10: { // Utensil Poker Carving (quay dao)
+                tex = gm->GetTexUtensilPoker(1); width = 26.0f; height = 50.0f;
+                rot = (float)GetTime() * 720.0f + 180.0f;
+                break;
+            }
+            default:
+                tex = gm->GetTexBulletPlayer(); width = 14.0f; height = 30.0f; break;
+        }
+
         if (tex.id != 0) {
-            DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
-                           {position.x, position.y, 10.0f, 30.0f}, {5.0f, 15.0f}, 0.0f, WHITE);
+            DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height},
+                           {position.x, position.y, width, height}, {width / 2.0f, height / 2.0f}, rot, WHITE);
         } else {
-            DrawCircle(position.x, position.y, 6, SKYBLUE);
+            DrawCircle(position.x, position.y, (int)radius, SKYBLUE);
         }
     } else {
         // Enemy Bullet
@@ -259,8 +265,13 @@ GameManager::GameManager()
     texBulletStrong = {0};
     texBulletWeak = {0};
     texBulletPlayer = {0};
-    texEnemyBullet = {0};
     texMeat = {0};
+    texPlasmaRifle = {0};
+    for(int i=0; i<5; i++) texAbsolverBeam[i] = {0};
+    for(int i=0; i<3; i++) texNeutronGun[i] = {0};
+    texRiddler = {0};
+    texLightningFryer = {0};
+    for(int i=0; i<2; i++) { texIonBlaster[i] = {0}; texUtensilPoker[i] = {0}; }
     texLoi = {0};
     texChiSo = {0};
     texSettingIcon = {0};
@@ -523,6 +534,24 @@ void GameManager::Init(int width, int height, const char* title) {
     // Bỏ load Bullet01_1.png đã bị xóa
     texEnemyBullet = LoadTexture("assets/egg.png"); 
     texMeat = LoadTexture("assets/meat.png");
+    
+    // Tải trọn bộ asset đồ họa của các loại vũ khí
+    texPlasmaRifle = LoadTexture("assets/spaceship/plasma_rifle.png");
+    texAbsolverBeam[0] = LoadTexture("assets/spaceship/AbsolverBeamStarter.png");
+    texAbsolverBeam[1] = LoadTexture("assets/spaceship/AbsolverBeamWeak.png");
+    texAbsolverBeam[2] = LoadTexture("assets/spaceship/AbsolverBeamMedium.png");
+    texAbsolverBeam[3] = LoadTexture("assets/spaceship/AbsolverBeamStrong.png");
+    texAbsolverBeam[4] = LoadTexture("assets/spaceship/AbsolverBeamFull.png");
+    texNeutronGun[0] = LoadTexture("assets/spaceship/NeutronGunWeak.png");
+    texNeutronGun[1] = LoadTexture("assets/spaceship/NeutronGunMedium.png");
+    texNeutronGun[2] = LoadTexture("assets/spaceship/NeutronGunStrong.png");
+    texRiddler = LoadTexture("assets/spaceship/Riddler.png");
+    texLightningFryer = LoadTexture("assets/spaceship/LightningFryer.png");
+    texIonBlaster[0] = LoadTexture("assets/spaceship/IonBlasterSingle.png");
+    texIonBlaster[1] = LoadTexture("assets/spaceship/IonBlasterDouble.png");
+    texUtensilPoker[0] = LoadTexture("assets/spaceship/UtensilPokerFork.png");
+    texUtensilPoker[1] = LoadTexture("assets/spaceship/UtensilPokerCarving.png");
+    
     // Selection screen card backgrounds
     texLoi   = LoadTexture("assets/loi.png");
     texChiSo = LoadTexture("assets/chiso.png");
@@ -600,33 +629,107 @@ void GameManager::Update(float deltaTime) {
             if (bgY >= 2.0f * screenHeight) bgY -= 2.0f * screenHeight;
             
             // --- Player Logic ---
-            if (currentState != GameState::TEST_ENEMY) {
-                if (player && player->IsActive()) {
-                    Vector2 pos = player->GetPosition();
-                    if (IsKeyDown(KEY_W)) pos.y -= player->GetMoveSpeed() * deltaTime;
-                    if (IsKeyDown(KEY_S)) pos.y += player->GetMoveSpeed() * deltaTime;
-                    if (IsKeyDown(KEY_A)) pos.x -= player->GetMoveSpeed() * deltaTime;
-                    if (IsKeyDown(KEY_D)) pos.x += player->GetMoveSpeed() * deltaTime;
-                    
-                    if (IsKeyPressed(KEY_L)) {
-                        player->LevelUp();
-                    }
-                    
-                    if (pos.x < 0) pos.x = 0;
-                    if (pos.x > screenWidth) pos.x = screenWidth;
-                    if (pos.y < 0) pos.y = 0;
-                    if (pos.y > screenHeight) pos.y = screenHeight;
-                    
-                    player->SetPosition(pos);
+            // --- WEAPON SANDBOX CONTROLS & PLAYER LOGIC ---
+            if (IsKeyPressed(KEY_F1)) debugSandboxMode = !debugSandboxMode; // Bật / tắt sandbox
+            if (debugSandboxMode && player && player->IsActive()) {
+                if (IsKeyPressed(KEY_ONE))   player->SetWeapon("Hypergun");
+                if (IsKeyPressed(KEY_TWO))   player->SetWeapon("Plasma_Rifle");
+                if (IsKeyPressed(KEY_THREE)) player->SetWeapon("Absolver_Beam");
+                if (IsKeyPressed(KEY_FOUR))  player->SetWeapon("Neutron_Gun");
+                if (IsKeyPressed(KEY_FIVE))  player->SetWeapon("Riddler");
+                if (IsKeyPressed(KEY_SIX))   player->SetWeapon("Lightning_Fryer");
+                if (IsKeyPressed(KEY_SEVEN)) player->SetWeapon("Ion_Blaster");
+                if (IsKeyPressed(KEY_EIGHT)) player->SetWeapon("Utensil_Poker");
 
-                    // Player input & update
-                    player->Update(deltaTime); // Cập nhật thời gian hồi chiêu
-                    static int frameCountDebug = 0;
-                    frameCountDebug++;
-                    if (frameCountDebug == 5 || IsKeyDown(KEY_SPACE)) {
-                        if (player->CanFire()) {
-                            player->Fire();
+                if (IsKeyPressed(KEY_UP))    player->SetLevel(std::min(player->GetLevel() + 1, 11));
+                if (IsKeyPressed(KEY_DOWN))  player->SetLevel(std::max(player->GetLevel() - 1, 1));
+                
+                if (IsKeyPressed(KEY_H))     showDebugHitboxes = !showDebugHitboxes;
+                if (IsKeyDown(KEY_F))        deltaTime *= 0.1f; // Slow-motion
+            }
+
+            if (player && player->IsActive()) {
+                Vector2 pos = player->GetPosition();
+                if (IsKeyDown(KEY_W)) pos.y -= player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_S)) pos.y += player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_A)) pos.x -= player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_D)) pos.x += player->GetMoveSpeed() * deltaTime;
+                
+                if (IsKeyPressed(KEY_L)) player->LevelUp();
+                if (IsKeyPressed(KEY_H) && !debugSandboxMode) showDebugHitboxes = !showDebugHitboxes;
+                
+                if (pos.x < 0) pos.x = 0;
+                if (pos.x > screenWidth) pos.x = screenWidth;
+                if (pos.y < 0) pos.y = 0;
+                if (pos.y > screenHeight) pos.y = screenHeight;
+                player->SetPosition(pos);
+
+                player->Update(deltaTime);
+                std::string weapon = player->GetWeapon();
+                bool isBeamWeapon = (weapon == "Lightning_Fryer" || weapon == "Plasma_Rifle" || weapon == "Absolver_Beam");
+
+                isAutoLocked = false;
+                if (isBeamWeapon && IsKeyDown(KEY_SPACE)) {
+                    Vector2 origin = { player->GetPosition().x, player->GetPosition().y - 20.0f };
+                    Vector2 endPos = { origin.x, -100.0f };
+                    float beamWidth = 30.0f;
+                    float damageRate = (player->GetDamage() + player->GetPermanentDamageBonus() + 40.0f) * 4.0f;
+
+                    if (weapon == "Lightning_Fryer") {
+                        static LightningFryerBehavior fryerAim;
+                        float aimAngle = 0.0f;
+                        isAutoLocked = fryerAim.FindNearestTarget(origin, activeEnemies, autoLockTargetPos, aimAngle);
+                        if (isAutoLocked) {
+                            endPos = autoLockTargetPos;
                         }
+                        beamWidth = 25.0f;
+                    } else if (weapon == "Plasma_Rifle") {
+                        beamWidth = 30.0f + player->GetLevel() * 8.0f;
+                    } else if (weapon == "Absolver_Beam") {
+                        beamWidth = 45.0f;
+                        damageRate *= 1.3f;
+                    }
+                    autoLockTargetPos = endPos;
+
+                    // XỬ LÝ VA CHẠM ĐOẠN THẲNG (LINE-SEGMENT COLLISION) CHO TẤT CẢ QUÁI VẬT TRÊN ĐƯỜNG TIA
+                    if (currentState == GameState::TEST_GAMEPLAY || currentState == GameState::TEST_ENEMY) {
+                        Vector2 v = { endPos.x - origin.x, endPos.y - origin.y };
+                        float vLenSq = v.x * v.x + v.y * v.y;
+                        if (vLenSq > 0.0f) {
+                            for (auto& enemy : activeEnemies) {
+                                if (!enemy || !enemy->IsActive()) continue;
+                                Vector2 ePos = enemy->GetPosition();
+                                Vector2 w = { ePos.x - origin.x, ePos.y - origin.y };
+                                float t = (w.x * v.x + w.y * v.y) / vLenSq;
+                                t = std::max(0.0f, std::min(1.0f, t));
+                                Vector2 closest = { origin.x + t * v.x, origin.y + t * v.y };
+                                float dx = ePos.x - closest.x;
+                                float dy = ePos.y - closest.y;
+                                float distSq = dx * dx + dy * dy;
+                                
+                                float threshold = 35.0f + (beamWidth / 2.0f);
+                                if (distSq <= threshold * threshold) {
+                                    float finalDmg = damageRate * deltaTime;
+                                    if (player->HasArgument(3) && enemy->enemyType == 4) finalDmg *= 1.8f;
+                                    if (player->HasArgument(4)) finalDmg += enemy->GetHp() * 0.03f * deltaTime;
+
+                                    enemy->TakeDamage(finalDmg);
+                                    if (!enemy->IsActive()) {
+                                        AddScore(enemy->GetPointValue());
+                                        if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
+                                        if (player->HasArgument(6)) player->Heal(15.0f);
+                                        PlayExplosionSound();
+                                        auto meat = std::make_shared<Meat>(enemy->GetPosition(),
+                                            Vector2{(float)GetRandomValue(-100, 100), -200.0f});
+                                        activeItems.push_back(meat);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (!isBeamWeapon && IsKeyDown(KEY_SPACE)) {
+                    if (player->CanFire()) {
+                        player->Fire();
                     }
                 }
             }
@@ -681,16 +784,44 @@ void GameManager::Update(float deltaTime) {
                 if (bullet->IsActive()) bullet->Update(deltaTime);
             }
 
-            // --- Collision Detection (chỉ khi đang gameplay thực sự) ---
-            if (currentState == GameState::TEST_GAMEPLAY) {
+            // --- Collision Detection (áp dụng cho cả GAMEPLAY và TEST_ENEMY) ---
+            if (currentState == GameState::TEST_GAMEPLAY || currentState == GameState::TEST_ENEMY) {
                 for (auto& bullet : activeBullets) {
                     if (!bullet->IsActive()) continue;
                     if (bullet->IsPlayerBullet()) {
                         for (auto& enemy : activeEnemies) {
-                            if (!enemy->IsActive()) continue;
-                            if (CheckCollisionRecs(bullet->GetHitbox(), enemy->GetHitbox())) {
+                            if (!enemy || !enemy->IsActive()) continue;
+                            
+                            Vector2 currCenter = bullet->GetCenter();
+                            float radius = bullet->GetRadius();
+                            Rectangle enemyBox = enemy->GetHitbox();
+                            
+                            // 1. Kiểm tra va chạm hình tròn tĩnh cơ bản
+                            bool hit = CheckCollisionCircleRec(currCenter, radius, enemyBox);
+                            
+                            // 2. Continuous Collision Detection (CCD) - Xử lý triệt để đạn tốc độ cao trôi thẳng xuyên qua gà (Tunneling Fix)
+                            if (!hit) {
+                                Vector2 prevCenter = bullet->GetPrevCenter();
+                                Vector2 eCenter = { enemyBox.x + enemyBox.width / 2.0f, enemyBox.y + enemyBox.height / 2.0f };
+                                float eRad = std::max(enemyBox.width, enemyBox.height) / 2.0f + radius;
+                                
+                                Vector2 v = { currCenter.x - prevCenter.x, currCenter.y - prevCenter.y };
+                                float vLenSq = v.x * v.x + v.y * v.y;
+                                if (vLenSq > 0.0f) {
+                                    Vector2 w = { eCenter.x - prevCenter.x, eCenter.y - prevCenter.y };
+                                    float t = std::max(0.0f, std::min(1.0f, (w.x * v.x + w.y * v.y) / vLenSq));
+                                    Vector2 closest = { prevCenter.x + t * v.x, prevCenter.y + t * v.y };
+                                    float dx = eCenter.x - closest.x;
+                                    float dy = eCenter.y - closest.y;
+                                    if ((dx * dx + dy * dy) <= (eRad * eRad)) {
+                                        hit = true;
+                                    }
+                                }
+                            }
+                            
+                            if (hit) {
                                 float finalDamage = bullet->GetDamage() + player->GetPermanentDamageBonus();
-                                if (player->HasArgument(3) && enemy->enemyType == 4) { // 3: Boss Hunter (assume asteroid enemyType 4 is boss-like for now since no bosses yet)
+                                if (player->HasArgument(3) && enemy->enemyType == 4) { // 3: Boss Hunter
                                     finalDamage *= 1.8f;
                                 }
                                 if (player->HasArgument(4)) { // 4: Armor Crusher
@@ -710,11 +841,12 @@ void GameManager::Update(float deltaTime) {
                                         Vector2{(float)GetRandomValue(-100, 100), -200.0f});
                                     activeItems.push_back(meat);
                                 }
+                                break; // Chống một viên đạn ăn trúng 2 mục tiêu cùng lúc
                             }
                         }
                     } else {
                         if (player && player->IsActive()) {
-                            if (CheckCollisionRecs(bullet->GetHitbox(), player->GetHitbox())) {
+                            if (CheckCollisionCircleRec(bullet->GetCenter(), bullet->GetRadius(), player->GetHitbox())) {
                                 bullet->SetActive(false);
                                 player->TakeDamage(bullet->GetDamage());
                             }
@@ -1052,27 +1184,178 @@ void GameManager::Draw() {
         case GameState::TEST_SPACESHIP:
         {
             // Vẽ Player
-            if (currentState != GameState::TEST_ENEMY) {
-                if (player && player->IsActive()) {
-                    player->Draw();
-                }
+            if (player && player->IsActive()) {
+                player->Draw();
             }
 
             // Vẽ Enemies
-            if (currentState != GameState::TEST_SPACESHIP) {
-                for (const auto& enemy : activeEnemies) {
-                    if (enemy->IsActive()) {
-                        enemy->Draw();
-                    }
+            for (const auto& enemy : activeEnemies) {
+                if (enemy && enemy->IsActive()) {
+                    enemy->Draw();
                 }
             }
 
             // Vẽ Bullets
-            if (currentState != GameState::TEST_ENEMY) {
+            for (const auto& bullet : activeBullets) {
+                if (bullet && bullet->IsActive()) {
+                    bullet->Draw();
+                }
+            }
+
+            // --- VẼ HIỆU ỨNG ĐỘNG ĐẠN TIA (ADVANCED BEAM & LASER VFX ENGINE) ---
+            if (player && player->IsActive() && IsKeyDown(KEY_SPACE)) {
+                std::string weapon = player->GetWeapon();
+                Vector2 origin = { player->GetPosition().x, player->GetPosition().y - 25.0f };
+                Vector2 endPos = autoLockTargetPos;
+                Vector2 diff = { endPos.x - origin.x, endPos.y - origin.y };
+                float len = sqrt(diff.x * diff.x + diff.y * diff.y);
+                float angleDeg = atan2(diff.y, diff.x) * 180.0f / 3.14159265f - 90.0f;
+                Vector2 dir = (len > 0.0f) ? Vector2{ diff.x / len, diff.y / len } : Vector2{ 0.0f, -1.0f };
+                float timeVal = (float)GetTime();
+                int level = player->GetLevel();
+
+                // Bật Blend Mode Additive để các dòng năng lượng phát vầng sáng thực tế
+                BeginBlendMode(BLEND_ADDITIVE);
+
+                if (weapon == "Lightning_Fryer") {
+                    // 1. LIGHTNING FRYER: Dòng hồ quang điện chao đảo gấp khúc ngẫu nhiên
+                    int numSegments = std::max(6, (int)(len / 38.0f));
+                    std::vector<Vector2> arcPoints;
+                    arcPoints.push_back(origin);
+                    
+                    Vector2 perp = { -dir.y, dir.x }; // Cạnh vuông góc để tạo độ chao nghiêng giật sét
+                    
+                    for (int i = 1; i < numSegments; ++i) {
+                        float t = (float)i / numSegments;
+                        float base_x = origin.x + diff.x * t;
+                        float base_y = origin.y + diff.y * t;
+                        float jitter = (float)GetRandomValue(-24, 24); // Dao động điện tích
+                        arcPoints.push_back({ base_x + perp.x * jitter, base_y + perp.y * jitter });
+                    }
+                    arcPoints.push_back(endPos);
+                    
+                    // Vẽ 3 tầng lớp ánh sáng lóa điện hồ quang
+                    for (size_t i = 0; i < arcPoints.size() - 1; ++i) {
+                        DrawLineEx(arcPoints[i], arcPoints[i+1], 18.0f, ColorAlpha(BLUE, 0.35f));
+                        DrawLineEx(arcPoints[i], arcPoints[i+1], 8.0f, ColorAlpha(SKYBLUE, 0.8f));
+                        DrawLineEx(arcPoints[i], arcPoints[i+1], 3.5f, WHITE);
+                    }
+                    
+                    // Tia điện chớp nháy phụ hạ (Secondary lightning fork) ở Level >= 4
+                    if (level >= 4 && arcPoints.size() > 2) {
+                        for (size_t i = 0; i < arcPoints.size() - 2; ++i) {
+                            Vector2 p2 = { arcPoints[i+1].x + GetRandomValue(-16,16), arcPoints[i+1].y + GetRandomValue(-16,16) };
+                            DrawLineEx(arcPoints[i], p2, 5.0f, ColorAlpha(SKYBLUE, 0.65f));
+                            DrawLineEx(arcPoints[i], p2, 2.0f, WHITE);
+                        }
+                    }
+
+                    // Tâm nổ điện tích tại nòng (Muzzle electric sphere)
+                    DrawCircleV(origin, 20.0f + sin(timeVal*45.0f)*5.0f, ColorAlpha(SKYBLUE, 0.8f));
+                    DrawCircleV(origin, 10.0f, WHITE);
+                    
+                    // Nổ tia lửa hồ quang bám trên mình quái vật (Impact Sparks)
+                    if (isAutoLocked) {
+                        DrawCircleV(endPos, 38.0f + cos(timeVal*50.0f)*8.0f, ColorAlpha(SKYBLUE, 0.65f));
+                        DrawCircleV(endPos, 16.0f, WHITE);
+                        for (int s = 0; s < 7; ++s) {
+                            float ang = GetRandomValue(0, 360) * (3.14159f / 180.0f);
+                            float r = (float)GetRandomValue(22, 48);
+                            DrawLineEx(endPos, { endPos.x + (float)cos(ang)*r, endPos.y + (float)sin(ang)*r }, 2.5f, WHITE);
+                        }
+                        DrawText("[LOCKED]", (int)endPos.x - 35, (int)endPos.y - 60, 14, YELLOW);
+                    }
+                } 
+                else if (weapon == "Plasma_Rifle") {
+                    // 2. PLASMA RIFLE: Sóng nhiệt Ion hóa rực rỡ
+                    float baseW = 34.0f + level * 7.0f;
+                    float pulseW1 = baseW + sin(timeVal * 32.0f) * 12.0f;
+                    float pulseW2 = (baseW * 0.65f) + cos(timeVal * 48.0f) * 8.0f;
+                    float coreW = 16.0f + level * 2.0f;
+
+                    // Cuộn nhiệt plasma qua 3 lớp Hào quang (Triple Layer Plasma Stream)
+                    DrawRectanglePro({ origin.x, origin.y, pulseW1, len }, { pulseW1 / 2.0f, 0.0f }, angleDeg, ColorAlpha(GREEN, 0.35f));
+                    DrawRectanglePro({ origin.x, origin.y, pulseW2, len }, { pulseW2 / 2.0f, 0.0f }, angleDeg, ColorAlpha(LIME, 0.7f));
+                    DrawRectanglePro({ origin.x, origin.y, coreW, len }, { coreW / 2.0f, 0.0f }, angleDeg, ColorAlpha(YELLOW, 0.85f));
+                    DrawLineEx(origin, endPos, 4.5f, WHITE); // Lõi gia tốc
+
+                    // Các quả cầu / vòng sóng nhiệt vút bay liên tiếp dọc theo chiều tia súng
+                    for (int r = 0; r < 5; ++r) {
+                        float ringDist = fmod(timeVal * 720.0f + r * 170.0f, len);
+                        if (ringDist > 12.0f && ringDist < len) {
+                            Vector2 ringPos = { origin.x + dir.x * ringDist, origin.y + dir.y * ringDist };
+                            DrawCircleV(ringPos, coreW * 1.35f, ColorAlpha(WHITE, 0.75f));
+                            DrawCircleV(ringPos, coreW * 0.85f, LIME);
+                        }
+                    }
+
+                    // Tâm nổ nòng súng Plasma
+                    DrawCircleV(origin, baseW * 0.75f + sin(timeVal*55.0f)*6.0f, ColorAlpha(LIME, 0.8f));
+                    DrawCircleV(origin, baseW * 0.38f, WHITE);
+                } 
+                else if (weapon == "Absolver_Beam") {
+                    // 3. ABSOLVER BEAM: Tia Hồng ngoại Hủy diệt ngợp ánh sáng
+                    int idx = std::min(4, (level - 1) / 2);
+                    Texture2D tex = texAbsolverBeam[idx];
+                    
+                    float beamW = 40.0f + idx * 10.0f;
+                    float outerW = beamW + sin(timeVal * 42.0f) * 14.0f;
+                    
+                    // Trường năng lượng quang phổ 4 lớp
+                    DrawLineEx(origin, endPos, outerW * 1.5f, ColorAlpha(PURPLE, 0.35f));
+                    DrawLineEx(origin, endPos, outerW, ColorAlpha(MAGENTA, 0.65f));
+                    DrawLineEx(origin, endPos, beamW * 0.65f, ColorAlpha(PINK, 0.88f));
+                    DrawLineEx(origin, endPos, beamW * 0.28f, WHITE); // Lõi Photon cực mạnh
+
+                    // Overlay asset đã được khử nền hoàn toàn kèm hiệu ứng chấn động tần số cao
+                    if (tex.id != 0 && len > 0) {
+                        float animW = beamW * 1.25f + GetRandomValue(-4, 4);
+                        DrawTexturePro(tex, { 0, 0, (float)tex.width, (float)tex.height },
+                                       { origin.x, origin.y, animW, len }, { animW / 2.0f, 0.0f }, angleDeg, ColorAlpha(WHITE, 0.9f));
+                    }
+
+                    // Quả cầu tích lụi Photon ở nòng tàu
+                    DrawCircleV(origin, beamW * 0.75f, ColorAlpha(MAGENTA, 0.85f));
+                    DrawCircleV(origin, beamW * 0.38f, WHITE);
+
+                    // Tia lửa vỡ tung tóe khi trúng quái vật trên đường đi
+                    for (auto& enemy : activeEnemies) {
+                        if (enemy && enemy->IsActive()) {
+                            Vector2 ePos = enemy->GetPosition();
+                            if (std::fabs(ePos.x - origin.x) <= (beamW / 2.0f + 42.0f) && ePos.y <= origin.y) {
+                                Vector2 hitPt = { origin.x, ePos.y };
+                                DrawCircleV(hitPt, 30.0f + sin(timeVal*65.0f)*8.0f, ColorAlpha(WHITE, 0.95f));
+                                DrawCircleV(hitPt, 15.0f, PINK);
+                                for (int k = 0; k < 6; ++k) {
+                                    float a = GetRandomValue(0, 360) * (3.14159f / 180.0f);
+                                    float r = (float)GetRandomValue(18, 38);
+                                    DrawLineEx(hitPt, { hitPt.x + (float)cos(a)*r, hitPt.y + (float)sin(a)*r }, 3.2f, WHITE);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Trả về Blend Mode chuẩn cho các đối tượng khác
+                EndBlendMode();
+            }
+
+            // --- HÌNH ẢNH QUAN SÁT DEBUG HITBOX & CIRCLE HITBOXES (PHÍM H) ---
+            if (showDebugHitboxes) {
+                for (const auto& enemy : activeEnemies) {
+                    if (enemy->IsActive()) {
+                        DrawRectangleLinesEx(enemy->GetHitbox(), 2.0f, RED);
+                        DrawText("RECT HITBOX", (int)enemy->GetPosition().x - 35, (int)enemy->GetPosition().y - 45, 12, RED);
+                    }
+                }
                 for (const auto& bullet : activeBullets) {
                     if (bullet->IsActive()) {
-                        bullet->Draw();
+                        DrawCircleLines((int)bullet->GetCenter().x, (int)bullet->GetCenter().y, bullet->GetRadius(), GREEN);
+                        DrawCircle((int)bullet->GetCenter().x, (int)bullet->GetCenter().y, 2.0f, YELLOW);
                     }
+                }
+                if (player && player->IsActive()) {
+                    DrawRectangleLinesEx(player->GetHitbox(), 2.0f, BLUE);
                 }
             }
             
@@ -1083,6 +1366,16 @@ void GameManager::Draw() {
                         item->Draw();
                     }
                 }
+                
+                // Bảng Hướng dẫn Quan Sát Trực Quan & Sandbox HUD
+                DrawRectangle(150, 10, 960, 58, ColorAlpha(BLACK, 0.85f));
+                DrawRectangleLines(150, 10, 960, 58, GREEN);
+                const char* wName = player ? player->GetWeapon().c_str() : "Hypergun";
+                int wLv = player ? player->GetLevel() : 1;
+                const char* sboxStatus = debugSandboxMode ? "ON (Keys 1-8: Weapon, UP/DOWN: Level, F: Slow-Mo)" : "OFF [F1 to Enable Sandbox]";
+                const char* hStatus = showDebugHitboxes ? "ON [H]" : "OFF [H]";
+                DrawText(TextFormat("SANDBOX MODE: %s | Hitboxes: %s", sboxStatus, hStatus), 160, 18, 15, YELLOW);
+                DrawText(TextFormat("Vu khi hien tai: [ %s ] - Level: [ %d / 11 ]", wName, wLv), 160, 42, 16, GREEN);
             }
             
             // Nút BACK
@@ -1280,6 +1573,12 @@ void GameManager::CleanUp() {
     UnloadTexture(texAsteroid2);
         UnloadTexture(texEnemyBullet);
         UnloadTexture(texMeat);
+        UnloadTexture(texPlasmaRifle);
+        for(int i=0; i<5; i++) UnloadTexture(texAbsolverBeam[i]);
+        for(int i=0; i<3; i++) UnloadTexture(texNeutronGun[i]);
+        UnloadTexture(texRiddler);
+        UnloadTexture(texLightningFryer);
+        for(int i=0; i<2; i++) { UnloadTexture(texIonBlaster[i]); UnloadTexture(texUtensilPoker[i]); }
         UnloadTexture(texLoi);
         UnloadTexture(texChiSo);
         

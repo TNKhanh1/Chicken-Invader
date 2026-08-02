@@ -23,6 +23,7 @@ private:
     float currentExp;
     float maxExp;
     std::string name;
+    std::string currentWeapon = "Hypergun";
 
     // Strategy Pattern
     std::unique_ptr<IShootingBehavior> shootingBehavior;
@@ -49,6 +50,7 @@ public:
     virtual float GetCurrentMana() const;
     virtual float GetAttackSpeed() const;
     virtual int GetLevel() const;
+    virtual void SetLevel(int newLevel);
     virtual float GetCurrentExp() const;
     virtual float GetMaxExp() const;
     virtual std::string GetName() const;
@@ -73,6 +75,8 @@ public:
     void Die() override;
 
     virtual void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior);
+    virtual void SetWeapon(const std::string& weaponName);
+    virtual std::string GetWeapon() const { return currentWeapon; }
 
     virtual bool CanFire() const;
 

@@ -1,5 +1,5 @@
 #include "Spaceship.h"
-
+#include "AllWeaponBehaviors.h"
 #include "SpaceshipDataManager.h"
 #include "GameManager.h"
 
@@ -29,6 +29,11 @@ float Spaceship::GetMaxMana() const { return maxMana; }
 float Spaceship::GetCurrentMana() const { return currentMana; }
 float Spaceship::GetAttackSpeed() const { return attackSpeed; }
 int Spaceship::GetLevel() const { return level; }
+void Spaceship::SetLevel(int newLevel) {
+    level = newLevel;
+    if (level < 1) level = 1;
+    if (level > 11) level = 11;
+}
 float Spaceship::GetCurrentExp() const { return currentExp; }
 float Spaceship::GetMaxExp() const { return maxExp; }
 std::string Spaceship::GetName() const { return name; }
@@ -49,6 +54,11 @@ void Spaceship::Die() {}
 
 void Spaceship::SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) {
     shootingBehavior = std::move(behavior);
+}
+
+void Spaceship::SetWeapon(const std::string& weaponName) {
+    currentWeapon = weaponName;
+    SetShootingBehavior(CreateWeaponBehavior(weaponName));
 }
 
 bool Spaceship::CanFire() const {
