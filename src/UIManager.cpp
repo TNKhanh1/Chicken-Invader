@@ -1,5 +1,5 @@
 #include "UIManager.h"
-
+#include "GameManager.h"
 UIManager::UIManager() : playerHp(0), playerMaxHp(100), playerMana(0), playerMaxMana(100), playerLevel(1), playerExp(0) {}
 
 void UIManager::OnNotify(EventType event, const std::string& data) {

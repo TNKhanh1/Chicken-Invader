@@ -1,7 +1,7 @@
 #include "../include/GameManager.h"
 
 int main() {
-    GameManager::GetInstance()->Init(1600, 900, "Chicken Invaders - OOP");
+    GameManager::GetInstance()->Init(1600, 900, "CHICKEN INVADERS");
     
     // Chạy vòng lặp game chính
     GameManager::GetInstance()->Run();

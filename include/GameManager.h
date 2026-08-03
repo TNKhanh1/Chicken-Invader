@@ -89,6 +89,14 @@ private:
     int testSelectedWave = 1;
     int testSelectedBatch = 1;
 
+struct DamageText {
+    Vector2 position;
+    int amount;
+    bool isCrit;
+    float timer;
+    float maxLifetime;
+};
+
     // Debug & Weapon Sandbox Observation
     bool showDebugHitboxes = false;
     bool debugSandboxMode = false;
@@ -96,8 +104,10 @@ private:
     Vector2 autoLockTargetPos = {0, 0};
     bool isAutoLocked = false;
     float beamAnimTimer = 0.0f;
+    float beamTextTimer = 0.0f;
 
 public:
+    std::vector<DamageText> activeDamageTexts;
     // Ngăn chặn copy và assignment
     GameManager(const GameManager&) = delete;
     void operator=(const GameManager&) = delete;
@@ -169,8 +179,18 @@ public:
     void AddEnemy(std::shared_ptr<class Enemy> enemy) { activeEnemies.push_back(enemy); }
     std::shared_ptr<class Spaceship> GetPlayer() const { return player; }
     
+    // Custom Font handling
+    Font customFont;
+    Font GetCustomFont() const { return customFont; }
+    void DrawTextCustom(const char* text, int posX, int posY, int fontSize, Color color);
+    int MeasureTextCustom(const char* text, int fontSize);
+
     // Yêu cầu thoát game
     void QuitGame() { isRunning = false; }
 };
+
+// Override Raylib default text functions globally for any file including GameManager.h
+#define DrawText(text, x, y, size, ...) GameManager::GetInstance()->DrawTextCustom(text, x, y, size, __VA_ARGS__)
+#define MeasureText(text, size) GameManager::GetInstance()->MeasureTextCustom(text, size)
 
 #endif // GAMEMANAGER_H

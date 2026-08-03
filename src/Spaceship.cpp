@@ -27,7 +27,10 @@ float Spaceship::GetCritChance() const { return critChance; }
 float Spaceship::GetCritDamage() const { return critDamage; }
 float Spaceship::GetMaxMana() const { return maxMana; }
 float Spaceship::GetCurrentMana() const { return currentMana; }
-float Spaceship::GetAttackSpeed() const { return attackSpeed; }
+float Spaceship::GetAttackSpeed() const { 
+    // Giảm tốc bắn 15% toàn cục theo yêu cầu (Global Fire Rate Nerf)
+    return attackSpeed * 0.85f; 
+}
 int Spaceship::GetLevel() const { return level; }
 void Spaceship::SetLevel(int newLevel) {
     level = newLevel;
@@ -71,8 +74,8 @@ void Spaceship::Fire() {
     if (shootingBehavior) {
         shootingBehavior->Shoot(this);
         
-        if (attackSpeed > 0) {
-            fireTimer = 1.0f / attackSpeed;
+        if (GetAttackSpeed() > 0) {
+            fireTimer = 1.0f / GetAttackSpeed();
         }
         GainMana(10.0f);
         if (HasArgument(7)) { // 7: Energy Flow

@@ -96,7 +96,8 @@ void UtensilPokerBehavior::Shoot(Spaceship* ship) {
     for (int i = 0; i < numUtensils; ++i) {
         Vector2 spawnPos = { pos.x + offsets[i], pos.y };
         auto bullet = std::make_shared<Bullet>(spawnPos, dmg, 480.0f, true, bulletType, 15.0f);
-        bullet->SetTrajectory(std::make_shared<OscillatingTrajectory>((i % 2 == 0 ? 0.0f : 5.0f), 3.0f, 14.0f));
+        // Giảm tốc độ lắc lượn của dĩa (từ 3.0f xuống 2.5f)
+        bullet->SetTrajectory(std::make_shared<OscillatingTrajectory>((i % 2 == 0 ? 0.0f : 5.0f), 2.5f, 14.0f));
         gm->AddBullet(bullet);
     }
     gm->PlayShootSound();

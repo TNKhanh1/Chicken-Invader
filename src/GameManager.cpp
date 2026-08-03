@@ -503,9 +503,20 @@ void GameManager::Init(int width, int height, const char* title) {
     screenHeight = height;
     
     // Khởi tạo cửa sổ Raylib
-    InitWindow(screenWidth, screenHeight, title);
+    InitWindow(screenWidth, screenHeight, "CHICKEN INVADERS");
     SetTargetFPS(60); // Đặt tốc độ khung hình 60 FPS
     
+    // Nạp Font hỗ trợ tiếng Việt
+    int codepoints[1000];
+    int count = 0;
+    for (int i = 32; i <= 126; i++) codepoints[count++] = i; // Basic Latin
+    for (int i = 161; i <= 255; i++) codepoints[count++] = i; // Latin-1 Supplement
+    for (int i = 0x0100; i <= 0x017F; i++) codepoints[count++] = i; // Latin Extended-A
+    for (int i = 0x0180; i <= 0x024F; i++) codepoints[count++] = i; // Latin Extended-B
+    for (int i = 0x1EA0; i <= 0x1EF9; i++) codepoints[count++] = i; // Latin Extended Additional (Tiếng Việt)
+    customFont = LoadFontEx("assets/FONT.ttf", 64, codepoints, count);
+    SetTextureFilter(customFont.texture, TEXTURE_FILTER_BILINEAR);
+
     // Khởi tạo các textures
     // InitAudioDevice();
     // sfxShoot = LoadSound("assets/shoot.wav");
@@ -528,7 +539,7 @@ void GameManager::Init(int width, int height, const char* title) {
     texSpaceshipHypergun = LoadTexture("assets/spaceship/hypergun_spaceship.png");
     texBulletStrong = LoadTexture("assets/spaceship/hypergun_strong.png");
     texBulletWeak = LoadTexture("assets/spaceship/hypergun_weak.png");
-    texEnemy = LoadTexture("assets/enemy/chicken03.png");
+    texEnemy = LoadTexture("assets/enemy/chicken01.png");
     texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
     texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
     // Bỏ load Bullet01_1.png đã bị xóa
@@ -626,6 +637,16 @@ void GameManager::Update(float deltaTime) {
         {
             // --- Background Scrolling ---
             bgY += 30.0f * deltaTime; // Tăng tốc độ background lên 15%
+            // Cập nhật Damage Texts
+            for (auto it = activeDamageTexts.begin(); it != activeDamageTexts.end(); ) {
+                it->timer -= deltaTime;
+                it->position.y -= 40.0f * deltaTime; // Bay lên từ từ
+                if (it->timer <= 0) {
+                    it = activeDamageTexts.erase(it);
+                } else {
+                    ++it;
+                }
+            }
             if (bgY >= 2.0f * screenHeight) bgY -= 2.0f * screenHeight;
             
             // --- Player Logic ---
@@ -673,7 +694,8 @@ void GameManager::Update(float deltaTime) {
                     Vector2 origin = { player->GetPosition().x, player->GetPosition().y - 20.0f };
                     Vector2 endPos = { origin.x, -100.0f };
                     float beamWidth = 30.0f;
-                    float damageRate = (player->GetDamage() + player->GetPermanentDamageBonus() + 40.0f) * 4.0f;
+                    // Giảm damage rate của tia lade 15% tương ứng với global attack speed nerf
+                    float damageRate = (player->GetDamage() + player->GetPermanentDamageBonus() + 40.0f) * 4.0f * 0.85f;
 
                     if (weapon == "Lightning_Fryer") {
                         static LightningFryerBehavior fryerAim;
@@ -696,6 +718,13 @@ void GameManager::Update(float deltaTime) {
                         Vector2 v = { endPos.x - origin.x, endPos.y - origin.y };
                         float vLenSq = v.x * v.x + v.y * v.y;
                         if (vLenSq > 0.0f) {
+                            bool popBeamText = false;
+                            beamTextTimer += deltaTime;
+                            if (beamTextTimer >= 0.25f) {
+                                popBeamText = true;
+                                beamTextTimer = 0.0f;
+                            }
+
                             for (auto& enemy : activeEnemies) {
                                 if (!enemy || !enemy->IsActive()) continue;
                                 Vector2 ePos = enemy->GetPosition();
@@ -710,10 +739,25 @@ void GameManager::Update(float deltaTime) {
                                 float threshold = 35.0f + (beamWidth / 2.0f);
                                 if (distSq <= threshold * threshold) {
                                     float finalDmg = damageRate * deltaTime;
+                                    bool isCrit = (GetRandomValue(0, 100) < player->GetCritChance());
+                                    if (isCrit) finalDmg *= (player->GetCritDamage() / 100.0f);
+
                                     if (player->HasArgument(3) && enemy->enemyType == 4) finalDmg *= 1.8f;
                                     if (player->HasArgument(4)) finalDmg += enemy->GetHp() * 0.03f * deltaTime;
 
                                     enemy->TakeDamage(finalDmg);
+
+                                    if (popBeamText) {
+                                        float displayDmg = damageRate * 0.25f; // Sát thương tích lũy
+                                        if (isCrit) displayDmg *= (player->GetCritDamage() / 100.0f);
+                                        if (player->HasArgument(3) && enemy->enemyType == 4) displayDmg *= 1.8f;
+                                        
+                                        float offsetX = (float)GetRandomValue(-20, 20) + 20.0f;
+                                        float lifetime = isCrit ? 0.7f : 0.45f;
+                                        activeDamageTexts.push_back({{enemy->GetPosition().x + offsetX, enemy->GetPosition().y}, 
+                                                                    (int)displayDmg, isCrit, lifetime, lifetime});
+                                    }
+
                                     if (!enemy->IsActive()) {
                                         AddScore(enemy->GetPointValue());
                                         if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
@@ -820,7 +864,11 @@ void GameManager::Update(float deltaTime) {
                             }
                             
                             if (hit) {
+                                bool isCrit = (GetRandomValue(0, 100) < player->GetCritChance());
                                 float finalDamage = bullet->GetDamage() + player->GetPermanentDamageBonus();
+                                if (isCrit) {
+                                    finalDamage *= (player->GetCritDamage() / 100.0f);
+                                }
                                 if (player->HasArgument(3) && enemy->enemyType == 4) { // 3: Boss Hunter
                                     finalDamage *= 1.8f;
                                 }
@@ -829,6 +877,11 @@ void GameManager::Update(float deltaTime) {
                                 }
                                 bullet->SetActive(false);
                                 enemy->TakeDamage(finalDamage);
+                                
+                                float offsetX = (float)GetRandomValue(-20, 20) + 20.0f;
+                                float lifetime = isCrit ? 0.7f : 0.45f;
+                                activeDamageTexts.push_back({{enemy->GetPosition().x + offsetX, enemy->GetPosition().y}, 
+                                                            (int)finalDamage, isCrit, lifetime, lifetime});
                                 if (!enemy->IsActive()) {
                                     AddScore(enemy->GetPointValue());
                                     // Blood Fury (Arg 5)
@@ -1015,7 +1068,8 @@ void GameManager::Draw() {
     switch (currentState) {
         case GameState::MAIN_MENU:
         {
-            DrawText("CHICKEN INVADERS (OOP)", screenWidth/2 - 180, 150, 30, DARKBLUE);
+            int titleW = MeasureText("CHICKEN INVADERS", 40);
+            DrawText("CHICKEN INVADERS", screenWidth/2 - titleW/2, 150, 40, DARKBLUE);
             
             if (DrawButton({(float)screenWidth/2 - 100, 300, 200, 50}, "PLAY")) {
                 currentState = GameState::COMING_SOON;
@@ -1229,7 +1283,10 @@ void GameManager::Draw() {
                         float t = (float)i / numSegments;
                         float base_x = origin.x + diff.x * t;
                         float base_y = origin.y + diff.y * t;
-                        float jitter = (float)GetRandomValue(-24, 24); // Dao động điện tích
+                        // Logic cũ: float jitter = (float)GetRandomValue(-24, 24);
+                        int tick = (int)(timeVal * 50.0f); // Tốc độ giật sét giảm xuống 50Hz (chậm hơn 60Hz)
+                        int pseudoRandom = (tick * 13 + i * 31) % 49 - 24;
+                        float jitter = (float)pseudoRandom; // Dao động điện tích
                         arcPoints.push_back({ base_x + perp.x * jitter, base_y + perp.y * jitter });
                     }
                     arcPoints.push_back(endPos);
@@ -1336,9 +1393,24 @@ void GameManager::Draw() {
                     }
                 }
 
-                // Trả về Blend Mode chuẩn cho các đối tượng khác
-                EndBlendMode();
+            // Trả về Blend Mode chuẩn cho các đối tượng khác
+            EndBlendMode();
+        }
+
+        // --- VẼ FLOATING DAMAGE TEXT ---
+        for (const auto& dt : activeDamageTexts) {
+            float alpha = 1.0f;
+            if (dt.timer < dt.maxLifetime * 0.4f) {
+                alpha = dt.timer / (dt.maxLifetime * 0.4f); 
             }
+            Color color = dt.isCrit ? RED : WHITE;
+            color.a = (unsigned char)(255 * alpha);
+            int fontSize = dt.isCrit ? 26 : 20; 
+
+            const char* text = TextFormat("%d", dt.amount);
+            DrawText(text, (int)dt.position.x - 1, (int)dt.position.y - 1, fontSize, ColorAlpha(BLACK, alpha)); // Viền
+            DrawText(text, (int)dt.position.x, (int)dt.position.y, fontSize, color); // Chữ
+        }
 
             // --- HÌNH ẢNH QUAN SÁT DEBUG HITBOX & CIRCLE HITBOXES (PHÍM H) ---
             if (showDebugHitboxes) {
@@ -1588,6 +1660,17 @@ void GameManager::CleanUp() {
         // UnloadMusicStream(bgMusic);
         // CloseAudioDevice();
         
+        UnloadFont(customFont);
         CloseWindow();
     }
 }
+
+void GameManager::DrawTextCustom(const char* text, int posX, int posY, int fontSize, Color color) {
+    DrawTextEx(customFont, text, {(float)posX, (float)posY}, (float)fontSize, 1.0f, color);
+}
+
+int GameManager::MeasureTextCustom(const char* text, int fontSize) {
+    Vector2 size = MeasureTextEx(customFont, text, (float)fontSize, 1.0f);
+    return (int)size.x;
+}
+
