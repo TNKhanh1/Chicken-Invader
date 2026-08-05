@@ -85,6 +85,15 @@ private:
     float waveTimer;
     bool isWaveTransitioning;
 
+    // --- Wave Intro Animation (State: WAVE_INTRO) ---
+    static constexpr float WARP_DURATION  = 3.4f;  // Thời gian warp speed background
+    static constexpr float TEXT_SHOW_DURATION = 2.0f;  // Thời gian hiện chữ WAVE X
+    static constexpr float TEXT_FADE_DURATION = 0.5f;  // Thời gian mờ dần chữ WAVE X
+    int   pendingNextWave  = 1;      // Wave sẽ bắt đầu sau khi animation kết thúc
+    float waveIntroTimer   = 0.0f;   // Đếm ngược tổng thời gian intro
+    float bgScrollSpeed    = 30.0f;  // Tốc độ cuộn background (px/s) — thay magic number
+    float waveTextAlpha    = 0.0f;   // Alpha chữ WAVE X (0–255)
+
     // Test selection
     int testSelectedWave = 1;
     int testSelectedBatch = 1;

@@ -19,7 +19,8 @@ enum class GameState {
     SETTINGS,
     COMING_SOON,
     STAT_SELECTION,       // Màn hình chọn chỉ số - hiện trước mỗi wave
-    ARGUMENT_SELECTION    // Màn hình chọn argument (lõi) - hiện trước wave 5/10/15
+    ARGUMENT_SELECTION,   // Màn hình chọn argument (lõi) - hiện trước wave 5/10/15
+    WAVE_INTRO            // Hiệu ứng chuyển wave: warp speed background + chữ WAVE X
 
 };
 

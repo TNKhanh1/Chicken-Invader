@@ -361,15 +361,25 @@ void GameManager::DestroyInstance() {
 }
 
 void GameManager::StartWave(int waveIndex) {
-    currentWave = waveIndex;
-    currentBatch = 1;
-    isWaveTransitioning = true;
-    waveTimer = 3.0f; // 3 seconds delay before wave starts
-    
     // Round Recovery (Arg 8)
     if (player && player->HasArgument(8)) {
         player->Heal(80.0f);
     }
+
+    // Clear everything from the previous wave
+    activeBullets.clear();
+    activeItems.clear();
+    activeEnemies.clear();
+    activeDamageTexts.clear();
+
+    // Kích hoạt hiệu ứng chuyển wave (WAVE_INTRO) thay vì nhảy thẳng vào gameplay
+    pendingNextWave = waveIndex;
+    currentWave    = waveIndex; // cập nhật sớm để Draw() hiển thị đúng số wave
+    currentBatch   = 1;
+    waveIntroTimer = WARP_DURATION + TEXT_SHOW_DURATION + TEXT_FADE_DURATION;
+    bgScrollSpeed  = 30.0f; // reset về bình thường, sẽ được tăng dần trong Update()
+    waveTextAlpha  = 0.0f;
+    ChangeState(GameState::WAVE_INTRO);
 }
 
 void GameManager::EnterStatSelection(int nextWave) {
@@ -695,12 +705,71 @@ void GameManager::Update(float deltaTime) {
             // Transition logic is handled in Draw() via DrawButton
             break;
 
+        case GameState::WAVE_INTRO:
+        {
+            waveIntroTimer -= deltaTime;
+            float totalDur = WARP_DURATION + TEXT_SHOW_DURATION + TEXT_FADE_DURATION;
+            float elapsed  = totalDur - waveIntroTimer;
+
+            if (elapsed < WARP_DURATION) {
+                // Phase 1: Warp speed, no text
+                float t = elapsed / 1.0f; // ease-in for 1s
+                if (t > 1.0f) t = 1.0f;
+                bgScrollSpeed = 30.0f + (3000.0f - 30.0f) * t;
+                waveTextAlpha = 0.0f;
+            } else if (elapsed < WARP_DURATION + TEXT_SHOW_DURATION) {
+                // Phase 2: Slow down warp, show text
+                bgScrollSpeed = std::max(30.0f, bgScrollSpeed - 2000.0f * deltaTime);
+                waveTextAlpha = std::min(255.0f, waveTextAlpha + 500.0f * deltaTime);
+            } else {
+                // Phase 3: Text fades out
+                bgScrollSpeed = 30.0f;
+                waveTextAlpha = std::max(0.0f, waveTextAlpha - 500.0f * deltaTime);
+            }
+
+            // Cuộn background liên tục trong suốt intro
+            bgY += bgScrollSpeed * deltaTime;
+            if (bgY >= 2.0f * screenHeight) bgY -= 2.0f * screenHeight;
+
+            // --- Cho phép người chơi di chuyển (nhưng không bắn) ---
+            if (player && player->IsActive()) {
+                Vector2 pPos = player->GetPosition();
+                if (IsKeyDown(KEY_W)) pPos.y -= player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_S)) pPos.y += player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_A)) pPos.x -= player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_D)) pPos.x += player->GetMoveSpeed() * deltaTime;
+                
+                if (pPos.x < 0) pPos.x = 0;
+                if (pPos.x > screenWidth) pPos.x = screenWidth;
+                if (pPos.y < 0) pPos.y = 0;
+                if (pPos.y > screenHeight) pPos.y = screenHeight;
+                player->SetPosition(pPos);
+                
+                player->Update(deltaTime);
+            }
+
+            // --- Kết thúc intro: bắt đầu wave thật ---
+            if (waveIntroTimer <= 0.0f) {
+                bgScrollSpeed     = 30.0f;
+                waveTextAlpha     = 0.0f;
+                isWaveTransitioning = false;
+                ChangeState(GameState::TEST_GAMEPLAY);
+                // Spawn batch đầu tiên của wave
+                bool spawned = SpawnWaveBatch(currentWave, currentBatch);
+                if (!spawned) {
+                    // Nếu wave không có enemy (cạn batch), chuyển thẳng sang chọn chỉ số
+                    EnterStatSelection(currentWave + 1);
+                }
+            }
+            break;
+        }
+
         case GameState::TEST_GAMEPLAY:
         case GameState::TEST_ENEMY:
         case GameState::TEST_SPACESHIP:
         {
             // --- Background Scrolling ---
-            bgY += 30.0f * deltaTime; // Tăng tốc độ background lên 15%
+            bgY += bgScrollSpeed * deltaTime; // Tốc độ cuộn background động
             // Cập nhật Damage Texts
             for (auto it = activeDamageTexts.begin(); it != activeDamageTexts.end(); ) {
                 it->timer -= deltaTime;
@@ -869,8 +938,10 @@ void GameManager::Update(float deltaTime) {
                         isWaveTransitioning = true;
                         waveTimer = 3.0f;
                     } else {
-                        // Nếu đã xong batch cuối của wave, chuyển sang chọn chỉ số ngay lập tức
-                        EnterStatSelection(currentWave + 1);
+                        // Nếu đã xong batch cuối của wave, chờ cho hết items rơi xuống rồi chuyển sang chọn chỉ số
+                        if (activeItems.empty()) {
+                            EnterStatSelection(currentWave + 1);
+                        }
                     }
                 }
             } else if (currentState == GameState::TEST_ENEMY) {
@@ -1052,7 +1123,6 @@ void GameManager::Update(float deltaTime) {
                             ChangeState(GameState::ARGUMENT_SELECTION);
                         } else {
                             StartWave(nextWaveAfterSelection);
-                            ChangeState(GameState::TEST_GAMEPLAY);
                         }
                         break;
                     }
@@ -1098,7 +1168,6 @@ void GameManager::Update(float deltaTime) {
                             }
                         }
                         StartWave(nextWaveAfterSelection);
-                        ChangeState(GameState::TEST_GAMEPLAY);
                         break;
                     }
                 }
@@ -1296,6 +1365,41 @@ void GameManager::Draw() {
             }
             if (DrawButton({ (float)screenWidth/2 - 100, 600, 200, 50 }, "BACK")) {
                 ChangeState(GameState::TEST_MENU);
+            }
+            break;
+        }
+
+        case GameState::WAVE_INTRO:
+        {
+            float totalDur2 = WARP_DURATION + TEXT_SHOW_DURATION + TEXT_FADE_DURATION;
+            float wElapsed2 = totalDur2 - waveIntroTimer;
+            float overlayAlpha2 = 0.0f;
+            
+            if (wElapsed2 < WARP_DURATION) {
+                overlayAlpha2 = (wElapsed2 / WARP_DURATION) * 80.0f;
+            } else if (wElapsed2 < WARP_DURATION + TEXT_SHOW_DURATION) {
+                float pct2 = (wElapsed2 - WARP_DURATION) / TEXT_SHOW_DURATION;
+                overlayAlpha2 = (1.0f - pct2) * 80.0f;
+            }
+            DrawRectangle(0, 0, screenWidth, screenHeight, {0, 0, 0, (unsigned char)overlayAlpha2});
+            
+            // Vẽ tàu của người chơi
+            if (player && player->IsActive()) {
+                player->Draw();
+            }
+
+            if (waveTextAlpha > 1.0f) {
+                unsigned char wAlpha = (unsigned char)waveTextAlpha;
+                char waveStr[32];
+                snprintf(waveStr, sizeof(waveStr), "WAVE %d", currentWave);
+                int wFontSize = 90;
+                int wTw = MeasureText(waveStr, wFontSize);
+                int wCx = screenWidth / 2 - wTw / 2;
+                int wCy = screenHeight / 2 - 45;
+                DrawText(waveStr, wCx + 4, wCy + 4, wFontSize, {0, 0, 0, (unsigned char)((int)wAlpha / 2)});
+                int wTwG = MeasureText(waveStr, wFontSize + 6);
+                DrawText(waveStr, screenWidth/2 - wTwG/2, wCy - 3, wFontSize + 6, {80, 220, 255, (unsigned char)((int)wAlpha * 3 / 10)});
+                DrawText(waveStr, wCx, wCy, wFontSize, {255, 255, 255, wAlpha});
             }
             break;
         }
