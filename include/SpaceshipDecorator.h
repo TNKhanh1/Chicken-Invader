@@ -40,6 +40,11 @@ public:
     virtual void SetWeapon(const std::string& weaponName) override;
     virtual std::string GetWeapon() const override;
     virtual void ReloadStatsFromCSV() override;
+    virtual void TriggerRecoil() override;
+    virtual float GetRecoilOffset() const override;
+    virtual float GetThrusterIntensity() const override;
+    virtual float GetThrusterTiltX() const override;
+    virtual float GetThrusterLengthMult() const override;
     virtual void Fire() override;
     virtual void GainExp(float amount) override;
     virtual void GainMana(float amount) override;

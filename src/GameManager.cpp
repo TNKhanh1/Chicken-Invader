@@ -246,17 +246,81 @@ void Enemy::Draw() {
 void Spaceship::Draw() {
     if (!isActive) return;
     
+    float offsetY = GetRecoilOffset();
+    float squish = (offsetY / 26.0f) * 0.08f; 
+    float drawWidth = 90.0f * (1.0f + squish);
+    float drawHeight = 90.0f * (1.0f - squish);
+
+    // -------------------------------------------------------------------------
+    // VẼ HỆ THỐNG ĐUÔI NĂNG LƯỢNG PLASMA ĐỘNG CƠ (3-Layer Plasma Thruster VFX)
+    // -------------------------------------------------------------------------
+    float intensity = GetThrusterIntensity();     // Từ 0.3f đến 2.5f
+    float tiltX = GetThrusterTiltX();             // Dao động nghiêng từ -28 đến +28px
+    float lenMult = GetThrusterLengthMult();      // Từ 0.7f đến 1.8f
+    
+    // Tâm miệng xả động cơ ở phía sau con tàu
+    Vector2 enginePos = { position.x, position.y + offsetY + 32.0f };
+    
+    // Chiều dài ngọn lửa plasma: vươn dài rực rỡ khi bứt tốc hoặc nã đạn lả tả
+    float flameLen = (18.0f + intensity * 24.0f) * lenMult + (float)GetRandomValue(-2, 3);
+    float flameWidth = 14.0f + std::min(12.0f, intensity * 5.0f);
+    
+    // Tọa độ các đỉnh của ngọn lửa hình tam giác phun lùi về sau
+    Vector2 leftBase = { enginePos.x - flameWidth / 2.0f, enginePos.y };
+    Vector2 rightBase = { enginePos.x + flameWidth / 2.0f, enginePos.y };
+    Vector2 tip = { enginePos.x + tiltX + (float)GetRandomValue(-1, 1), enginePos.y + flameLen };
+    
+    // Tầng 1: Hào quang bao quanh rực rỡ (Outer Electric Blue Aura)
+    unsigned char alpha1 = (unsigned char)std::min(255, (int)(75 * intensity));
+    Color colorOuter = { 0, 140, 255, alpha1 };
+    DrawCircleV(enginePos, flameWidth * 0.7f, colorOuter); // Ánh hào quang tại miệng xả
+    DrawTriangle(leftBase, tip, rightBase, colorOuter);
+    DrawTriangle(leftBase, rightBase, tip, colorOuter); // Vẽ 2 chiều chống backface culling
+    
+    // Tầng 2: Lõi Plasma sáng mượt mà (Middle Neon Cyan Core)
+    Vector2 leftMid = { enginePos.x - (flameWidth * 0.35f), enginePos.y };
+    Vector2 rightMid = { enginePos.x + (flameWidth * 0.35f), enginePos.y };
+    Vector2 tipMid = { enginePos.x + (tiltX * 0.8f), enginePos.y + (flameLen * 0.75f) };
+    unsigned char alpha2 = (unsigned char)std::min(255, (int)(110 * intensity));
+    Color colorMid = { 0, 230, 255, alpha2 };
+    DrawTriangle(leftMid, tipMid, rightMid, colorMid);
+    DrawTriangle(leftMid, rightMid, tipMid, colorMid);
+    
+    // Tầng 3: Lõi chớp trắng rực tâm buồng đốt (Inner White-Hot Incandescence)
+    Vector2 leftCore = { enginePos.x - (flameWidth * 0.18f), enginePos.y };
+    Vector2 rightCore = { enginePos.x + (flameWidth * 0.18f), enginePos.y };
+    Vector2 tipCore = { enginePos.x + (tiltX * 0.5f), enginePos.y + (flameLen * 0.4f) };
+    unsigned char alpha3 = (unsigned char)std::min(255, (int)(160 * intensity));
+    Color colorCore = { 220, 255, 255, alpha3 };
+    DrawCircleV(enginePos, flameWidth * 0.3f, { 255, 255, 255, (unsigned char)std::min(255, (int)(200 * intensity)) });
+    DrawTriangle(leftCore, tipCore, rightCore, colorCore);
+    DrawTriangle(leftCore, rightCore, tipCore, colorCore);
+    
+    // Hiệu ứng tàn thiêu hạt plasma tản rã sa rây phía sau tip khi di chuyển nhanh hoặc xả đạn (Intensity > 0.8)
+    if (intensity > 0.8f) {
+        int sparkCount = (int)(intensity * 2.5f); // 2 đến 6 hạt tàn plasma
+        for (int i = 1; i <= sparkCount; ++i) {
+            float sparkDist = i * 14.0f + GetRandomValue(-4, 6);
+            Vector2 sparkPos = { tip.x + (float)GetRandomValue(-7, 7) * (i * 0.3f), tip.y + sparkDist };
+            float sparkRad = std::max(1.5f, 5.0f - i * 0.7f);
+            unsigned char sparkAlpha = (unsigned char)std::max(0, 230 - i * 35);
+            DrawCircleV(sparkPos, sparkRad, { 60, 230, 255, sparkAlpha });
+        }
+    }
+    // -------------------------------------------------------------------------
+
     // Mặc định luôn vẽ Hypergun vì ảnh cũ đã bị xóa
     Texture2D tex = GameManager::GetInstance()->GetTexSpaceshipHypergun();
     if (tex.id != 0) {
         DrawTexturePro(tex, {36.0f, 201.0f, 108.0f, 95.0f}, 
-                       {position.x, position.y, 90.0f, 90.0f}, {45.0f, 45.0f}, 0.0f, WHITE);
+                       {position.x, position.y + offsetY, drawWidth, drawHeight}, 
+                       {drawWidth / 2.0f, drawHeight / 2.0f}, 0.0f, WHITE);
     }
 }
 // -------------------------------------------
 
 GameManager::GameManager() 
-    : previousState(GameState::MAIN_MENU), currentState(GameState::MAIN_MENU), screenWidth(1600), screenHeight(900), isRunning(false), score(0), currentWave(0), currentBatch(0), waveTimer(0.0f), isWaveTransitioning(false) {
+    : currentState(GameState::MAIN_MENU), previousState(GameState::MAIN_MENU), screenWidth(1600), screenHeight(900), isRunning(false), score(0), currentWave(0), currentBatch(0), waveTimer(0.0f), isWaveTransitioning(false) {
     texSpaceship = {0};
     texSpaceshipHypergun = {0};
     texEnemy = {0};
@@ -691,6 +755,9 @@ void GameManager::Update(float deltaTime) {
 
                 isAutoLocked = false;
                 if (isBeamWeapon && IsKeyDown(KEY_SPACE)) {
+                    if (player->CanFire()) {
+                        player->Fire(); // Kích hoạt hiệu ứng nảy giật (Recoil) liên hồi khi xả tia laser/beam
+                    }
                     Vector2 origin = { player->GetPosition().x, player->GetPosition().y - 20.0f };
                     Vector2 endPos = { origin.x, -100.0f };
                     float beamWidth = 30.0f;

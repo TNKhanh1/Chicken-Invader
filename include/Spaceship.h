@@ -30,6 +30,18 @@ private:
 
     float fireTimer = 0.0f; // Bộ đếm hồi chiêu
 
+    // Thuộc tính hiệu ứng giật nhẹ (Recoil & Kickback Animation - OOP Encapsulation)
+    float recoilOffset = 0.0f;
+    float recoilTimer = 0.0f;
+    float recoilDuration = 0.15f;
+    float maxRecoilDistance = 6.0f;
+
+    // Thuộc tính đuôi năng lượng plasma phía sau tàu (Thruster Flame & Trail)
+    Vector2 prevPosition = {0.0f, 0.0f};
+    float thrusterIntensity = 0.3f;
+    float thrusterTiltX = 0.0f;
+    float thrusterLengthMult = 1.0f;
+
     // Observer Pattern
     std::vector<IObserver*> observers;
 
@@ -78,6 +90,15 @@ public:
     virtual void SetWeapon(const std::string& weaponName);
     virtual std::string GetWeapon() const { return currentWeapon; }
     virtual void ReloadStatsFromCSV();
+
+    // Hiệu ứng giật súng
+    virtual void TriggerRecoil();
+    virtual float GetRecoilOffset() const;
+
+    // Hiệu ứng đuôi năng lượng & động cơ
+    virtual float GetThrusterIntensity() const;
+    virtual float GetThrusterTiltX() const;
+    virtual float GetThrusterLengthMult() const;
 
     virtual bool CanFire() const;
 

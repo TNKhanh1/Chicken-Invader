@@ -3,12 +3,15 @@
 #include "SpaceshipDataManager.h"
 #include "GameManager.h"
 #include <iostream>
+#include <cmath>
 
 Spaceship::Spaceship(std::string n, Vector2 pos, float hp, float dmg, float arm, float spd, 
                      float critC, float critD, float mana, float atkSpd)
     : Character(pos, hp, dmg, arm, spd), 
       critChance(critC), critDamage(critD), maxMana(mana), currentMana(0), attackSpeed(atkSpd),
-      level(1), currentExp(0), maxExp(100), name(n) {}
+      level(1), currentExp(0), maxExp(100), name(n) {
+    prevPosition = pos;
+}
 
 void Spaceship::AddObserver(IObserver* observer) {
     observers.push_back(observer);
@@ -52,6 +55,67 @@ void Spaceship::Update(float deltaTime) {
     if (fireTimer > 0.0f) {
         fireTimer -= deltaTime;
     }
+    
+    // Cập nhật animation giật lùi nảy súng (Weapon Recoil Animation)
+    if (recoilTimer > 0.0f) {
+        recoilTimer -= deltaTime;
+        if (recoilTimer <= 0.0f) {
+            recoilTimer = 0.0f;
+            recoilOffset = 0.0f;
+        } else {
+            float progress = 1.0f - (recoilTimer / recoilDuration);
+            if (progress <= 0.15f) {
+                // Giai đoạn 1: giật nảy chớp nhoáng siêu tốc (15% chu kỳ đầu)
+                recoilOffset = maxRecoilDistance * (progress / 0.15f);
+            } else {
+                // Giai đoạn 2: lướt nhanh phục hồi về vị trí cũ (85% chu kỳ sau)
+                float recovery = (progress - 0.15f) / 0.85f;
+                recoilOffset = maxRecoilDistance * (1.0f - recovery);
+            }
+        }
+    } else {
+        recoilOffset = 0.0f;
+    }
+    
+    // Cập nhật hệ thống đuôi năng lượng và động cơ phản lực (Thruster Energy Trail)
+    float dx = position.x - prevPosition.x;
+    float dy = position.y - prevPosition.y;
+    float distMoved = sqrt(dx * dx + dy * dy);
+
+    if (deltaTime > 0.0f && distMoved > 0.1f) {
+        // Tàu đang di chuyển: gia tăng cường độ sáng lửa đuôi dựa trên tốc độ và quãng đường
+        float currentSpeed = distMoved / deltaTime;
+        float moveBoost = (currentSpeed / (moveSpeed > 0 ? moveSpeed : 300.0f)) * 1.5f;
+        thrusterIntensity += moveBoost * 4.0f * deltaTime;
+        if (thrusterIntensity > 2.5f) thrusterIntensity = 2.5f;
+
+        // Lực quán tính: lái sang ngang khiến ngọn lửa đuôi nghiêng sang hướng ngược lại
+        float targetTilt = -dx * 1.8f;
+        if (targetTilt > 28.0f) targetTilt = 28.0f;
+        if (targetTilt < -28.0f) targetTilt = -28.0f;
+        thrusterTiltX = thrusterTiltX + (targetTilt - thrusterTiltX) * (12.0f * deltaTime);
+
+        // Tiến lùi theo trục Y: phóng tới (dy < 0) làm lửa đuôi vươn dài, lùi sau (dy > 0) lửa thu ngắn
+        if (dy < -0.5f) {
+            thrusterLengthMult = 1.0f + std::min(0.8f, (-dy / (moveSpeed * 0.016f)) * 0.4f);
+        } else if (dy > 0.5f) {
+            thrusterLengthMult = 0.7f;
+        } else {
+            thrusterLengthMult = 1.0f;
+        }
+    } else {
+        // Tàu đứng yên: lửa lui về trạng thái chờ êm ái (Idle glow), độ nghiêng phục hồi về chính tâm
+        thrusterTiltX *= (1.0f - 8.0f * deltaTime);
+        thrusterLengthMult = 1.0f;
+    }
+
+    // Khấu hao (Decay) cường độ sáng dần lui về mức nền 0.3f khi ngừng bứt tốc hoặc xả đạn
+    if (thrusterIntensity > 0.3f) {
+        thrusterIntensity -= 1.6f * deltaTime;
+        if (thrusterIntensity < 0.3f) thrusterIntensity = 0.3f;
+    }
+
+    prevPosition = position;
 }
 
 void Spaceship::Die() {}
@@ -93,11 +157,36 @@ bool Spaceship::CanFire() const {
     return fireTimer <= 0.0f;
 }
 
+void Spaceship::TriggerRecoil() {
+    float atkSpd = GetAttackSpeed();
+    float fireInterval = (atkSpd > 0.0f) ? (1.0f / atkSpd) : 0.25f;
+    
+    // Thời gian animation rút ngắn siêu tốc để giật nhanh và gắt hơn (tối thiểu 30ms, tối đa 120ms)
+    recoilDuration = std::min(fireInterval * 0.5f, 0.12f);
+    if (recoilDuration < 0.03f) recoilDuration = 0.03f;
+    
+    // Tăng cường độ giật cực đại: tối thiểu 12px (kể cả súng tia Laser bắn siêu tốc) và tối đa 26px với súng đại bác bắn chậm
+    maxRecoilDistance = std::min(26.0f, std::max(12.0f, 50.0f / (atkSpd > 0.0f ? atkSpd : 5.0f)));
+    
+    recoilTimer = recoilDuration;
 
+    // Xả tải buồng đốt khi bóp cò nã súng: cường độ sáng đuôi gia tăng mạnh phụ thuộc tốc độ bắn (Attack Speed)
+    float shootBoost = std::min(1.0f, 0.3f + (atkSpd * 0.06f));
+    thrusterIntensity = std::min(2.5f, thrusterIntensity + shootBoost);
+}
+
+float Spaceship::GetRecoilOffset() const {
+    return recoilOffset;
+}
+
+float Spaceship::GetThrusterIntensity() const { return thrusterIntensity; }
+float Spaceship::GetThrusterTiltX() const { return thrusterTiltX; }
+float Spaceship::GetThrusterLengthMult() const { return thrusterLengthMult; }
 
 void Spaceship::Fire() {
     if (shootingBehavior) {
         shootingBehavior->Shoot(this);
+        TriggerRecoil(); // Kích hoạt hiệu ứng phản lực nảy giật súng (Juice VFX)
         
         if (GetAttackSpeed() > 0) {
             fireTimer = 1.0f / GetAttackSpeed();

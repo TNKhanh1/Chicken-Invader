@@ -48,10 +48,39 @@
   ```
 - Nhờ log này, dev và QC dễ dàng tra cứu ngay lập tức trên Terminal mà không cần lục tìm bộ nhớ RAM.
 
+### Bước 4: Bổ Sung Hiệu Ứng Nảy / Giật Mạnh & Siêu Nhanh Khi Bắn Súng Kể Cả Súng Laser (Enhanced Weapon Recoil & Juice VFX)
+Để giao diện chiến đấu trở nên ấn tượng, uy lực và có lực (juice & feedback), bổ sung cơ chế phản lực giật lùi cho phi thuyền khi khai hỏa theo đúng chuẩn kiến trúc hướng đối tượng (OOP):
+- **Bao Đóng Thuộc Tính & Phương Thức (OOP Encapsulation trong `Spaceship`):**
+  - Thêm các biến trạng thái animation: `recoilOffset`, `recoilTimer`, `recoilDuration`, `maxRecoilDistance`.
+  - Thêm phương thức công khai `virtual void TriggerRecoil();` và `virtual float GetRecoilOffset() const;`.
+  - Kế thừa và chuyển tiếp trong `SpaceshipDecorator` (Decorator Pattern): Đảm bảo các lớp gia trì (như `DamageStoneDecorator`) khi gọi `TriggerRecoil()` hoặc `GetRecoilOffset()` đều chuyển tiếp chính xác đến đối tượng tàu lõi (`coreShip`).
+- **Thuật Toán Animation Giật Mạnh Mẽ & Tốc Độ Siêu Nhanh Tỷ Lệ Theo Tốc Độ Bắn (Dynamic Attack Speed Scaling):**
+  - Trong `Spaceship::TriggerRecoil()`, tính toán thời gian và biên độ giật dựa theo chỉ số Tốc độ bắn (`GetAttackSpeed()`) với cường độ giật mạnh và chớp nhoáng hơn:
+    - **Thời gian giật (`recoilDuration`):** Rút gọn xuống siêu nhanh, tỷ lệ thuận với chu kỳ bắn ($t_{recoil} = \min(\frac{1}{\text{AttackSpeed}} \times 0.5, 0.12s)$). Súng có chu kỳ bắn càng nhanh (tốc đánh càng cao), thời gian animation diễn ra càng chớp nhoáng ($30ms - 100ms$), đảm bảo animation luôn kịp kết thúc trước viên đạn tiếp theo, tạo hiệu ứng rung gắt nhịp nhàng cực kỳ đắc lực!
+    - **Biên độ giật gia tăng gia cố (`maxRecoilDistance`):** Tăng cường độ giật lên mức cực đại ($\max(12.0, \min(26.0, \frac{50}{\text{AttackSpeed}}))$). Ngay cả các loại súng Laser / Beam bắn siêu tốc cũng bị giật rung mạnh mẽ tối thiểu $12$ pixels, trong khi súng hạng nặng bắn chậm (như Neutron Gun) tung ra nhịp nảy giật cực kỳ uy lực lên tới $26$ pixels!
+  - **Kích Hoạt Nảy Giật Cho Súng Laser / Beam (Trong `GameManager::Update`):**
+    - Súng đạn tia (Beam/Laser như Absolver Beam, Lightning Fryer, Plasma Rifle) liên tục phát xạ cũng gọi trực tiếp `player->Fire()` (kèm kiểm tra `player->CanFire()`) khi giữ phím cách (`SPACE`), buộc con tàu phản ứng giật liên hồi từng chu kỳ bắn thay vì bám cố định bất động như trước.
+- **Nâng Tầm Thẩm Mỹ Render (Squash & Stretch trong `Spaceship::Draw`):**
+  - Cập nhật hàm `Spaceship::Draw()` trong `src/GameManager.cpp`: Thay vì chỉ dời vị trí vẽ xuống dưới (`position.y + GetRecoilOffset()`), bổ sung hiệu ứng co giãn đàn hồi vi mô (Squash & Stretch) lùi chiều cao ($-\Delta y$) và mở rộng chiều ngang ($+\Delta x$) lên tới $8\%$ ở cực đại giật nảy.
+  - Vị trí Hitbox thật của tàu (`position`) không bị tác động bởi animation nảy giật để bảo toàn hoàn hảo độ chính xác khi người chơi né đạn!
+
+### Bước 5: Tạo Đuôi Năng Lượng Tương Tác Động Gắn Sau Phi Thuyền (Dynamic Plasma Thruster & Energy Trail VFX)
+Nhờ sự bùng nổ của động cơ phản lực và tải trọng bắn, thiết lập hệ thống đuôi tia plasma đằng sau tàu theo nguyên tắc OOP:
+- **Bao Đóng Trạng Thái Đuôi Năng Lượng (OOP Encapsulation trong `Spaceship` & `SpaceshipDecorator`):**
+  - Khai báo các thuộc tính protected trong `Spaceship`: `prevPosition` (tọa độ frame liền trước), `thrusterIntensity` (cường độ sáng động cơ, từ 0.3f Idle tới 2.5f Max), `thrusterTiltX` (độ nghiêng quán tính đuôi lửa), và `thrusterLengthMult` (hệ số co giãn chiều dài).
+  - Expose các hàm getters: `GetThrusterIntensity()`, `GetThrusterTiltX()`, `GetThrusterLengthMult()`.
+  - Nghiêm chỉnh kế thừa và ghi đè ủy quyền lại cho `coreShip` trong `SpaceshipDecorator` nhằm bảo toàn tuyệt đối Decorator Pattern.
+- **Thuật Toán Gia Tăng Năng Lượng Theo Quãng Đường & Tốc Độ Bắn (Dynamic Intensity Scaling):**
+  - **Phụ thuộc quãng đường / tốc độ bay:** Trong `Spaceship::Update(float deltaTime)`, đo khoảng cách dịch chuyển ($\Delta \vec{p} = \vec{p}_{curr} - \vec{p}_{prev}$). Khi tàu bay với tốc độ cao, cường độ sáng `thrusterIntensity` liên tục bơm gia tốc lên mức cao rực rỡ; khi tiến/lùi theo trục Y, lửa đuôi giãn ra hoặc thu ngắn thầm mỉa mai. Lực quán tính ngang ($\Delta x$) nghiêng ngã đuôi ngược hướng bay để bộc lộ độ đầm cơ học.
+  - **Phụ thuộc tốc độ bắn (Attack Speed):** Khi tàu xả đạn (`TriggerRecoil`), năng lượng buồng súng quá tải được xả sang đường xả sau tàu: `thrusterIntensity` gia tăng tỷ lệ thuận với tốc độ bắn (`GetAttackSpeed()`). Bắn đạn laser hoặc spray siêu tốc khiến lửa động cơ sục tung sáng ngời sáng chói!
+- **Nghệ Thuật Render Đa Trái Tim Cực Phim (3-Layer Plasma Plume & Embers trong `Spaceship::Draw`):**
+  - Trước khi vẽ lớp phi thuyền, dựng 3 tầng Hào quang (Outer Blue Aura $\rightarrow$ Middle Neon Cyan $\rightarrow$ Inner White Incandescence Core) chao đảo sống động ngay tại miệng xả phía sau.
+  - Khi cường độ cao ($> 0.8$), hệ thống rải lả tả các hạt plasma (sparks/embers) tan rã sa rây phía sau chớp mây.
+
 ---
 
 ## 4. Acceptance Criteria
-Tiêu chí nghiệm thu cho thấy tính năng scale chỉ số hoạt động chính xác tuyệt đối theo hợp đồng dữ liệu CSV:
+Tiêu chí nghiệm thu cho thấy tính năng scale chỉ số và hiệu ứng hoạt động chính xác tuyệt đối theo hợp đồng dữ liệu CSV:
 
 1. **Nạp Động Khi Khởi Động / Re-Init Game:**
    - Mỗi lần một phiên chơi bắt đầu hoặc một phi thuyền được khởi dựng bằng `SpaceshipFactory`, file `assets/spaceship/spaceship.csv` tự động được nạp lại.
@@ -67,3 +96,13 @@ Tiêu chí nghiệm thu cho thấy tính năng scale chỉ số hoạt động c
 
 3. **Scale Tiến Hóa Thăng Cấp Độ (Level 1 $\rightarrow$ 11):**
    - Khi phi thuyền tích lũy đủ điểm kinh nghiệm hoặc nhấn phím test thăng cấp (`L`), toàn bộ 8 trường chỉ số đồng loạt gia tăng theo chính xác dãy số đã cấu hình ở dòng Level tương đương trong `spaceship.csv`, giữ nguyên sự trung thực của hệ thống chiến đấu.
+
+4. **Hiệu Ứng Nảy Giật Phi Thuyền Đẹp Mắt & Linh Hoạt (Recoil & Juice VFX):**
+   - Khi phi thuyền khai hỏa (bao gồm cả súng đạn rời và các dòng súng tia Laser/Beam), hình ảnh súng/phi thuyền lập tức giật ngửa mạnh và nhanh gọn về phía sau kèm co giãn uyển chuyển rồi trở lại vị trí gốc chớp nhoáng.
+   - Khi dùng súng đạn tia laser bắn liên tục hoặc các vũ khí tốc độ cao, tàu giật rung liên hồi một cách đầm chắc (tối thiểu $12$ pixels), tạo cảm giác súng nã ra nguồn năng lượng khổng lồ.
+   - Không gây chệch Hitbox va chạm với quái hay đạn quái.
+
+5. **Hiệu Ứng Đuôi Năng Lượng / Động Cơ Phản Lực Đẹp Mắt & Tuyệt Đối Động (Energy Thruster Trail):**
+   - Phía sau chiêu đuôi phi thuyền liên tục bừng lên ngọn lửa plasma uyển chuyển nhiều lớp (Xanh hào quang $\rightarrow$ Cyan rực rỡ $\rightarrow$ Trắng buồng đốt chớp nháy).
+   - Khi tàu di chuyển (quãng đường càng xa, vận tốc càng mau lẹ), ngọn lửa càng bừng sáng vút dài rực rỡ, kèm hiệu ứng bẻ xoay ngược chiều theo lực quán tính khi lái sang trái/phải.
+   - Khi xả súng thuyên chuyển hoặc phun tia laser cường độ cao, năng lượng nổ tuôn tuôn thắp sáng luồng lửa động cơ đến đỉnh điểm và văng lả tả những tàn thiêu hạt plasma tản rã trong không gian, vô cùng mãn nhãn và sinh động.
