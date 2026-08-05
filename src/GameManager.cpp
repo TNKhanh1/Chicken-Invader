@@ -76,172 +76,6 @@ static const CardDef ALL_STATS[6] = {
 GameManager* GameManager::instance = nullptr;
 
 // --- Implement methods for entities ---
-void Enemy::Update(float deltaTime) {
-    // Áp dụng Strategy di chuyển
-    if (movementBehavior) {
-        auto gm = GameManager::GetInstance();
-        movementBehavior->Move(position, moveSpeed, deltaTime, gm->GetScreenWidth(), gm->GetScreenHeight());
-    }
-
-    // Cập nhật animation và trail của ASTEROID
-    if (enemyType == 4) {
-        // --- Cập nhật frame (có 30 frames, chỉ lấy từ hàng 1 - thân thiên thạch) ---
-        frameTimer += deltaTime;
-        if (frameTimer >= 0.04f) { // ~25 FPS animation
-            frameTimer = 0.0f;
-            currentFrame = (currentFrame + 1) % 30; // 30 frames trong hàng 1
-        }
-
-        // --- Spawn trail point tại vị trí hiện tại (mỗi 40ms) ---
-        trailSpawnTimer += deltaTime;
-        if (trailSpawnTimer >= 0.04f) {
-            trailSpawnTimer = 0.0f;
-            TrailPoint tp;
-            tp.pos   = position;
-            tp.alpha = 1.0f;
-            tp.frame = currentFrame;
-            trailPoints.push_back(std::move(tp));
-        }
-
-        // --- Fade các trail point, xóa những cái đã biến mất ---
-        // fade speed = 2.0f (biến mất sau 0.5 giây)
-        const float fadeSpeed = 2.0f;
-        for (auto& tp : trailPoints) {
-            tp.alpha -= fadeSpeed * deltaTime;
-        }
-        trailPoints.erase(
-            std::remove_if(trailPoints.begin(), trailPoints.end(),
-                [](const Enemy::TrailPoint& t) { return t.alpha <= 0.0f; }),
-            trailPoints.end()
-        );
-    }
-    
-    // Logic thả trứng (bắn đạn)
-    if (canShoot) {
-        eggDropTimer -= deltaTime;
-        if (eggDropTimer <= 0.0f) {
-            ResetEggTimer();
-            auto egg = std::make_shared<Bullet>(position, damage, 150.0f, false);
-            GameManager::GetInstance()->AddBullet(egg);
-        }
-    }
-    
-    // Hủy enemy nếu đi quá xa khỏi màn hình
-    if (position.y > GameManager::GetInstance()->GetScreenHeight() + 300.0f ||
-        position.x > GameManager::GetInstance()->GetScreenWidth() + 300.0f ||
-        position.x < -1000.0f) {
-        isActive = false;
-    }
-}
-
-void Bullet::Draw() {
-    if (!isActive) return;
-    
-    if (isPlayerBullet) {
-        GameManager* gm = GameManager::GetInstance();
-        Texture2D tex = {0};
-        float width = 16.0f, height = 32.0f;
-        float rot = angle;
-        
-        switch(bulletType) {
-            case 1: tex = gm->GetTexBulletStrong(); width = 20.0f; height = 40.0f; break; // Hypergun Strong
-            case 2: tex = gm->GetTexBulletWeak(); width = 12.0f; height = 24.0f; break; // Hypergun Weak
-            case 3: tex = gm->GetTexNeutronGun(0); width = 14.0f; height = 30.0f; break; // Neutron Weak
-            case 4: tex = gm->GetTexNeutronGun(1); width = 18.0f; height = 40.0f; break; // Neutron Med
-            case 5: tex = gm->GetTexNeutronGun(2); width = 24.0f; height = 52.0f; break; // Neutron Strong
-            case 6: tex = gm->GetTexRiddler(); width = 16.0f; height = 28.0f; break; // Riddler
-            case 7: tex = gm->GetTexIonBlaster(0); width = 18.0f; height = 28.0f; break; // Ion Single
-            case 8: tex = gm->GetTexIonBlaster(1); width = 26.0f; height = 38.0f; break; // Ion Double
-            case 9: { // Utensil Poker Fork (quay nĩa)
-                tex = gm->GetTexUtensilPoker(0); width = 22.0f; height = 44.0f;
-                rot = (float)GetTime() * 720.0f;
-                break;
-            }
-            case 10: { // Utensil Poker Carving (quay dao)
-                tex = gm->GetTexUtensilPoker(1); width = 26.0f; height = 50.0f;
-                rot = (float)GetTime() * 720.0f + 180.0f;
-                break;
-            }
-            default:
-                tex = gm->GetTexBulletPlayer(); width = 14.0f; height = 30.0f; break;
-        }
-
-        if (tex.id != 0) {
-            DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height},
-                           {position.x, position.y, width, height}, {width / 2.0f, height / 2.0f}, rot, WHITE);
-        } else {
-            DrawCircle(position.x, position.y, (int)radius, SKYBLUE);
-        }
-    } else {
-        // Enemy Bullet
-        Texture2D tex = GameManager::GetInstance()->GetTexEnemyBullet();
-        if (tex.id != 0) {
-            DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
-                           {position.x, position.y, 20.0f, 25.0f}, {10.0f, 12.5f}, 0.0f, WHITE);
-        } else {
-            DrawCircle(position.x, position.y, 8, RED);
-        }
-    }
-}
-
-void Enemy::Draw() {
-    auto gm = GameManager::GetInstance();
-    
-    if (enemyType == 4) { // ASTEROID
-        Texture2D tex = (asteroidVariant == 1) ? gm->GetTexAsteroid1() : gm->GetTexAsteroid2();
-        // Layout: 7680x2048, 30 cột x 2 hàng. Mỗi frame = 256x1024 px.
-        // Hàng 0 (trên, y=0..1023): trail/lửa phía trên thiên thạch
-        // Hàng 1 (dưới, y=1024..2047): thân thiên thạch
-        const int   COLS    = 30;
-        const float FRAME_W = (float)tex.width  / COLS;  // 256 px
-        const float FULL_H  = (float)tex.height;           // 2048 px (cả 2 hàng)
-        const int   bodyCol = currentFrame % COLS;
-
-        // Khi vẽ 100px rộng: mỗi hàng cao 100*(1024/256)=400px, tổng 800px
-        // Thân đá ở 400px dưới, trail lửa ở 400px trên → tự nhiên
-        const float DEST_W      = 100.0f;
-        const float DEST_ROW_H  = DEST_W * (FULL_H * 0.5f / FRAME_W); // 400px
-        const float DEST_FULL_H = DEST_ROW_H * 2.0f;                   // 800px
-        // Neo ở đáy (cuối hàng 1) → trail lửa bay lên trên tự nhiên
-        Vector2 fullOrigin = { DEST_W * 0.5f, DEST_FULL_H };
-
-        // 1) Particle motion echo tại các vị trí cũ: vòng tròn nhỏ xiu
-        //    THAY THẾP ghost sprite → loại bỏ hiệu ứng "tàng ảnh"
-        for (const auto& tp : trailPoints) {
-            float radius = 10.0f * tp.alpha;        // thu nhỏ dần
-            unsigned char a = (unsigned char)(tp.alpha * 160.0f);
-            if (asteroidVariant == 2) { // asteroidFlame: cam/lửa
-                DrawCircleGradient((int)tp.pos.x, (int)tp.pos.y,
-                                   radius, {255, 160, 30, a}, {255, 80, 0, 0});
-            } else {                    // asteroidNormal: xám/đá
-                DrawCircleGradient((int)tp.pos.x, (int)tp.pos.y,
-                                   radius, {200, 200, 210, a}, {120, 120, 130, 0});
-            }
-        }
-
-        // 2) Vẽ toàn bộ sprite (hàng trail + hàng thân) gộp làm 1 draw call
-        //    Nguồn: cột bodyCol, từ y=0 đến hết (cả 2 hàng)
-        Rectangle fullSrc = { bodyCol * FRAME_W, 0.0f, FRAME_W, FULL_H };
-        Rectangle fullDst = { position.x, position.y, DEST_W, DEST_FULL_H };
-        DrawTexturePro(tex, fullSrc, fullDst, fullOrigin, 0.0f, WHITE);
-
-    } else {
-        Texture2D tex = gm->GetTexEnemy();
-        Vector2 origin = { (float)tex.width / 2, (float)tex.height / 2 };
-        Rectangle sourceRec = { 0.0f, 0.0f, (float)tex.width, (float)tex.height };
-        Rectangle destRec = { position.x, position.y, (float)tex.width, (float)tex.height };
-        DrawTexturePro(tex, sourceRec, destRec, origin, 0.0f, WHITE);
-    }
-                   
-    // Hiện thanh máu nếu chuột di vào hitbox
-    if (CheckCollisionPointRec(GetMousePosition(), GetHitbox())) {
-        float hpRatio = GetHp() / GetMaxHp();
-        if (hpRatio < 0.0f) hpRatio = 0.0f;
-        DrawRectangle(position.x - 25, position.y - 50, 50, 6, RED);
-        DrawRectangle(position.x - 25, position.y - 50, 50 * hpRatio, 6, GREEN);
-        DrawRectangleLines(position.x - 25, position.y - 50, 50, 6, BLACK);
-    }
-}
 
 void Spaceship::Draw() {
     if (!isActive) return;
@@ -323,7 +157,6 @@ GameManager::GameManager()
     : currentState(GameState::MAIN_MENU), previousState(GameState::MAIN_MENU), screenWidth(1600), screenHeight(900), isRunning(false), score(0), currentWave(0), currentBatch(0), waveTimer(0.0f), isWaveTransitioning(false) {
     texSpaceship = {0};
     texSpaceshipHypergun = {0};
-    texEnemy = {0};
     texAsteroid1 = {0};
     texAsteroid2 = {0};
     texBulletStrong = {0};
@@ -336,7 +169,8 @@ GameManager::GameManager()
     texRiddler = {0};
     texLightningFryer = {0};
     for(int i=0; i<2; i++) { texIonBlaster[i] = {0}; texUtensilPoker[i] = {0}; }
-    texLoi = {0};
+    texEnemyAnim = {0};
+    texLoi   = {0};
     texChiSo = {0};
     texSettingIcon = {0};
     for(int i=0; i<4; i++) texBackgrounds[i] = {0};
@@ -609,14 +443,14 @@ void GameManager::Init(int width, int height, const char* title) {
     SpaceshipDataManager::GetInstance()->LoadCSV("assets/spaceship/spaceship.csv");
     SpaceshipDataManager::GetInstance()->LoadJSON("Hypergun", "assets/spaceship/hypergun.json");
 
-    // Bỏ load spaceship01.png cũ đã bị xóa
     texSpaceshipHypergun = LoadTexture("assets/spaceship/hypergun_spaceship.png");
     texBulletStrong = LoadTexture("assets/spaceship/hypergun_strong.png");
     texBulletWeak = LoadTexture("assets/spaceship/hypergun_weak.png");
-    texEnemy = LoadTexture("assets/enemy/chicken01.png");
-    texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
+    
+    texEnemyAnim = LoadTexture("assets/enemy/chicken01_anim.png");
+    
+    texAsteroid1 = LoadTexture("assets/enemy/Asteroid 01 - Base.png");
     texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
-    // Bỏ load Bullet01_1.png đã bị xóa
     texEnemyBullet = LoadTexture("assets/egg.png"); 
     texMeat = LoadTexture("assets/meat.png");
     
@@ -1811,7 +1645,7 @@ void GameManager::CleanUp() {
     if (IsWindowReady()) {
         UnloadTexture(texSettingIcon);
     UnloadTexture(texSpaceshipHypergun);
-    UnloadTexture(texEnemy);
+    UnloadTexture(texEnemyAnim);
     UnloadTexture(texAsteroid1);
     UnloadTexture(texAsteroid2);
         UnloadTexture(texEnemyBullet);

@@ -1,8 +1,15 @@
 #include "Enemy.h"
 #include "raylib.h"
+#include "GameManager.h"
+#include "Bullet.h"
+#include <algorithm>
 
 Enemy::Enemy(Vector2 pos, float hp, float dmg, float arm, float spd, int points)
-    : Character(pos, hp, dmg, arm, spd), pointValue(points) {}
+    : Character(pos, hp, dmg, arm, spd), pointValue(points) {
+    // Khởi tạo gà ngẫu nhiên (Asteroid không xài nhưng kệ nó, không ảnh hưởng)
+    // Gán frame random cho ASTEROID để các cục đá không xoay đồng bộ
+    currentFrame = GetRandomValue(0, 29);
+ }
 
 int Enemy::GetPointValue() const { return pointValue; }
 
@@ -25,6 +32,164 @@ void Enemy::SetMovementBehavior(std::unique_ptr<IMovementBehavior> behavior) {
 void Enemy::DropItem() {
 }
 
+void Enemy::TakeDamage(float incomingDamage) {
+    hitFlashTimer = 0.15f; 
+    Character::TakeDamage(incomingDamage);
+}
+
+float Enemy::baseSizeForType() const {
+    switch (enemyType) {
+        case 1: return 70.0f;   // SWARM
+        case 2: return 150.0f;  // TANK
+        case 3: return 220.0f;  // BOSS
+        default: return 100.0f; // NORMAL (and fallback for Asteroid)
+    }
+}
+
 Rectangle Enemy::GetHitbox() const {
-    return {position.x - 25, position.y - 25, 50, 50};
+    float half = baseSizeForType() / 2.0f;
+    return { position.x - half, position.y - half, half * 2.0f, half * 2.0f };
+}
+
+void Enemy::Update(float deltaTime) {
+    prevPosition = position; // Capture position before movement
+
+    if (hitFlashTimer > 0.0f) {
+        hitFlashTimer -= deltaTime;
+    }
+
+    // Update Sprite Sheet Animation (12 fps)
+    animTimer += deltaTime;
+    if (animTimer >= 1.0f / 12.0f) {
+        animTimer -= 1.0f / 12.0f;
+        currentAnimFrame = (currentAnimFrame + 1) % 12;
+    }
+
+    // Áp dụng Strategy di chuyển
+    if (movementBehavior) {
+        auto gm = GameManager::GetInstance();
+        movementBehavior->Move(position, moveSpeed, deltaTime, gm->GetScreenWidth(), gm->GetScreenHeight());
+    }
+
+    // Cập nhật animation và trail của ASTEROID
+    if (enemyType == 4) {
+        // --- Cập nhật frame (có 30 frames, chỉ lấy từ hàng 1 - thân thiên thạch) ---
+        frameTimer += deltaTime;
+        if (frameTimer >= 0.04f) { // ~25 FPS animation
+            frameTimer = 0.0f;
+            currentFrame = (currentFrame + 1) % 30; // 30 frames trong hàng 1
+        }
+
+        // --- Spawn trail point tại vị trí hiện tại (mỗi 40ms) ---
+        trailSpawnTimer += deltaTime;
+        if (trailSpawnTimer >= 0.04f) {
+            trailSpawnTimer = 0.0f;
+            TrailPoint tp;
+            tp.pos   = position;
+            tp.alpha = 1.0f;
+            tp.frame = currentFrame;
+            trailPoints.push_back(std::move(tp));
+        }
+
+        // --- Fade các trail point, xóa những cái đã biến mất ---
+        // fade speed = 2.0f (biến mất sau 0.5 giây)
+        const float fadeSpeed = 2.0f;
+        for (auto& tp : trailPoints) {
+            tp.alpha -= fadeSpeed * deltaTime;
+        }
+        trailPoints.erase(
+            std::remove_if(trailPoints.begin(), trailPoints.end(),
+                [](const Enemy::TrailPoint& t) { return t.alpha <= 0.0f; }),
+            trailPoints.end()
+        );
+    }
+    
+    // Logic thả trứng (bắn đạn)
+    if (canShoot) {
+        eggDropTimer -= deltaTime;
+        if (eggDropTimer <= 0.0f) {
+            ResetEggTimer();
+            auto egg = std::make_shared<Bullet>(position, damage, 150.0f, false);
+            GameManager::GetInstance()->AddBullet(egg);
+        }
+    }
+    
+    // Hủy enemy nếu đi quá xa khỏi màn hình
+    if (position.y > GameManager::GetInstance()->GetScreenHeight() + 300.0f ||
+        position.x > GameManager::GetInstance()->GetScreenWidth() + 300.0f ||
+        position.x < -1000.0f) {
+        isActive = false;
+    }
+}
+
+void Enemy::Draw() {
+    auto gm = GameManager::GetInstance();
+    
+    if (enemyType == 4) { // ASTEROID
+        Texture2D tex = (asteroidVariant == 1) ? gm->GetTexAsteroid1() : gm->GetTexAsteroid2();
+        const int   COLS    = 30;
+        const float FRAME_W = (float)tex.width  / COLS;  
+        const float FULL_H  = (float)tex.height;           
+        const int   bodyCol = currentFrame % COLS;
+
+        const float DEST_W      = 100.0f;
+        const float DEST_ROW_H  = DEST_W * (FULL_H * 0.5f / FRAME_W); 
+        const float DEST_FULL_H = DEST_ROW_H * 2.0f;                   
+        Vector2 fullOrigin = { DEST_W * 0.5f, DEST_FULL_H };
+
+        for (const auto& tp : trailPoints) {
+            float radius = 10.0f * tp.alpha;
+            unsigned char a = (unsigned char)(tp.alpha * 160.0f);
+            if (asteroidVariant == 2) {
+                DrawCircleGradient((int)tp.pos.x, (int)tp.pos.y,
+                                   radius, {255, 160, 30, a}, {255, 80, 0, 0});
+            } else {
+                DrawCircleGradient((int)tp.pos.x, (int)tp.pos.y,
+                                   radius, {200, 200, 210, a}, {120, 120, 130, 0});
+            }
+        }
+
+        Rectangle fullSrc = { bodyCol * FRAME_W, 0.0f, FRAME_W, FULL_H };
+        Rectangle fullDst = { position.x, position.y, DEST_W, DEST_FULL_H };
+        DrawTexturePro(tex, fullSrc, fullDst, fullOrigin, 0.0f, WHITE);
+
+    } else {
+        Texture2D tex = gm->GetTexEnemyAnim();
+        
+        float base = baseSizeForType();
+        float aspectRatio = 1.0f; // Mỗi khung hình là 100x100
+
+        // --- Tilt nghiêng khi di chuyển ngang ---
+        float dx = position.x - prevPosition.x;
+        float tiltAngle = std::max(-12.0f, std::min(12.0f, dx * 0.8f));
+
+        // --- Hit flash ---
+        Color tintColor = WHITE;
+        float shakeX = 0.0f, shakeY = 0.0f;
+        if (hitFlashTimer > 0.0f) {
+            tintColor = { 255, 80, 80, 255 };
+            shakeX = (float)GetRandomValue(-3, 3);
+            shakeY = (float)GetRandomValue(-3, 3);
+        }
+
+        // --- Final draw ---
+        float destW = base;
+        float destH = base * aspectRatio;
+        Vector2 origin = { destW / 2.0f, destH / 2.0f }; // Vẽ từ tâm
+        
+        // Sprite sheet nằm ngang, 12 frames, mỗi frame 100px
+        Rectangle srcRec = { (float)currentAnimFrame * 100.0f, 0, 100.0f, 100.0f };
+        Rectangle destRec = { position.x + shakeX, position.y + shakeY, destW, destH };
+        
+        DrawTexturePro(tex, srcRec, destRec, origin, tiltAngle, tintColor);
+    }
+                   
+    // Hiện thanh máu nếu chuột di vào hitbox
+    if (CheckCollisionPointRec(GetMousePosition(), GetHitbox())) {
+        float hpRatio = GetHp() / GetMaxHp();
+        if (hpRatio < 0.0f) hpRatio = 0.0f;
+        DrawRectangle(position.x - 25, position.y - 50, 50, 6, RED);
+        DrawRectangle(position.x - 25, position.y - 50, 50 * hpRatio, 6, GREEN);
+        DrawRectangleLines(position.x - 25, position.y - 50, 50, 6, BLACK);
+    }
 }

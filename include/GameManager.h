@@ -38,7 +38,7 @@ private:
     // Player resources
     Texture2D texSpaceship;
     Texture2D texSpaceshipHypergun;
-    Texture2D texEnemy;
+    Texture2D texEnemyAnim;
     Texture2D texAsteroid1;
     Texture2D texAsteroid2;
     Texture2D texBulletStrong;
@@ -155,9 +155,9 @@ public:
     
     // Texture Getters
     Texture2D GetTexSpaceship() const { return texSpaceship; }
-    Texture2D GetTexSpaceshipHypergun() const { return texSpaceshipHypergun; }
-    Texture2D GetTexEnemy() const { return texEnemy; }
-    Texture2D GetTexAsteroid1() const { return texAsteroid1; }
+    Texture2D& GetTexSpaceshipHypergun() { return texSpaceshipHypergun; }
+    Texture2D& GetTexEnemyAnim() { return texEnemyAnim; }
+    Texture2D& GetTexAsteroid1() { return texAsteroid1; }
     Texture2D GetTexAsteroid2() const { return texAsteroid2; }
     Texture2D GetTexBulletStrong() const { return texBulletStrong; }
     Texture2D GetTexBulletWeak() const { return texBulletWeak; }

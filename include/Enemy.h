@@ -11,6 +11,7 @@ class Enemy : public Character {
 private:
     std::unique_ptr<IMovementBehavior> movementBehavior;
     int pointValue; // Điểm số khi bị giết
+    float baseSizeForType() const;
 
 public:
     Enemy(Vector2 pos, float hp, float dmg, float arm, float spd, int points);
@@ -23,6 +24,13 @@ public:
     int currentFrame = 0;
     float frameTimer = 0.0f;
     int asteroidVariant = 1; // Loại thiên thạch (1 hoặc 2)
+
+    float hitFlashTimer = 0.0f;
+    Vector2 prevPosition = {0, 0};
+    
+    // Animation Sprite Sheet variables
+    int currentAnimFrame = 0;
+    float animTimer = 0.0f;
 
     // Trail system for asteroid: stores fading trail positions
     struct TrailPoint {
@@ -42,6 +50,8 @@ public:
     void Update(float deltaTime) override;
 
     void Draw() override;
+
+    void TakeDamage(float incomingDamage) override;
 
     void Die() override;
 
