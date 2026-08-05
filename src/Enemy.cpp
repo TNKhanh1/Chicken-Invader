@@ -38,17 +38,14 @@ void Enemy::TakeDamage(float incomingDamage) {
 }
 
 float Enemy::baseSizeForType() const {
-    switch (enemyType) {
-        case 1: return 70.0f;   // SWARM
-        case 2: return 150.0f;  // TANK
-        case 3: return 220.0f;  // BOSS
-        default: return 100.0f; // NORMAL (and fallback for Asteroid)
-    }
+    // Khôi phục lại kích thước hiển thị 100.0f mặc định cho mọi loại gà
+    // Để không làm hỏng cân bằng game (Wave 3 Tank Chicken quá to)
+    return 100.0f; 
 }
 
 Rectangle Enemy::GetHitbox() const {
-    float half = baseSizeForType() / 2.0f;
-    return { position.x - half, position.y - half, half * 2.0f, half * 2.0f };
+    // Khôi phục lại hitbox gốc 50x50 ở tâm
+    return {position.x - 25, position.y - 25, 50, 50};
 }
 
 void Enemy::Update(float deltaTime) {
@@ -127,7 +124,7 @@ void Enemy::Draw() {
     
     if (enemyType == 4) { // ASTEROID
         Texture2D tex = (asteroidVariant == 1) ? gm->GetTexAsteroid1() : gm->GetTexAsteroid2();
-        const int   COLS    = 30;
+        const int   COLS    = (asteroidVariant == 2) ? 15 : 30;
         const float FRAME_W = (float)tex.width  / COLS;  
         const float FULL_H  = (float)tex.height;           
         const int   bodyCol = currentFrame % COLS;

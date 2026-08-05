@@ -449,7 +449,7 @@ void GameManager::Init(int width, int height, const char* title) {
     
     texEnemyAnim = LoadTexture("assets/enemy/chicken01_anim.png");
     
-    texAsteroid1 = LoadTexture("assets/enemy/Asteroid 01 - Base.png");
+    texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
     texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
     texEnemyBullet = LoadTexture("assets/egg.png"); 
     texMeat = LoadTexture("assets/meat.png");
