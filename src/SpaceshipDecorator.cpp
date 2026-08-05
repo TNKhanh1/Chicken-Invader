@@ -30,6 +30,7 @@ void SpaceshipDecorator::Notify(EventType event, const std::string& data) { core
 void SpaceshipDecorator::SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior) { coreShip->SetShootingBehavior(std::move(behavior)); }
 void SpaceshipDecorator::SetWeapon(const std::string& weaponName) { coreShip->SetWeapon(weaponName); }
 std::string SpaceshipDecorator::GetWeapon() const { return coreShip->GetWeapon(); }
+void SpaceshipDecorator::ReloadStatsFromCSV() { coreShip->ReloadStatsFromCSV(); }
 void SpaceshipDecorator::Fire() { coreShip->Fire(); }
 void SpaceshipDecorator::GainExp(float amount) { coreShip->GainExp(amount); }
 void SpaceshipDecorator::GainMana(float amount) { coreShip->GainMana(amount); }

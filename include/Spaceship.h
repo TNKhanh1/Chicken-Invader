@@ -77,6 +77,7 @@ public:
     virtual void SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior);
     virtual void SetWeapon(const std::string& weaponName);
     virtual std::string GetWeapon() const { return currentWeapon; }
+    virtual void ReloadStatsFromCSV();
 
     virtual bool CanFire() const;
 

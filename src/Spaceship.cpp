@@ -2,6 +2,7 @@
 #include "AllWeaponBehaviors.h"
 #include "SpaceshipDataManager.h"
 #include "GameManager.h"
+#include <iostream>
 
 Spaceship::Spaceship(std::string n, Vector2 pos, float hp, float dmg, float arm, float spd, 
                      float critC, float critD, float mana, float atkSpd)
@@ -59,9 +60,33 @@ void Spaceship::SetShootingBehavior(std::unique_ptr<IShootingBehavior> behavior)
     shootingBehavior = std::move(behavior);
 }
 
+void Spaceship::ReloadStatsFromCSV() {
+    SpaceshipStats stats = SpaceshipDataManager::GetInstance()->GetStats(name, level);
+    maxHp = stats.hp;
+    currentHp = maxHp; 
+    damage = stats.damage;
+    armor = stats.armor;
+    moveSpeed = stats.moveSpeed;
+    critChance = stats.critChance;
+    critDamage = stats.critDamage;
+    maxMana = stats.maxMana;
+    currentMana = maxMana;
+    attackSpeed = stats.attackSpeed;
+
+    std::cout << "[STAT SCALING] Reloaded CSV Stats -> Ship: " << name 
+              << " | Level: " << level 
+              << " | HP: " << maxHp 
+              << " | DMG: " << damage 
+              << " | AS: " << attackSpeed 
+              << " | MoveSpd: " << moveSpeed 
+              << " | Crit: " << critChance << "%" << std::endl;
+}
+
 void Spaceship::SetWeapon(const std::string& weaponName) {
+    name = weaponName;
     currentWeapon = weaponName;
     SetShootingBehavior(CreateWeaponBehavior(weaponName));
+    ReloadStatsFromCSV();
 }
 
 bool Spaceship::CanFire() const {
@@ -111,18 +136,8 @@ void Spaceship::LevelUp() {
     currentExp -= maxExp;
     maxExp *= 1.2f;
     
-    // Đọc chỉ số mới từ CSV
-    SpaceshipStats stats = SpaceshipDataManager::GetInstance()->GetStats(name, level);
-    maxHp = stats.hp;
-    currentHp = maxHp; 
-    damage = stats.damage;
-    armor = stats.armor;
-    moveSpeed = stats.moveSpeed;
-    critChance = stats.critChance;
-    critDamage = stats.critDamage;
-    maxMana = stats.maxMana;
-    attackSpeed = stats.attackSpeed;
-    this->currentMana = this->maxMana;
+    // Tái đồng bộ chỉ số từ CSV theo nguyên tắc OOP Data-Driven và DRY
+    ReloadStatsFromCSV();
     
     if (level >= 10) {
         currentExp = 0; // Đặt exp về 0 khi max level
