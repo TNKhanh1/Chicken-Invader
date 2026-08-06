@@ -99,6 +99,10 @@ void Bullet::Draw() {
                 rot = (float)GetTime() * 720.0f + 180.0f;
                 break;
             }
+            case 11: tex = gm->GetTexLaserCannon(0); width = 16.0f; height = 36.0f; break; // Laser Cannon Weak
+            case 12: tex = gm->GetTexLaserCannon(1); width = 18.0f; height = 42.0f; break; // Laser Cannon Med Weak
+            case 13: tex = gm->GetTexLaserCannon(2); width = 20.0f; height = 50.0f; break; // Laser Cannon Med Strong
+            case 14: tex = gm->GetTexLaserCannon(3); width = 24.0f; height = 58.0f; break; // Laser Cannon Strong
             default:
                 tex = gm->GetTexBulletPlayer(); width = 14.0f; height = 30.0f; break;
         }

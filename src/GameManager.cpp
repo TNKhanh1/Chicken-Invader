@@ -169,6 +169,7 @@ GameManager::GameManager()
     texRiddler = {0};
     texLightningFryer = {0};
     for(int i=0; i<2; i++) { texIonBlaster[i] = {0}; texUtensilPoker[i] = {0}; }
+    for(int i=0; i<4; i++) texLaserCannon[i] = {0};
     texEnemyAnim = {0};
     texLoi   = {0};
     texChiSo = {0};
@@ -456,20 +457,23 @@ void GameManager::Init(int width, int height, const char* title) {
     
     // Tải trọn bộ asset đồ họa của các loại vũ khí
     texPlasmaRifle = LoadTexture("assets/spaceship/plasma_rifle.png");
-    texAbsolverBeam[0] = LoadTexture("assets/spaceship/AbsolverBeamStarter.png");
-    texAbsolverBeam[1] = LoadTexture("assets/spaceship/AbsolverBeamWeak.png");
-    texAbsolverBeam[2] = LoadTexture("assets/spaceship/AbsolverBeamMedium.png");
-    texAbsolverBeam[3] = LoadTexture("assets/spaceship/AbsolverBeamStrong.png");
-    texAbsolverBeam[4] = LoadTexture("assets/spaceship/AbsolverBeamFull.png");
+    SetTextureWrap(texPlasmaRifle, TEXTURE_WRAP_REPEAT);
+    SetTextureFilter(texPlasmaRifle, TEXTURE_FILTER_BILINEAR);
     texNeutronGun[0] = LoadTexture("assets/spaceship/NeutronGunWeak.png");
     texNeutronGun[1] = LoadTexture("assets/spaceship/NeutronGunMedium.png");
     texNeutronGun[2] = LoadTexture("assets/spaceship/NeutronGunStrong.png");
     texRiddler = LoadTexture("assets/spaceship/Riddler.png");
     texLightningFryer = LoadTexture("assets/spaceship/LightningFryer.png");
+    SetTextureWrap(texLightningFryer, TEXTURE_WRAP_REPEAT);
+    SetTextureFilter(texLightningFryer, TEXTURE_FILTER_BILINEAR);
     texIonBlaster[0] = LoadTexture("assets/spaceship/IonBlasterSingle.png");
     texIonBlaster[1] = LoadTexture("assets/spaceship/IonBlasterDouble.png");
     texUtensilPoker[0] = LoadTexture("assets/spaceship/UtensilPokerFork.png");
     texUtensilPoker[1] = LoadTexture("assets/spaceship/UtensilPokerCarving.png");
+    texLaserCannon[0] = LoadTexture("assets/spaceship/LaserCannonWeak.png");
+    texLaserCannon[1] = LoadTexture("assets/spaceship/LaserCannonMediumWeak.png");
+    texLaserCannon[2] = LoadTexture("assets/spaceship/LaserCannonMediumStrong.png");
+    texLaserCannon[3] = LoadTexture("assets/spaceship/LaserCannonStrong.png");
     
     // Selection screen card backgrounds
     texLoi   = LoadTexture("assets/loi.png");
@@ -628,6 +632,7 @@ void GameManager::Update(float deltaTime) {
                 if (IsKeyPressed(KEY_SIX))   player->SetWeapon("Lightning_Fryer");
                 if (IsKeyPressed(KEY_SEVEN)) player->SetWeapon("Ion_Blaster");
                 if (IsKeyPressed(KEY_EIGHT)) player->SetWeapon("Utensil_Poker");
+                if (IsKeyPressed(KEY_NINE))  player->SetWeapon("Laser_Cannon");
 
                 if (IsKeyPressed(KEY_UP))    player->SetLevel(std::min(player->GetLevel() + 1, 11));
                 if (IsKeyPressed(KEY_DOWN))  player->SetLevel(std::max(player->GetLevel() - 1, 1));
@@ -654,7 +659,7 @@ void GameManager::Update(float deltaTime) {
 
                 player->Update(deltaTime);
                 std::string weapon = player->GetWeapon();
-                bool isBeamWeapon = (weapon == "Lightning_Fryer" || weapon == "Plasma_Rifle" || weapon == "Absolver_Beam");
+                bool isBeamWeapon = (weapon == "Lightning_Fryer" || weapon == "Plasma_Rifle" || weapon == "Laser_Cannon");
 
                 isAutoLocked = false;
                 if (isBeamWeapon && IsKeyDown(KEY_SPACE)) {
@@ -677,9 +682,9 @@ void GameManager::Update(float deltaTime) {
                         beamWidth = 25.0f;
                     } else if (weapon == "Plasma_Rifle") {
                         beamWidth = 30.0f + player->GetLevel() * 8.0f;
-                    } else if (weapon == "Absolver_Beam") {
-                        beamWidth = 45.0f;
-                        damageRate *= 1.3f;
+                    } else if (weapon == "Laser_Cannon") {
+                        beamWidth = 20.0f + player->GetLevel() * 4.0f;
+                        damageRate *= 1.2f;
                     }
                     autoLockTargetPos = endPos;
 
@@ -1242,11 +1247,6 @@ void GameManager::Draw() {
         case GameState::TEST_ENEMY:
         case GameState::TEST_SPACESHIP:
         {
-            // Vẽ Player
-            if (player && player->IsActive()) {
-                player->Draw();
-            }
-
             // Vẽ Enemies
             for (const auto& enemy : activeEnemies) {
                 if (enemy && enemy->IsActive()) {
@@ -1277,129 +1277,86 @@ void GameManager::Draw() {
                 BeginBlendMode(BLEND_ADDITIVE);
 
                 if (weapon == "Lightning_Fryer") {
-                    // 1. LIGHTNING FRYER: Dòng hồ quang điện chao đảo gấp khúc ngẫu nhiên
-                    int numSegments = std::max(6, (int)(len / 38.0f));
-                    std::vector<Vector2> arcPoints;
-                    arcPoints.push_back(origin);
-                    
-                    Vector2 perp = { -dir.y, dir.x }; // Cạnh vuông góc để tạo độ chao nghiêng giật sét
-                    
-                    for (int i = 1; i < numSegments; ++i) {
-                        float t = (float)i / numSegments;
-                        float base_x = origin.x + diff.x * t;
-                        float base_y = origin.y + diff.y * t;
-                        // Logic cũ: float jitter = (float)GetRandomValue(-24, 24);
-                        int tick = (int)(timeVal * 50.0f); // Tốc độ giật sét giảm xuống 50Hz (chậm hơn 60Hz)
-                        int pseudoRandom = (tick * 13 + i * 31) % 49 - 24;
-                        float jitter = (float)pseudoRandom; // Dao động điện tích
-                        arcPoints.push_back({ base_x + perp.x * jitter, base_y + perp.y * jitter });
-                    }
-                    arcPoints.push_back(endPos);
-                    
-                    // Vẽ 3 tầng lớp ánh sáng lóa điện hồ quang
-                    for (size_t i = 0; i < arcPoints.size() - 1; ++i) {
-                        DrawLineEx(arcPoints[i], arcPoints[i+1], 18.0f, ColorAlpha(BLUE, 0.35f));
-                        DrawLineEx(arcPoints[i], arcPoints[i+1], 8.0f, ColorAlpha(SKYBLUE, 0.8f));
-                        DrawLineEx(arcPoints[i], arcPoints[i+1], 3.5f, WHITE);
-                    }
-                    
-                    // Tia điện chớp nháy phụ hạ (Secondary lightning fork) ở Level >= 4
-                    if (level >= 4 && arcPoints.size() > 2) {
-                        for (size_t i = 0; i < arcPoints.size() - 2; ++i) {
-                            Vector2 p2 = { arcPoints[i+1].x + GetRandomValue(-16,16), arcPoints[i+1].y + GetRandomValue(-16,16) };
-                            DrawLineEx(arcPoints[i], p2, 5.0f, ColorAlpha(SKYBLUE, 0.65f));
-                            DrawLineEx(arcPoints[i], p2, 2.0f, WHITE);
-                        }
-                    }
+                    // 1. LIGHTNING FRYER: Dòng hồ quang điện cuộn UV tốc độ cao liên tục (Real-Time UV Scrolling)
+                    if (texLightningFryer.id != 0) {
+                        float scrollSpeed1 = 850.0f;
+                        float scrollSpeed2 = 1350.0f;
+                        float texRatio = (float)texLightningFryer.height > 0 ? (len / (float)texLightningFryer.height) * 1.5f : 2.0f;
 
-                    // Tâm nổ điện tích tại nòng (Muzzle electric sphere)
-                    DrawCircleV(origin, 20.0f + sin(timeVal*45.0f)*5.0f, ColorAlpha(SKYBLUE, 0.8f));
-                    DrawCircleV(origin, 10.0f, WHITE);
-                    
-                    // Nổ tia lửa hồ quang bám trên mình quái vật (Impact Sparks)
-                    if (isAutoLocked) {
-                        DrawCircleV(endPos, 38.0f + cos(timeVal*50.0f)*8.0f, ColorAlpha(SKYBLUE, 0.65f));
-                        DrawCircleV(endPos, 16.0f, WHITE);
-                        for (int s = 0; s < 7; ++s) {
-                            float ang = GetRandomValue(0, 360) * (3.14159f / 180.0f);
-                            float r = (float)GetRandomValue(22, 48);
-                            DrawLineEx(endPos, { endPos.x + (float)cos(ang)*r, endPos.y + (float)sin(ang)*r }, 2.5f, WHITE);
-                        }
-                        DrawText("[LOCKED]", (int)endPos.x - 35, (int)endPos.y - 60, 14, YELLOW);
+                        float rotDeg = atan2(diff.y, diff.x) * 180.0f / 3.14159265f + 90.0f;
+
+                        float baseWidth = 32.0f + level * 4.0f;
+                        float width1 = baseWidth + sin(timeVal * 42.0f) * 8.0f;
+                        float width2 = (baseWidth * 0.75f) + cos(timeVal * 58.0f) * 6.0f;
+
+                        float uOffsetY1 = fmod(timeVal * (scrollSpeed1 / (float)texLightningFryer.height), 1.0f) * (float)texLightningFryer.height;
+                        float uOffsetY2 = fmod(timeVal * (scrollSpeed2 / (float)texLightningFryer.height), 1.0f) * (float)texLightningFryer.height;
+
+                        Rectangle src1 = { 0.0f, uOffsetY1, (float)texLightningFryer.width, ((float)texLightningFryer.height) * texRatio };
+                        Rectangle dst1 = { origin.x, origin.y, width1, len };
+                        DrawTexturePro(texLightningFryer, src1, dst1, { width1 / 2.0f, len }, rotDeg, ColorAlpha(SKYBLUE, 0.95f));
+
+                        Rectangle src2 = { 0.0f, uOffsetY2, -(float)texLightningFryer.width, ((float)texLightningFryer.height) * texRatio * 1.3f };
+                        Rectangle dst2 = { origin.x, origin.y, width2, len };
+                        DrawTexturePro(texLightningFryer, src2, dst2, { width2 / 2.0f, len }, rotDeg, WHITE);
+                    } else {
+                        DrawLineEx(origin, endPos, 8.0f, SKYBLUE);
                     }
                 } 
                 else if (weapon == "Plasma_Rifle") {
-                    // 2. PLASMA RIFLE: Sóng nhiệt Ion hóa rực rỡ
-                    float baseW = 34.0f + level * 7.0f;
-                    float pulseW1 = baseW + sin(timeVal * 32.0f) * 12.0f;
-                    float pulseW2 = (baseW * 0.65f) + cos(timeVal * 48.0f) * 8.0f;
-                    float coreW = 16.0f + level * 2.0f;
+                    // 2. PLASMA RIFLE: Sóng nhiệt Ion hóa cuộn UV tốc độ cao rực rỡ
+                    float baseW = 38.0f + level * 6.5f;
+                    float pulseW1 = baseW + sin(timeVal * 34.0f) * 12.0f;
+                    float pulseW2 = (baseW * 0.72f) + cos(timeVal * 52.0f) * 8.0f;
 
-                    // Cuộn nhiệt plasma qua 3 lớp Hào quang (Triple Layer Plasma Stream)
-                    DrawRectanglePro({ origin.x, origin.y, pulseW1, len }, { pulseW1 / 2.0f, 0.0f }, angleDeg, ColorAlpha(GREEN, 0.35f));
-                    DrawRectanglePro({ origin.x, origin.y, pulseW2, len }, { pulseW2 / 2.0f, 0.0f }, angleDeg, ColorAlpha(LIME, 0.7f));
-                    DrawRectanglePro({ origin.x, origin.y, coreW, len }, { coreW / 2.0f, 0.0f }, angleDeg, ColorAlpha(YELLOW, 0.85f));
-                    DrawLineEx(origin, endPos, 4.5f, WHITE); // Lõi gia tốc
+                    if (texPlasmaRifle.id != 0) {
+                        float scrollSpeed1 = 780.0f;
+                        float scrollSpeed2 = 1200.0f;
+                        float texRatio = (float)texPlasmaRifle.height > 0 ? (len / (float)texPlasmaRifle.height) * 1.35f : 2.0f;
+                        float rotDeg = atan2(diff.y, diff.x) * 180.0f / 3.14159265f + 90.0f;
 
-                    // Các quả cầu / vòng sóng nhiệt vút bay liên tiếp dọc theo chiều tia súng
-                    for (int r = 0; r < 5; ++r) {
-                        float ringDist = fmod(timeVal * 720.0f + r * 170.0f, len);
-                        if (ringDist > 12.0f && ringDist < len) {
-                            Vector2 ringPos = { origin.x + dir.x * ringDist, origin.y + dir.y * ringDist };
-                            DrawCircleV(ringPos, coreW * 1.35f, ColorAlpha(WHITE, 0.75f));
-                            DrawCircleV(ringPos, coreW * 0.85f, LIME);
-                        }
+                        float uOffsetY1 = fmod(timeVal * (scrollSpeed1 / (float)texPlasmaRifle.height), 1.0f) * (float)texPlasmaRifle.height;
+                        float uOffsetY2 = fmod(timeVal * (scrollSpeed2 / (float)texPlasmaRifle.height), 1.0f) * (float)texPlasmaRifle.height;
+
+                        Rectangle src1 = { 0.0f, uOffsetY1, (float)texPlasmaRifle.width, ((float)texPlasmaRifle.height) * texRatio };
+                        Rectangle dst1 = { origin.x, origin.y, pulseW1, len };
+                        DrawTexturePro(texPlasmaRifle, src1, dst1, { pulseW1 / 2.0f, len }, rotDeg, ColorAlpha(LIME, 0.9f));
+
+                        Rectangle src2 = { 0.0f, uOffsetY2, -(float)texPlasmaRifle.width, ((float)texPlasmaRifle.height) * texRatio * 1.2f };
+                        Rectangle dst2 = { origin.x, origin.y, pulseW2, len };
+                        DrawTexturePro(texPlasmaRifle, src2, dst2, { pulseW2 / 2.0f, len }, rotDeg, WHITE);
+                    } else {
+                        DrawRectanglePro({ origin.x, origin.y, pulseW1, len }, { pulseW1 / 2.0f, 0.0f }, angleDeg, ColorAlpha(GREEN, 0.35f));
                     }
-
-                    // Tâm nổ nòng súng Plasma
-                    DrawCircleV(origin, baseW * 0.75f + sin(timeVal*55.0f)*6.0f, ColorAlpha(LIME, 0.8f));
-                    DrawCircleV(origin, baseW * 0.38f, WHITE);
                 } 
-                else if (weapon == "Absolver_Beam") {
-                    // 3. ABSOLVER BEAM: Tia Hồng ngoại Hủy diệt ngợp ánh sáng
-                    int idx = std::min(4, (level - 1) / 2);
-                    Texture2D tex = texAbsolverBeam[idx];
-                    
-                    float beamW = 40.0f + idx * 10.0f;
-                    float outerW = beamW + sin(timeVal * 42.0f) * 14.0f;
-                    
-                    // Trường năng lượng quang phổ 4 lớp
-                    DrawLineEx(origin, endPos, outerW * 1.5f, ColorAlpha(PURPLE, 0.35f));
-                    DrawLineEx(origin, endPos, outerW, ColorAlpha(MAGENTA, 0.65f));
-                    DrawLineEx(origin, endPos, beamW * 0.65f, ColorAlpha(PINK, 0.88f));
-                    DrawLineEx(origin, endPos, beamW * 0.28f, WHITE); // Lõi Photon cực mạnh
+                else if (weapon == "Laser_Cannon") {
+                    // 3. LASER CANNON: Tia lade quang học cường độ cao cuộn UV
+                    int idx = std::min(3, (level - 1) / 3);
+                    Texture2D tex = texLaserCannon[idx];
+                    float beamW = 20.0f + level * 4.0f;
+                    float animW = beamW + sin(timeVal * 50.0f) * 6.0f;
 
-                    // Overlay asset đã được khử nền hoàn toàn kèm hiệu ứng chấn động tần số cao
                     if (tex.id != 0 && len > 0) {
-                        float animW = beamW * 1.25f + GetRandomValue(-4, 4);
-                        DrawTexturePro(tex, { 0, 0, (float)tex.width, (float)tex.height },
-                                       { origin.x, origin.y, animW, len }, { animW / 2.0f, 0.0f }, angleDeg, ColorAlpha(WHITE, 0.9f));
-                    }
-
-                    // Quả cầu tích lụi Photon ở nòng tàu
-                    DrawCircleV(origin, beamW * 0.75f, ColorAlpha(MAGENTA, 0.85f));
-                    DrawCircleV(origin, beamW * 0.38f, WHITE);
-
-                    // Tia lửa vỡ tung tóe khi trúng quái vật trên đường đi
-                    for (auto& enemy : activeEnemies) {
-                        if (enemy && enemy->IsActive()) {
-                            Vector2 ePos = enemy->GetPosition();
-                            if (std::fabs(ePos.x - origin.x) <= (beamW / 2.0f + 42.0f) && ePos.y <= origin.y) {
-                                Vector2 hitPt = { origin.x, ePos.y };
-                                DrawCircleV(hitPt, 30.0f + sin(timeVal*65.0f)*8.0f, ColorAlpha(WHITE, 0.95f));
-                                DrawCircleV(hitPt, 15.0f, PINK);
-                                for (int k = 0; k < 6; ++k) {
-                                    float a = GetRandomValue(0, 360) * (3.14159f / 180.0f);
-                                    float r = (float)GetRandomValue(18, 38);
-                                    DrawLineEx(hitPt, { hitPt.x + (float)cos(a)*r, hitPt.y + (float)sin(a)*r }, 3.2f, WHITE);
-                                }
-                            }
-                        }
+                        float scrollSpeed = 1000.0f;
+                        float texRatio = (float)tex.height > 0 ? (len / (float)tex.height) * 2.0f : 2.0f;
+                        float rotDeg = atan2(diff.y, diff.x) * 180.0f / 3.14159265f + 90.0f;
+                        float uOffsetY = fmod(timeVal * (scrollSpeed / (float)tex.height), 1.0f) * (float)tex.height;
+                        
+                        Rectangle src = { 0.0f, uOffsetY, (float)tex.width, ((float)tex.height) * texRatio };
+                        Rectangle dst = { origin.x, origin.y, animW, len };
+                        DrawTexturePro(tex, src, dst, { animW / 2.0f, len }, rotDeg, ColorAlpha(WHITE, 0.95f));
+                    } else {
+                        DrawLineEx(origin, endPos, animW, ColorAlpha(RED, 0.85f));
                     }
                 }
 
             // Trả về Blend Mode chuẩn cho các đối tượng khác
             EndBlendMode();
+        }
+
+        // Vẽ Player TRÊN CÙNG để không bị đạn/tia che khuất
+        if (player && player->IsActive()) {
+            player->Draw();
         }
 
         // --- VẼ FLOATING DAMAGE TEXT ---
@@ -1651,11 +1608,11 @@ void GameManager::CleanUp() {
         UnloadTexture(texEnemyBullet);
         UnloadTexture(texMeat);
         UnloadTexture(texPlasmaRifle);
-        for(int i=0; i<5; i++) UnloadTexture(texAbsolverBeam[i]);
         for(int i=0; i<3; i++) UnloadTexture(texNeutronGun[i]);
         UnloadTexture(texRiddler);
         UnloadTexture(texLightningFryer);
         for(int i=0; i<2; i++) { UnloadTexture(texIonBlaster[i]); UnloadTexture(texUtensilPoker[i]); }
+        for(int i=0; i<4; i++) UnloadTexture(texLaserCannon[i]);
         UnloadTexture(texLoi);
         UnloadTexture(texChiSo);
         

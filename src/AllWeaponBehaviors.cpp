@@ -108,20 +108,20 @@ void PlasmaRifleBehavior::Shoot(Spaceship* ship) {
     GameManager::GetInstance()->PlayShootSound();
 }
 
-void AbsolverBeamBehavior::Shoot(Spaceship* ship) {
-    // Sát thương tia laser Absolver Beam liên tục được tính trực tiếp trong GameManager
+void LaserCannonBehavior::Shoot(Spaceship* ship) {
+    // Sát thương tia Laser liên tục được tính trực tiếp ở vòng lặp update beam trong GameManager
     GameManager::GetInstance()->PlayShootSound();
 }
 
 std::unique_ptr<IShootingBehavior> CreateWeaponBehavior(const std::string& weaponName) {
     if (weaponName == "Hypergun")        return std::make_unique<HypergunShootingBehavior>();
     if (weaponName == "Plasma_Rifle")    return std::make_unique<PlasmaRifleBehavior>();
-    if (weaponName == "Absolver_Beam")   return std::make_unique<AbsolverBeamBehavior>();
     if (weaponName == "Neutron_Gun")     return std::make_unique<NeutronGunBehavior>();
     if (weaponName == "Riddler")         return std::make_unique<RiddlerBehavior>();
     if (weaponName == "Lightning_Fryer") return std::make_unique<LightningFryerBehavior>();
     if (weaponName == "Ion_Blaster")     return std::make_unique<IonBlasterBehavior>();
     if (weaponName == "Utensil_Poker")   return std::make_unique<UtensilPokerBehavior>();
+    if (weaponName == "Laser_Cannon")    return std::make_unique<LaserCannonBehavior>();
     
     // Mặc định trả về Hypergun
     return std::make_unique<HypergunShootingBehavior>();

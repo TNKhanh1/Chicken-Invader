@@ -31,7 +31,9 @@ public:
     void Shoot(Spaceship* ship) override;
 };
 
-class AbsolverBeamBehavior : public IShootingBehavior {
+
+
+class LaserCannonBehavior : public IShootingBehavior {
 public:
     void Shoot(Spaceship* ship) override;
 };

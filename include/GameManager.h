@@ -55,6 +55,7 @@ private:
     Texture2D texLightningFryer;
     Texture2D texIonBlaster[2];
     Texture2D texUtensilPoker[2];
+    Texture2D texLaserCannon[4];
 
     // Selection screen textures
     Texture2D texLoi;    // Argument card background (loi.png)
@@ -173,6 +174,7 @@ public:
     Texture2D GetTexLightningFryer() const { return texLightningFryer; }
     Texture2D GetTexIonBlaster(int idx) const { return texIonBlaster[idx >= 0 && idx < 2 ? idx : 0]; }
     Texture2D GetTexUtensilPoker(int idx) const { return texUtensilPoker[idx >= 0 && idx < 2 ? idx : 0]; }
+    Texture2D GetTexLaserCannon(int idx) const { return texLaserCannon[idx >= 0 && idx < 4 ? idx : 0]; }
     
     // Score management
     int GetScore() const { return score; }
