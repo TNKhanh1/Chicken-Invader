@@ -13,6 +13,7 @@
 #include "../include/MeteorDiveMovement.h"
 #include "../include/SineZigzagMovement.h"
 #include "../include/SpiralMovement.h"
+#include "../include/WaypointMovement.h"
 #include "../include/Bullet.h"
 #include "../include/Item.h"
 #include "../include/Meat.h"
@@ -236,26 +237,7 @@ void GameManager::EnterStatSelection(int nextWave) {
 bool GameManager::SpawnWaveBatch(int wave, int batch) {
     if (wave == 1) {
         if (batch == 1) {
-            for (int i = 0; i < 10; ++i) {
-                float x = screenWidth + 100.0f + i * 150.0f;
-                float y = 150.0f + (i % 2) * 100.0f;
-                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
-                enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(-1.0f));
-                enemy->ResetEggTimer();
-                AddEnemy(std::move(enemy));
-            }
-            return true;
-        } else if (batch == 2) {
-            for (int i = 0; i < 15; ++i) {
-                float x = -100.0f - i * 150.0f;
-                float y = 150.0f + (i % 3) * 100.0f; 
-                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
-                enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(1.0f));
-                enemy->ResetEggTimer();
-                AddEnemy(std::move(enemy));
-            }
-            return true;
-        } else if (batch == 3) {
+            // Wave 1.1: 15 chickens in 3 rows, fly down and hover
             float startX = screenWidth / 2.0f;
             for (int r = 0; r < 3; ++r) {
                 for (int c = 0; c < 5; ++c) {
@@ -264,7 +246,50 @@ bool GameManager::SpawnWaveBatch(int wave, int batch) {
                     float y = -300.0f + r * 100.0f; 
                     float targetY = 100.0f + r * 100.0f;
                     auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
+                    // bounceRange = 0 -> hover in place
+                    enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(targetY, 0.0f, 1.0f));
+                    enemy->ResetEggTimer();
+                    AddEnemy(std::move(enemy));
+                }
+            }
+            return true;
+        } else if (batch == 2) {
+            // Wave 1.2: 15 chickens in 3 rows, fly down and move left/right
+            float startX = screenWidth / 2.0f;
+            for (int r = 0; r < 3; ++r) {
+                for (int c = 0; c < 5; ++c) {
+                    float offsetX = (c - 2) * 150.0f;
+                    float x = startX + offsetX;
+                    float y = -300.0f + r * 100.0f; 
+                    float targetY = 100.0f + r * 100.0f;
+                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
+                    // bounceRange = 300 -> sweep left/right
                     enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(targetY, 300.0f, 1.0f));
+                    enemy->ResetEggTimer();
+                    AddEnemy(std::move(enemy));
+                }
+            }
+            return true;
+        } else if (batch == 3) {
+            // Wave 1.3: 8 chickens (4 left, 4 right). Fly horizontally then up to form 2 rows.
+            for (int col = 0; col < 2; ++col) {
+                float startX = (col == 0) ? -100.0f : screenWidth + 100.0f;
+                
+                for (int i = 0; i < 4; ++i) {
+                    float startY = 300.0f + i * 150.0f; // Start low
+                    
+                    float intersectX = (col == 0) ? (screenWidth / 2.0f - 150.0f) : (screenWidth / 2.0f + 150.0f);
+                    float intersectY = startY;
+                    
+                    // Top row (y=100) and Bottom row (y=200)
+                    float gridY = 100.0f + (i / 2) * 100.0f;
+                    
+                    // Left chickens take x = -300 and -100 from center
+                    // Right chickens take x = 100 and 300 from center
+                    float gridX = screenWidth / 2.0f + ((col == 0) ? (-300.0f + (i % 2) * 200.0f) : (100.0f + (i % 2) * 200.0f));
+                    
+                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {startX, startY}, wave);
+                    enemy->SetMovementBehavior(std::make_unique<WaypointMovement>(std::vector<Vector2>{{intersectX, intersectY}, {gridX, gridY}}));
                     enemy->ResetEggTimer();
                     AddEnemy(std::move(enemy));
                 }
@@ -273,131 +298,108 @@ bool GameManager::SpawnWaveBatch(int wave, int batch) {
         }
     } else if (wave == 2) {
         if (batch == 1) {
-            for (int i = 0; i < 15; ++i) {
-                float x = 150.0f + (i % 5) * 250.0f;
-                float y = -100.0f - (i / 5) * 150.0f;
-                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
-                enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>());
-                enemy->ResetEggTimer();
-                AddEnemy(std::move(enemy));
+            // Wave 2.1: Double V-shape (2 lớp), úp ngược xuống, hover
+            for (int layer = 0; layer < 2; ++layer) {
+                for (int i = 0; i < 11; ++i) { // 11 chickens per V
+                    float x = screenWidth / 2.0f + (i - 5.0f) * 100.0f;
+                    float y = -100.0f - std::abs(i - 5.0f) * 80.0f - layer * 150.0f;
+                    
+                    float targetY = 150.0f + std::abs(i - 5.0f) * 80.0f + layer * 150.0f;
+                    
+                    auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
+                    enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(targetY, 0.0f, 1.0f)); // Hover
+                    enemy->ResetEggTimer();
+                    AddEnemy(std::move(enemy));
+                }
             }
             return true;
         } else if (batch == 2) {
+            // Wave 2.2: Intersecting V-shapes (Top and Bottom) into grid
             for (int i = 0; i < 10; ++i) {
-                float x = 200.0f + i * 120.0f;
-                float y = -100.0f - i * 50.0f;
-                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::SWARM_CHICKEN, {x, y}, wave);
-                enemy->SetMovementBehavior(std::make_unique<SineZigzagMovement>());
-                enemy->ResetEggTimer();
-                AddEnemy(std::move(enemy));
-            }
-            return true;
-        } else if (batch == 3) {
-            float startX = screenWidth / 2.0f;
-            for (int i = 0; i < 15; ++i) {
-                float offsetX = (i % 5 - 2) * 200.0f;
-                float offsetY = -200.0f - (i / 5) * 150.0f;
-                auto type = (i % 3 == 0) ? EnemyFactory::EnemyType::SWARM_CHICKEN : EnemyFactory::EnemyType::NORMAL_CHICKEN;
-                auto enemy = EnemyFactory::CreateEnemy(type, {startX + offsetX, offsetY}, wave);
-                enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>());
-                enemy->ResetEggTimer();
-                AddEnemy(std::move(enemy));
+                // Top V
+                float topStartX = screenWidth / 2.0f + (i - 4.5f) * 80.0f;
+                float topStartY = -100.0f - std::abs(i - 4.5f) * 80.0f;
+                float intersectX = topStartX;
+                float intersectY = screenHeight / 2.0f;
+                float gridX_top = screenWidth / 2.0f - 200.0f + (i % 5) * 100.0f;
+                float gridY_top = 100.0f + (i / 5) * 100.0f;
+                
+                auto enemyTop = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::SWARM_CHICKEN, {topStartX, topStartY}, wave);
+                enemyTop->SetMovementBehavior(std::make_unique<WaypointMovement>(std::vector<Vector2>{{intersectX, intersectY}, {gridX_top, gridY_top}}));
+                enemyTop->ResetEggTimer();
+                AddEnemy(std::move(enemyTop));
+                
+                // Bottom V
+                float botStartX = screenWidth / 2.0f + (i - 4.5f) * 80.0f;
+                float botStartY = screenHeight + 100.0f + std::abs(i - 4.5f) * 80.0f;
+                float gridX_bot = screenWidth / 2.0f - 200.0f + (i % 5) * 100.0f;
+                float gridY_bot = 300.0f + (i / 5) * 100.0f;
+                
+                auto enemyBot = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::SWARM_CHICKEN, {botStartX, botStartY}, wave);
+                enemyBot->SetMovementBehavior(std::make_unique<WaypointMovement>(std::vector<Vector2>{{intersectX, intersectY}, {gridX_bot, gridY_bot}}));
+                enemyBot->ResetEggTimer();
+                AddEnemy(std::move(enemyBot));
             }
             return true;
         }
     } else if (wave == 3) {
         if (batch == 1) {
-            for (int i = 0; i < 20; i++) {
+            // Wave 3: Asteroid Rain (Reduced density: 30 asteroids over 15 seconds)
+            for (int i = 0; i < 30; i++) {
                 float x = GetRandomValue(100, screenWidth - 100);
-                float y = -100.0f - i * 150.0f; 
+                float y = -100.0f - GetRandomValue(0, 4500); // 15 seconds * 300 speed
                 auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {x, y}, wave);
                 enemy->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
-                enemy->asteroidVariant = 1;
+                enemy->asteroidVariant = GetRandomValue(1, 2);
                 enemy->canShoot = false;
                 AddEnemy(std::move(enemy));
             }
             return true;
+        }
+    } else if (wave == 4) {
+        if (batch == 1) {
+            // Wave 4.1: Massive V-shape of 15 chickens
+            for (int i = 0; i < 15; ++i) {
+                float x = screenWidth / 2.0f + (i - 7.0f) * 100.0f;
+                float y = -100.0f - std::abs(i - 7.0f) * 80.0f;
+                float targetY = 150.0f + std::abs(i - 7.0f) * 80.0f;
+                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::NORMAL_CHICKEN, {x, y}, wave);
+                enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(targetY, 150.0f, 1.0f));
+                enemy->ResetEggTimer();
+                AddEnemy(std::move(enemy));
+            }
+            return true;
         } else if (batch == 2) {
-            for (int i = 0; i < 5; ++i) {
-                float x = 200.0f + i * 300.0f;
+            // Wave 4.2: Many Tank Chickens, and 3 targeted flame asteroids that drop DURING the fight
+            // Spawn Tank chickens
+            for (int i = 0; i < 8; ++i) {
+                float x = 100.0f + i * 200.0f;
                 auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::TANK_CHICKEN, {x, -100.0f}, wave);
                 enemy->SetMovementBehavior(std::make_unique<StraightMovement>());
                 enemy->ResetEggTimer();
                 AddEnemy(std::move(enemy));
             }
-            return true;
-        } else if (batch == 3) {
-            // Mưa thiên thạch lửa (asteroidFlame) từ 2 góc + 3 Tank Chicken
-            // Spawn trong vùng hợp lý để không bị kẹt off-screen
-            // Cột trái: 5 asteroid
-            for (int i = 0; i < 5; ++i) {
-                float ax = 100.0f + i * 80.0f;
-                float ay = -200.0f - i * 120.0f; // max -680
-                auto asteroid = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {ax, ay}, wave);
-                asteroid->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
-                asteroid->asteroidVariant = 2;
-                asteroid->canShoot = false;
-                AddEnemy(std::move(asteroid));
-            }
-            // Cột phải: 5 asteroid
-            for (int i = 0; i < 5; ++i) {
-                float ax = (float)(screenWidth - 100) - i * 80.0f;
-                float ay = -300.0f - i * 120.0f; // max -780, lệch pha cột trái
-                auto asteroid = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {ax, ay}, wave);
-                asteroid->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
-                asteroid->asteroidVariant = 2;
-                asteroid->canShoot = false;
-                AddEnemy(std::move(asteroid));
-            }
-            // 3 Tank Chicken: dùng StraightMovement để không kẹt off-screen
-            for (int i = 0; i < 3; ++i) {
-                float tx = 250.0f + i * 450.0f;
-                float ty = -150.0f - i * 200.0f; // max -550, nhanh xuất hiện
-                auto tank = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::TANK_CHICKEN, {tx, ty}, wave);
-                tank->SetMovementBehavior(std::make_unique<StraightMovement>());
-                tank->ResetEggTimer();
-                AddEnemy(std::move(tank));
-            }
-            return true;
-
-        }
-    } else if (wave == 4) {
-        if (batch == 1) {
-            for (int i = 0; i < 20; ++i) {
-                auto type = (i % 2 == 0) ? EnemyFactory::EnemyType::NORMAL_CHICKEN : EnemyFactory::EnemyType::SWARM_CHICKEN;
-                float x = (i % 2 == 0) ? -100.0f - i * 100.0f : screenWidth + 100.0f + i * 100.0f;
-                float y = 100.0f + (i % 5) * 80.0f;
-                auto enemy = EnemyFactory::CreateEnemy(type, {x, y}, wave);
-                enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>((i % 2 == 0) ? 1.0f : -1.0f));
-                enemy->ResetEggTimer();
-                AddEnemy(std::move(enemy));
-            }
-            return true;
-        } else if (batch == 2) {
-            for (int i = 0; i < 8; ++i) {
-                float x = 200.0f + i * 170.0f;
-                auto enemy = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::TANK_CHICKEN, {x, -100.0f}, wave);
-                enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(150.0f, 100.0f, 1.0f));
-                enemy->ResetEggTimer();
-                AddEnemy(std::move(enemy));
-            }
-            return true;
-        } else if (batch == 3) {
-            for (int i = 0; i < 20; ++i) {
-                EnemyFactory::EnemyType type = EnemyFactory::EnemyType::NORMAL_CHICKEN;
-                if (i % 4 == 0) type = EnemyFactory::EnemyType::TANK_CHICKEN;
-                else if (i % 4 == 1) type = EnemyFactory::EnemyType::SWARM_CHICKEN;
+            
+            // Spawn Targeted Asteroids with delays (Y offset)
+            if (player) {
+                float px = player->GetPosition().x;
+                // Asteroid 1 drops at 3 seconds
+                auto ast1 = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {px, -900.0f}, wave);
+                ast1->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
+                ast1->asteroidVariant = 2; ast1->canShoot = false;
+                AddEnemy(std::move(ast1));
                 
-                float x = GetRandomValue(100, screenWidth - 100);
-                float y = -100.0f - i * 100.0f;
-                auto enemy = EnemyFactory::CreateEnemy(type, {x, y}, wave);
-                if (type == EnemyFactory::EnemyType::TANK_CHICKEN) {
-                    enemy->SetMovementBehavior(std::make_unique<StraightMovement>());
-                } else {
-                    enemy->SetMovementBehavior(std::make_unique<SineZigzagMovement>());
-                }
-                enemy->ResetEggTimer();
-                AddEnemy(std::move(enemy));
+                // Asteroid 2 drops at 6 seconds
+                auto ast2 = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {screenWidth/2.0f, -1800.0f}, wave);
+                ast2->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
+                ast2->asteroidVariant = 2; ast2->canShoot = false;
+                AddEnemy(std::move(ast2));
+                
+                // Asteroid 3 drops at 9 seconds
+                auto ast3 = EnemyFactory::CreateEnemy(EnemyFactory::EnemyType::ASTEROID, {px + 150.0f, -2700.0f}, wave);
+                ast3->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
+                ast3->asteroidVariant = 2; ast3->canShoot = false;
+                AddEnemy(std::move(ast3));
             }
             return true;
         }

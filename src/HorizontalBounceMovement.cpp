@@ -11,12 +11,15 @@ void HorizontalBounceMovement::Move(Vector2& position, float moveSpeed, float de
     }
     if (position.y < targetY) {
         position.y += moveSpeed * deltaTime;
+        if (position.y > targetY) position.y = targetY; // Don't overshoot
     } else {
-        position.x += direction * moveSpeed * deltaTime;
-        if (direction > 0 && position.x > startX + drift) {
-            direction = -1.0f;
-        } else if (direction < 0 && position.x < startX - drift) {
-            direction = 1.0f;
+        if (drift > 0.0f) {
+            position.x += direction * moveSpeed * deltaTime;
+            if (direction > 0 && position.x > startX + drift) {
+                direction = -1.0f;
+            } else if (direction < 0 && position.x < startX - drift) {
+                direction = 1.0f;
+            }
         }
     }
 }

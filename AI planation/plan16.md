@@ -46,3 +46,25 @@ With the procedural mesh-warping system successfully deployed for `chicken01.png
 - **State Addition:** An `int chickenVariant;` property will be added to the `Enemy` class.
 - **Initialization:** Upon instantiation, the `Enemy` constructor will assign a specific variant index (0-9) based on the wave configuration or RNG.
 - **Dynamic Rendering:** The `Enemy::Draw()` method will fetch the texture matching its `chickenVariant` from the `GameManager` and render the appropriate frame. This strategy ensures O(1) rendering complexity while providing rich visual diversity across different game waves.
+
+---
+
+## 4. Wave Choreography & Game Balance Refactoring
+
+Based on the precise design specifications provided by the user, the `SpawnWaveBatch` system was entirely overhauled to support complex, multi-stage enemy behaviors and formations, along with global speed balancing.
+
+### 4.1 Global Speed Tuning
+To increase the game's difficulty and fluidity:
+- **Movement Speed:** Base speed for all enemy types was increased by 25% within `EnemyFactory.cpp`.
+- **Projectile Speed:** Egg drop velocity was increased by 15%.
+- **Animation Fidelity:** The animation frame rate was aggressively bumped to 30 FPS. To support this without visual looping artifacts, the Python mesh-warping pipeline was executed as a batch job to output dense 24-frame sprite sheets for all 10 chicken variants.
+
+### 4.2 Behavior Classes Enhancements
+- **WaypointMovement (New):** A stateful movement behavior was introduced to allow entities to navigate through a sequence of discrete `Vector2` coordinates before assuming a final holding pattern. This enables complex pathing like intersecting V-shapes.
+- **Hover Jitter Fix:** `HorizontalBounceMovement` was refactored to eliminate a single-frame vibrational jitter when the drift parameter is set to `0.0f` (hover mode).
+
+### 4.3 Wave Designs Implemented
+- **Wave 1:** Focused on foundational movements. Features 15 enemies dropping into a dead hover (1.1), followed by a swaying hover (1.2). Finally, 8 enemies (split into 2 wide columns) perform a horizontal sweep from off-screen, meet in the center, and dynamically fly upwards to form two organized horizontal rows, leaving a safe gap for the player (1.3).
+- **Wave 2:** Focused on V-shape geometries. Introduces a double-layered inverted V-shape that drops and hovers (2.1), followed by two opposing V-shapes (one ascending, one descending) that intersect precisely at the screen center before fanning out into a rectangular grid using the new `WaypointMovement` logic (2.2).
+- **Wave 3:** A pure endurance wave featuring a 15-second localized asteroid rain. The density was fine-tuned (30 asteroids) to force the player into evasive maneuvers without being completely impenetrable.
+- **Wave 4:** High-pressure combat. A massive 15-enemy V-shape spans the screen (4.1). This is followed by a squad of Tank Chickens, accompanied by 3 targeted flame asteroids that spawn directly above the player's real-time X coordinate at 3-second intervals during the fight, completely bypassing standard fixed-spawn limitations (4.2).

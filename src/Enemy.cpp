@@ -55,11 +55,11 @@ void Enemy::Update(float deltaTime) {
         hitFlashTimer -= deltaTime;
     }
 
-    // Update Sprite Sheet Animation (12 fps)
+    // Update Sprite Sheet Animation (30 fps for 24 frames)
     animTimer += deltaTime;
-    if (animTimer >= 1.0f / 12.0f) {
-        animTimer -= 1.0f / 12.0f;
-        currentAnimFrame = (currentAnimFrame + 1) % 12;
+    if (animTimer >= 1.0f / 30.0f) {
+        animTimer -= 1.0f / 30.0f;
+        currentAnimFrame = (currentAnimFrame + 1) % 24;
     }
 
     // Áp dụng Strategy di chuyển
@@ -106,7 +106,7 @@ void Enemy::Update(float deltaTime) {
         eggDropTimer -= deltaTime;
         if (eggDropTimer <= 0.0f) {
             ResetEggTimer();
-            auto egg = std::make_shared<Bullet>(position, damage, 150.0f, false);
+            auto egg = std::make_shared<Bullet>(position, damage, 175.0f, false);
             GameManager::GetInstance()->AddBullet(egg);
         }
     }
