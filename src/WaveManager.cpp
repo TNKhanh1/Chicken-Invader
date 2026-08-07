@@ -196,3 +196,24 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
     }
     return false;
 }
+
+int WaveManager::GetTotalWaves() const {
+    if (!stageData.contains("waves")) return 0;
+    return stageData["waves"].size();
+}
+
+int WaveManager::GetMaxBatchForWave(int waveId) const {
+    if (!stageData.contains("waves")) return 0;
+    for (const auto& w : stageData["waves"]) {
+        if (w["wave_id"] == waveId) {
+            if (!w.contains("batches")) return 0;
+            int maxBatch = 0;
+            for (const auto& b : w["batches"]) {
+                int bId = b["batch_id"];
+                if (bId > maxBatch) maxBatch = bId;
+            }
+            return maxBatch;
+        }
+    }
+    return 0;
+}

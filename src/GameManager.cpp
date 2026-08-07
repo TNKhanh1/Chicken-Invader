@@ -172,7 +172,7 @@ GameManager::GameManager()
     texLightningFryer = {0};
     for(int i=0; i<2; i++) { texIonBlaster[i] = {0}; texUtensilPoker[i] = {0}; }
     for(int i=0; i<4; i++) texLaserCannon[i] = {0};
-    texEnemyAnim = {0};
+    for(int i=0; i<10; i++) texEnemyAnims[i] = {0};
     texLoi   = {0};
     texChiSo = {0};
     texSettingIcon = {0};
@@ -280,7 +280,11 @@ void GameManager::Init(int width, int height, const char* title) {
     texBulletStrong = LoadTexture("assets/spaceship/hypergun_strong.png");
     texBulletWeak = LoadTexture("assets/spaceship/hypergun_weak.png");
     
-    texEnemyAnim = LoadTexture("assets/enemy/chicken01_anim.png");
+    for (int i = 0; i < 10; i++) {
+        char path[100];
+        snprintf(path, sizeof(path), "assets/enemy/chicken%02d_anim.png", i + 1);
+        texEnemyAnims[i] = LoadTexture(path);
+    }
     
     texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
     texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
@@ -603,17 +607,22 @@ void GameManager::Update(float deltaTime) {
                         }
                     }
                 } else if (activeEnemies.empty()) {
-                    // Cấu trúc wave hiện tại đều có 3 batch (từ wave 1 đến wave 4)
-                    int maxBatch = 3; 
+                    int maxBatch = WaveManager::GetInstance()->GetMaxBatchForWave(currentWave);
                     if (currentBatch < maxBatch) {
-                        // Khi dọn sạch batch hiện tại, chuẩn bị sang batch tiếp theo
                         currentBatch++;
                         isWaveTransitioning = true;
                         waveTimer = 3.0f;
                     } else {
-                        // Nếu đã xong batch cuối của wave, chờ cho hết items rơi xuống rồi chuyển sang chọn chỉ số
                         if (activeItems.empty()) {
-                            EnterStatSelection(currentWave + 1);
+                            if (currentWave < WaveManager::GetInstance()->GetTotalWaves()) {
+                                EnterStatSelection(currentWave + 1);
+                            } else {
+                                currentStage++;
+                                currentWave = 1;
+                                currentBatch = 1;
+                                WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
+                                EnterStatSelection(currentWave);
+                            }
                         }
                     }
                 }
@@ -992,7 +1001,7 @@ void GameManager::Draw() {
             DrawText("TEST STAGE & WAVE", screenWidth/2 - MeasureText("TEST STAGE & WAVE", 40)/2, 120, 40, YELLOW);
             
             // Fix Out-of-Bounds Issue: Show warning if trying to start non-existent waves
-            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 4);
+            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 4);
             if (!isValidSelection) {
                 DrawText("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2 - 200, 180, 20, RED);
             }
@@ -1455,7 +1464,7 @@ void GameManager::CleanUp() {
     if (IsWindowReady()) {
         UnloadTexture(texSettingIcon);
     UnloadTexture(texSpaceshipHypergun);
-    UnloadTexture(texEnemyAnim);
+    for (int i = 0; i < 10; i++) UnloadTexture(texEnemyAnims[i]);
     UnloadTexture(texAsteroid1);
     UnloadTexture(texAsteroid2);
         UnloadTexture(texEnemyBullet);

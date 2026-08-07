@@ -29,6 +29,9 @@ public:
     bool LoadStage(const std::string& filepath);
     bool SpawnBatch(int waveId, int batchId);
     
+    int GetTotalWaves() const;
+    int GetMaxBatchForWave(int waveId) const;
+    
     void Update(float deltaTime);
 };
 

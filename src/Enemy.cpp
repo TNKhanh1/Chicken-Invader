@@ -154,10 +154,11 @@ void Enemy::Draw() {
         DrawTexturePro(tex, fullSrc, fullDst, fullOrigin, 0.0f, WHITE);
 
     } else {
-        Texture2D tex = gm->GetTexEnemyAnim();
+        Texture2D tex = gm->GetTexEnemyAnim(visualId - 1);
         
         float base = baseSizeForType();
-        float aspectRatio = 1.0f; // Mỗi khung hình là 100x100
+        float aspectRatio = 1.0f; // Mỗi khung hình là hình vuông
+        float frameSize = (float)tex.height;
 
         // --- Tilt nghiêng khi di chuyển ngang ---
         float dx = position.x - prevPosition.x;
@@ -177,8 +178,8 @@ void Enemy::Draw() {
         float destH = base * aspectRatio;
         Vector2 origin = { destW / 2.0f, destH / 2.0f }; // Vẽ từ tâm
         
-        // Sprite sheet nằm ngang, 12 frames, mỗi frame 100px
-        Rectangle srcRec = { (float)currentAnimFrame * 100.0f, 0, 100.0f, 100.0f };
+        // Sprite sheet nằm ngang, 24 frames, mỗi frame là frameSize x frameSize
+        Rectangle srcRec = { (float)currentAnimFrame * frameSize, 0, frameSize, frameSize };
         Rectangle destRec = { position.x + shakeX, position.y + shakeY, destW, destH };
         
         DrawTexturePro(tex, srcRec, destRec, origin, tiltAngle, tintColor);
