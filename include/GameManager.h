@@ -81,6 +81,7 @@ private:
     std::shared_ptr<class Spaceship> player;
     
     // Wave variables
+    int currentStage = 1;
     int currentWave;
     int currentBatch;
     float waveTimer;
@@ -95,9 +96,15 @@ private:
     float bgScrollSpeed    = 30.0f;  // Tốc độ cuộn background (px/s) — thay magic number
     float waveTextAlpha    = 0.0f;   // Alpha chữ WAVE X (0–255)
 
-    // Test selection
-    int testSelectedWave = 1;
-    int testSelectedBatch = 1;
+    // Test selection configuration (Encapsulated)
+    struct TestConfig {
+        int stage = 1;
+        int wave = 1;
+        int batch = 1;
+        int maxStage = 2;
+        int maxWave = 10;
+        int maxBatch = 5;
+    } testConfig;
 
 struct DamageText {
     Vector2 position;

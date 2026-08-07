@@ -7,14 +7,7 @@
 // Factory Method Pattern để tạo ra các loại gà
 class EnemyFactory {
 public:
-    enum class EnemyType {
-        NORMAL_CHICKEN,
-        SWARM_CHICKEN,
-        TANK_CHICKEN,
-        BOSS,
-        ASTEROID
-    };
-    static std::unique_ptr<Enemy> CreateEnemy(EnemyType type, Vector2 startPos, int wave = 1);
+    static std::unique_ptr<Enemy> CreateEnemy(int visualId, EnemyRole role, const EnemyStats& stats, Vector2 position);
 };
 
 #endif // ENEMY_FACTORY_H

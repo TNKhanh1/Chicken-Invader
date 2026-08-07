@@ -5,7 +5,26 @@
 #include "IMovementBehavior.h"
 #include <memory>
 
+
 #include <vector>
+
+enum class EnemyRole {
+    NORMAL,
+    SWARM,
+    TANK,
+    BOSS,
+    ASTEROID
+};
+
+struct EnemyStats {
+    float hp = 100.0f;
+    float damage = 20.0f;
+    float armor = 0.0f;
+    float speed = 100.0f;
+    float eggRate = 3.0f;
+    int score = 10;
+};
+
 
 class Enemy : public Character {
 private:
@@ -14,13 +33,15 @@ private:
     float baseSizeForType() const;
 
 public:
-    Enemy(Vector2 pos, float hp, float dmg, float arm, float spd, int points);
+    Enemy(int visualId, EnemyRole role, const EnemyStats& stats, Vector2 pos);
 
     int GetPointValue() const;
 
     void Init() override;
 
-    int enemyType = 0;
+    int visualId = 1;
+    EnemyRole role = EnemyRole::NORMAL;
+    EnemyStats stats;
     int currentFrame = 0;
     float frameTimer = 0.0f;
     int asteroidVariant = 1; // Loại thiên thạch (1 hoặc 2)

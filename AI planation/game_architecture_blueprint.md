@@ -1,86 +1,106 @@
 # Bản Thiết Kế Kiến Trúc Tổng Thể: Hệ Thống Kẻ Địch và Các Đợt Chơi (Dài Hạn)
 
-## 1. Lưu Trữ Dữ Liệu (Data-Driven Design) - Dùng CSV
-Việc sử dụng file CSV (như cách chúng ta đã làm với phi thuyền qua `spaceship_data.csv`) là một phương án **TUYỆT VỜI** và rất phổ biến trong lập trình game chuyên nghiệp. Việc này giúp tách bạch hoàn toàn phần Data (cân bằng game) ra khỏi phần Code. Bạn chỉ cần sửa Excel, thêm 100 loại gà hoặc 1000 wave mà không cần phải mở C++ ra compile lại.
+## 1. Lưu Trữ Dữ Liệu (Data-Driven Design) bằng JSON
 
-### a. Bảng dữ liệu Quái vật (`enemy_data.csv`)
-Mỗi loại gà sẽ là 1 dòng trong file CSV. Các cột dự kiến:
-- `EnemyID`: Mã quái (Ví dụ: `CHICKEN_MINION`, `CHICKEN_TANK`, `CHICKEN_BOSS_1`).
-- `TextureIndex`: Xác định dùng file png nào (VD: `1` cho `chicken01.png`, `2` cho `chicken02.png`).
-- `BaseScale`: Tỷ lệ kích thước gốc (1.0 = 100px, 1.5 = 150px).
-- `BaseHP`, `BaseDamage`, `Armor`, `Speed`: Các chỉ số gốc.
-- `Abilities`: Các kỹ năng nội tại/đặc biệt, ngăn cách bằng dấu `|` (VD: `SHIELDED|SPLIT_ON_DEATH`).
+Việc sử dụng file JSON là một phương án **TUYỆT VỜI** và linh hoạt nhất để tách bạch hoàn toàn phần Data (cân bằng game) ra khỏi phần Code C++. Bạn có thể tùy ý mix 10 ngoại hình gà, với các kích thước và chỉ số máu khác nhau ở mỗi Wave mà không cần đụng vào code.
 
-### b. Bảng dữ liệu Đợt chơi (`wave_data.json` hoặc `.csv`)
-*Lưu ý: Vì cấu trúc của một đợt chơi có thể phức tạp (trộn nhiều loại quái, thiên thạch, sự kiện), dùng **JSON** sẽ linh hoạt hơn CSV ở mảng này.*
-- `BattleID`: Xác định trận đấu (VD: `CAMPAIGN_01`, `KILL_100_MODE`, `BLIND_MATCH`).
-- `WaveData`: Danh sách các Wave.
-  - Trong mỗi Wave lại có danh sách các `Batch` (Tốp lính).
-  - Một `Batch` có thể chứa NHIỀU loại quái cùng lúc (VD: 5 Gà Nhỏ + 2 Thiên Thạch), xếp theo các Formation khác nhau.
-- `SpecialEvents`: Các cờ (flag) đặc biệt (Ví dụ: `"isBlind": true`, `"bossSpawn": true`).
+### a. Kiến trúc "Component-Override" (Phân lớp dữ liệu)
+Thay vì tạo ra hàng chục Class con (`Chicken1Boss`, `Chicken5Tank`), một đối tượng Quái sẽ được lắp ghép từ 3 lớp độc lập khi sinh ra:
+
+1. **Lớp Hình Ảnh (Visual Layer):** Chỉ số ID từ 1 đến 10 (`visual_id`). Xác định con gà sẽ dùng spritesheet nào (`chicken01.png` đến `chicken10.png`).
+2. **Lớp Vai Trò (Role Layer):** (`NORMAL`, `SWARM`, `TANK`, `BOSS`). Lớp này quyết định kích thước render trên màn hình (Scale) và bán kính va chạm (Hitbox).
+3. **Lớp Chỉ Số (Stat Layer):** (`HP, Speed, EggRate, Score`). Lớp này quyết định độ khó thực tế của con gà.
+
+### b. Bảng dữ liệu Đợt chơi (`waves.json`)
+Toàn bộ sức mạnh của kiến trúc nằm ở file này. Nó cho phép bạn **override (ghi đè)** chỉ số của bất kỳ ngoại hình gà nào tùy theo từng đợt chơi.
+
+Ví dụ file `waves.json`:
+```json
+"waves": [
+  {
+    "wave_id": 1,
+    "batches": [
+      {
+        "batch_id": 1,
+        "visual_id": 1,             // Dùng ngoại hình gà 1
+        "role": "NORMAL",           // Size bình thường
+        "count": 15,
+        "pattern": "HOVER_GRID",
+        "stats": {                  // Chỉ số chính xác cho Wave 1
+          "hp": 100,
+          "speed": 125,
+          "egg_rate": 3.0,
+          "score": 10
+        }
+      }
+    ]
+  },
+  {
+    "wave_id": 10,
+    "batches": [
+      {
+        "batch_id": 1,
+        "visual_id": 1,             // Vẫn là ngoại hình gà 1
+        "role": "BOSS",             // Nhưng bị bơm to thành Size Boss
+        "count": 1,
+        "pattern": "BOSS_MOVEMENT",
+        "stats": {                  // Chỉ số khủng khiếp cho Wave 10
+          "hp": 15000,
+          "speed": 200,
+          "egg_rate": 0.5,          
+          "score": 5000
+        }
+      }
+    ]
+  }
+]
+```
 
 ---
 
-## Giải đáp thắc mắc: "Nếu có ý tưởng dị, chế độ đặc biệt thì CSV/JSON làm sao đáp ứng?"
+## 2. Giải đáp thắc mắc: "Nếu có ý tưởng dị, chế độ đặc biệt thì làm sao đáp ứng?"
 
-Bạn hoàn toàn đúng khi lo lắng rằng dữ liệu file (như CSV) thì cứng nhắc. Chìa khóa ở đây là: **File dữ liệu (CSV/JSON) CHỈ LÀ THÔNG SỐ, còn LUẬT CHƠI (Logic) nằm ở C++ (Interface IBattleMode).**
+Chìa khóa ở đây là: **File dữ liệu (JSON) CHỈ LÀ THÔNG SỐ, còn LUẬT CHƠI (Logic) nằm ở C++ (Interface IBattleMode).**
 
 1. **Trộn nhiều loại gà, thiên thạch:** 
-   Trong file dữ liệu, một đợt (Wave) không bị giới hạn chỉ 1 loại quái. Ta thiết kế để 1 đợt chứa một danh sách (List) các `Batch`. Tốp 1 là 5 thiên thạch, Tốp 2 là 10 Gà Tank cùng xuất hiện. Trình đọc dữ liệu sẽ lặp qua toàn bộ và sinh ra đủ các loại.
+   Trong JSON, mảng `batches` có thể chứa vô hạn phần tử. Tốp 1 là thiên thạch (visual_id: 11), Tốp 2 là Gà Tank (visual_id: 5). Trình đọc dữ liệu sẽ lặp qua toàn bộ và sinh ra đủ các loại cùng lúc.
 
 2. **Chế độ Blind (Mù) hoặc Môi trường đặc biệt:**
-   File dữ liệu của màn đó sẽ truyền vào một tham số: `Environment = "BLIND"`. Khi `GameManager` đọc thấy tham số này, nó sẽ kích hoạt `BlindBattleMode` (chứa code vẽ màn đêm bằng Raylib). Nếu sau này bạn nảy ra ý tưởng môi trường "Gió thổi dạt phi thuyền", bạn chỉ cần code thêm class `WindyBattleMode` trong C++ và để CSV gọi tên nó. File dữ liệu KHÔNG chứa code gió, nó chỉ BẢO hệ thống C++ hãy bật tính năng gió lên.
+   File dữ liệu của trận đấu đó sẽ truyền vào cờ: `"environment": "BLIND"`. Khi C++ đọc thấy, nó kích hoạt `BlindBattleMode` (chứa code vẽ màn đêm). File dữ liệu KHÔNG chứa code sương mù, nó chỉ BẢO C++ hãy bật tính năng đó lên.
 
 3. **Chế độ không có Wave, tiêu diệt 100 quái là thắng:**
-   Đúng vậy, chế độ này không chạy theo luồng Wave thông thường. Lúc này bạn sẽ tạo một class C++ tên là `KillCountBattleMode` kế thừa `IBattleMode`.
-   - `KillCountBattleMode` sẽ phớt lờ cơ chế chờ hết quái mới ra Wave tiếp theo.
-   - Nó sẽ có biến đếm `killedCount`.
-   - Cứ mỗi vài giây nó lại gọi ngẫu nhiên một Tốp lính từ Data. Đủ 100 kill thì qua màn.
-   - Khi đó trong file Data của trận này, bạn chỉ cần ném vào danh sách "Các loại quái có thể xuất hiện", phần còn lại để C++ lo!
-
-=> **Kết luận:** Nếu bạn nảy ra ý tưởng mới, bạn sẽ code luật chơi đó thành một Class C++ (áp dụng Strategy Pattern). Còn CSV/JSON chỉ cung cấp thông số (Máu bao nhiêu, số lượng 100 hay 200, thời gian 5s hay 10s) cho Class C++ đó chạy. Nó CỰC KỲ dễ mở rộng mà không làm hỏng các màn chơi cũ!
-
-## 2. Kiến Trúc Lập Trình (OOP & Design Patterns)
-
-Để game đáp ứng được hệ thống CSV đồ sộ trên, code C++ cần áp dụng các Design Pattern sau:
-
-### a. Data Manager & Factory Pattern (Quản lý và Sinh Quái)
-- **`EnemyDataManager` (Singleton):** Chỉ chạy 1 lần khi bật game. Nó đọc `enemy_data.csv` và lưu vào `std::map<std::string, EnemyProfile>`.
-- **`EnemyFactory`:** Khi GameManager yêu cầu sinh quái `CHICKEN_TANK`, Factory sẽ tra cứu DataManager, copy các chỉ số, và trả về đối tượng `Enemy` tương ứng.
-
-### b. Component Pattern (Cho Nội Tại / Chiêu Thức)
-- Thay vì tạo ra hàng chục Class con (`TankChicken`, `PoisonChicken`), ta **chỉ dùng đúng 1 Class `Enemy`**.
-- Lớp `Enemy` sẽ chứa một danh sách các "Mảnh ghép" nội tại: `std::vector<std::unique_ptr<IEnemyAbility>>`.
-- Interface `IEnemyAbility` chứa: `Update()`, `OnTakeDamage()`, `OnDeath()`.
-- **Ví dụ:** Nếu CSV ghi `SPLIT_ON_DEATH`, Factory sẽ nhét class `SplitAbility` vào con quái đó. Khi quái chết, `Enemy::Die()` sẽ tự động kích hoạt `SplitAbility::OnDeath()` (sinh ra 3 con gà nhỏ).
-
-### c. Modifier Pattern (Scaling Kích thước và Độ Khó)
-- Mọi chỉ số trong CSV là **Chỉ số gốc (Base Stats)**.
-- Khi tạo màn chơi, ta truyền vào một `DifficultyContext` (Ví dụ: Wave 10 hệ số máu x2.5).
-- Factory sẽ lấy: `BaseHP * DifficultyContext.HpMult` = HP Thực tế.
-
-### d. Builder Pattern (Sinh Đội Hình Tọa Độ)
-- Hàm `SpawnWaveBatch` hiện tại của bạn đang lặp `for` và tính tọa độ x, y thủ công rất mệt mỏi.
-- Cần tạo lớp **`FormationBuilder`**. Nhiệm vụ:
-  - Input: Nhận biến `Count` (số lượng) và kiểu `Formation` (`V_SHAPE`, `GRID`).
-  - Output: Trả về một mảng tọa độ `std::vector<Vector2>`.
-- Code sinh quái sẽ rất gọn: gọi Builder lấy tọa độ, sau đó gọi Factory sinh quái đặt vào tọa độ đó.
-
-### e. Strategy / State Pattern (Cho Các Phương Thức Trận Đấu)
-- Tạo Interface **`IBattleMode`** chịu trách nhiệm điều phối luật chơi, bao gồm:
-  - `virtual void Update(float deltaTime) = 0;`
-  - `virtual void DrawOverlay() = 0;` // Để vẽ các hiệu ứng riêng
-- Các Class con:
-  - `StandardBattleMode`: Chơi theo màn cơ bản, phải diệt sạch lính thì Wave mới xuất hiện Tốp (Batch) tiếp theo.
-  - `EndlessBattleMode`: Bỏ qua việc lính còn hay chết, cứ đếm Timer đủ `SpawnDelay` là quái tràn ra màn hình liên tục.
-  - `BlindBattleMode`: Trong hàm `DrawOverlay()`, vẽ một lớp Texture màu đen đục phủ kín màn hình, chỉ để lộ vòng tròn nhỏ quanh Phi Thuyền (sương mù chiến tranh).
+   Sử dụng class C++ `KillCountBattleMode` kế thừa `IBattleMode`. Chế độ này bỏ qua biến đếm Wave. Nó liên tục bốc random cấu hình quái từ mảng JSON và thả vào màn hình. Đủ 100 kill là tự động Victory.
 
 ---
 
-## 3. Các Bước Triển Khai Thực Tế
-*(Theo đúng yêu cầu, chúng ta chưa code vội, đây là thứ tự sẽ làm khi bắt đầu code)*
+## 3. Kiến Trúc Lập Trình OOP (C++)
 
-- **Giai đoạn 1:** Soạn thảo 2 file `enemy_data.csv` và `wave_data.csv`. Viết class `DataManager` đọc file này đưa vào RAM.
-- **Giai đoạn 2:** Xây dựng `FormationBuilder` (chứa thuật toán xếp đội hình chữ V, lưới, tròn). Chỉnh sửa `GameManager` để load màn chơi từ file CSV thay vì `if-else` cứng.
-- **Giai đoạn 3:** Áp dụng Component Pattern cho quái (viết interface `IEnemyAbility` và thử nghiệm 1 nội tại đầu tiên).
-- **Giai đoạn 4:** Thiết kế `IBattleMode` và đưa logic `StandardMode`, `BlindMode` vào hoạt động.
+Để đáp ứng hệ thống trên, Code C++ cần áp dụng các mẫu thiết kế:
+
+### a. WaveManager & Factory Pattern (Đọc JSON và Sinh Quái)
+- **`WaveManager` (Singleton):** Sử dụng thư viện `nlohmann/json.hpp` để nạp `waves.json` vào bộ nhớ. Nó sẽ tự động trích xuất các thông số của Batch hiện tại.
+- **`EnemyFactory`:** Hàm `CreateEnemy` giờ đây sẽ nhận vào `visual_id`, `role`, và một struct `EnemyStats`. Factory không còn chứa lệnh `switch-case` hardcode chỉ số nữa, mà chỉ thuần túy copy dữ liệu từ JSON sang Object Enemy.
+
+### b. FormationBuilder Pattern (Dịch Layout sang Tọa Độ)
+- File JSON chỉ mô tả hình dáng (VD: `type: "V_SHAPE"`, `count: 15`). Làm sao để biến nó thành tọa độ X, Y chính xác trên màn hình?
+- Lớp **`FormationBuilder`** sẽ nhận cục JSON `"layout"` này và tính toán ra một mảng `std::vector<Vector2>`. 
+- Nó chứa các hàm toán học như `BuildGrid()`, `BuildVShape()`, giúp `WaveManager` biết chính xác phải đặt quái ở đâu mà không cần viết lại công thức toán.
+
+### c. Component Pattern (Cho Nội Tại / Chiêu Thức)
+- Giữ nguyên thiết kế **1 Class `Enemy` duy nhất**.
+- Các hiệu ứng đặc biệt (chia nhỏ khi chết, hồi máu, tạo khiên) được code thành các class kế thừa `IEnemyAbility` (VD: `SplitAbility`).
+- Nếu JSON có ghi `"abilities": ["SPLIT_ON_DEATH"]`, Factory sẽ cấy `SplitAbility` vào con quái đó.
+
+### d. Strategy Pattern (Cho Các Phương Thức Trận Đấu)
+- Tạo Interface **`IBattleMode`** chịu trách nhiệm điều phối luật chơi (`Update`, `DrawOverlay`).
+- **`StandardBattleMode`:** Chơi màn cơ bản, diệt sạch quái mới qua Wave.
+- **`EndlessBattleMode`:** Quái ra liên tục dựa theo chu kỳ thời gian (Timer).
+
+---
+
+## 4. Các Bước Triển Khai Thực Tế
+
+- **Giai đoạn 1:** Tích hợp thư viện JSON C++ (`nlohmann/json`). Cập nhật `EnemyFactory` và `Enemy` class để chấp nhận struct `EnemyStats` và `visualId` một cách độc lập. Tự động nạp 10 Sprite sheet vào mảng.
+- **Giai đoạn 2:** Tạo file `waves.json` và class `WaveManager`. Dịch thuật các logic Wave 1-4 (đang nằm cứng trong `GameManager.cpp`) sang file JSON để hệ thống bắt đầu chạy Data-Driven 100%.
+- **Giai đoạn 3:** Xây dựng Component Pattern (`IEnemyAbility`) để gán chiêu thức đặc biệt cho các quái thông qua mảng `"abilities"` trong JSON.
+- **Giai đoạn 4:** Thiết lập `IBattleMode` để làm nền tảng cho các chế độ chơi dị (Blind, Endless) trong tương lai.

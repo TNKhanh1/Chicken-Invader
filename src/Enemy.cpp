@@ -4,8 +4,11 @@
 #include "Bullet.h"
 #include <algorithm>
 
-Enemy::Enemy(Vector2 pos, float hp, float dmg, float arm, float spd, int points)
-    : Character(pos, hp, dmg, arm, spd), pointValue(points) {
+Enemy::Enemy(int vId, EnemyRole r, const EnemyStats& s, Vector2 pos)
+    : Character(pos, s.hp, s.damage, s.armor, s.speed), pointValue(s.score) {
+    visualId = vId;
+    role = r;
+    stats = s;
     // Khởi tạo gà ngẫu nhiên (Asteroid không xài nhưng kệ nó, không ảnh hưởng)
     // Gán frame random cho ASTEROID để các cục đá không xoay đồng bộ
     currentFrame = GetRandomValue(0, 29);
@@ -69,7 +72,7 @@ void Enemy::Update(float deltaTime) {
     }
 
     // Cập nhật animation và trail của ASTEROID
-    if (enemyType == 4) {
+    if (role == EnemyRole::ASTEROID) {
         // --- Cập nhật frame (có 30 frames, chỉ lấy từ hàng 1 - thân thiên thạch) ---
         frameTimer += deltaTime;
         if (frameTimer >= 0.04f) { // ~25 FPS animation
@@ -122,7 +125,7 @@ void Enemy::Update(float deltaTime) {
 void Enemy::Draw() {
     auto gm = GameManager::GetInstance();
     
-    if (enemyType == 4) { // ASTEROID
+    if (role == EnemyRole::ASTEROID) {
         Texture2D tex = (asteroidVariant == 1) ? gm->GetTexAsteroid1() : gm->GetTexAsteroid2();
         const int   COLS    = (asteroidVariant == 2) ? 15 : 30;
         const float FRAME_W = (float)tex.width  / COLS;  
