@@ -115,3 +115,47 @@ Implement the first 4 waves of **Stage 2** using the `chicken02` variant. This i
   - Refactored `GameManager.h` to add `extraStatSelectionsPending`.
   - Updated `GameManager.cpp` to correctly chain 3 consecutive `STAT_SELECTION` states when this Argument is chosen.
 - Compiled successfully and verified the fixes.
+
+---
+
+## 6. Fire Phoenix Boss (Stage 1, Wave 5) Implementation
+- **Completed Boss implementation** based on `planboss01.md`.
+- Added `FireBullet` class for procedural fire projectiles with glowing and pulsing effects (no external texture required).
+- Added `FirePhoenixBoss` class implementing a complex 2-phase lifecycle:
+  - **Phase 1** has a normal attack cycle and wing spark particles (fewer, lower alpha).
+  - Overrode `Die()` to prevent death at the end of Phase 1. Instead, triggers a 2-second transition state (invulnerable, flashes white/orange, bursts of sparks).
+  - **Phase 2** features faster attacks, denser spark particles (brighter, more frequent), and a subtle red tint on the sprite.
+  - Integrated 2 alternating skills into the attack cycle: Fireball (large glowing projectiles) and Fire Rain (radial burst of small projectiles).
+  - Implemented a custom Boss HP bar with Phase indicators drawn directly above the boss.
+- Updated `EnemyFactory.cpp` and `stage1.json` to cleanly construct `FirePhoenixBoss` using `visualId == 10` (the new chicken10 variant).
+- Appended Wave 5 configuration to `data/stage1.json` defining the boss encounter.
+
+### 6.1 Visual & Bullet Upgrades (Follow-up)
+- **Advanced Boss Image Warping:** 
+  - Wrote a custom Python script (`create_boss_anim.py`) to process `chicken10.png` (531x470).
+  - Used Connected Components (`skimage.measure.label`) to automatically isolate the main body from detached fire feathers.
+  - Applied mesh warping (flapping) ONLY to the main body.
+  - Implemented a 2-stream falling and fading logic for the detached fire feathers to create a seamless infinite looping idle animation (cháy rụi/rụng lông) without stretching them.
+  - Automatically detected and filtered out an extraneous Gemini watermark logo in the bottom right corner before processing.
+- **Procedural + Texture Bullet Blending:**
+  - Loaded `firebullet.png` into `GameManager`.
+  - Refactored `FireBullet` to use an `enum class Type { NORMAL, LARGE, EXPLOSIVE }` for robust OOP scalability instead of a boolean flag.
+  - Scaled up normal bullets by 1.5x.
+  - Implemented the `EXPLOSIVE` bullet type: it dynamically aims at the player's predicted position (`player->GetHitbox()`), travels for 0.8 seconds, and automatically detonates into a 360-degree spread of 16 `NORMAL` bullets.
+  - Removed `firebullet.png` to rely entirely on procedural generation (`DrawCircleGradient`) for boss projectiles to save resources and maintain a consistent aesthetic.
+- Scaled up the procedural bullets significantly to match the visual weight of the previous sprite.
+- Successfully compiled the game without errors. The implementation strictly adheres to OOP principles (Inheritance, Strategy, Factory) and encapsulates bullet explosion logic directly within the `FireBullet` class to avoid logic leaks.
+
+### 6.2 Boss Polish & Critical Bug Fixes
+- **Iterator Invalidation Crash Fix:** 
+  - **Issue:** The game crashed via Segmentation Fault during the Phase 2 boss fight when the boss spawned a burst of bullets. This was due to modifying `GameManager::activeBullets` while iterating over it in `GameManager::Update()`.
+  - **Solution:** Implemented an entity pending buffer (`pendingBullets`, `pendingEnemies`, `pendingItems`). All entities added during the `Update` loop are staged here and flushed to the active lists at the very end of the loop, preventing iterator invalidation.
+- **Stage Auto-Transition Refactor:** 
+  - Instead of automatically loading the JSON for the next stage upon completion of the final wave, `GameManager` now transitions back to `GameState::WAVE_SELECTION` (Main Menu). The player's HP is also fully healed.
+- **Removed Boss Drumstick Drop:** Removed the logic in `Boss::Update` that spawned `Meat` every 5 seconds to keep the boss fight challenging and focused.
+- **Intense Phase 2 Transition:**
+  - **Duration:** Increased transition duration to 2.6 seconds.
+  - **Flashing:** The boss now blinks aggressively (every 0.08s) between blinding white (`Opacity: 100%`) and a highly transparent red-orange (`Opacity: ~30%`), simulating a powerful resurrection/transformation.
+  - **Stand Still:** Overrode movement by locking `targetPos = position` so the boss hovers menacingly in place.
+  - **Bullet Bursts:** The boss detonates a 360-degree burst of 24 large fireballs at the exact start *and* the exact end of the transition.
+  - **Aggression:** Decreased `attackCooldown` from 1.8f to 1.1f for Phase 2, resulting in vastly more bullets being fired once the boss revives.

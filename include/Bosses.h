@@ -73,4 +73,83 @@ public:
     void Update(float deltaTime) override;
 };
 
+class FireBullet : public Bullet {
+public:
+    enum class Type { NORMAL, LARGE, EXPLOSIVE };
+private:
+    Type type;
+    float glowPulse;
+    float lifeTimer;
+    Vector2 initialVelocity;
+
+public:
+    FireBullet(Vector2 startPos, Vector2 velocity, float damage, Type type = Type::NORMAL);
+    void Update(float deltaTime) override;
+    void Draw() override;
+};
+
+// --- Fire Phoenix Boss (Stage 1, Wave 5) ---
+class FirePhoenixBoss : public Boss {
+public:
+    enum class Phase { PHASE_1, TRANSITIONING, PHASE_2 };
+
+private:
+    Phase currentPhase;
+    float phase1MaxHp;
+    float phase2MaxHp;
+
+    // Phase transition
+    float transitionTimer;
+    bool isInvulnerable;
+    int transitionFlashCount;
+    float transitionFlashTimer;
+
+    // Attack system
+    float attackTimer;
+    int normalAttackCount;
+    int normalAttacksBeforeSkill; // Phase1: 4, Phase2: 3
+    float attackCooldown;         // Phase1: 2.5s, Phase2: 1.8s
+    int nextSkillType;            // 0: Fireball, 1: Fire Rain (alternating)
+
+    // Wing spark particle system
+    struct SparkParticle {
+        Vector2 pos;
+        Vector2 velocity;
+        float alpha;
+        float size;
+        Color color;
+    };
+    std::vector<SparkParticle> sparks;
+    float sparkSpawnTimer;
+
+    // Attack methods
+    void FireNormalAttack();
+    void FireLargeFireball();
+    void FireRain();
+
+    // Particle methods
+    void SpawnWingSparks(float deltaTime);
+    void UpdateSparks(float deltaTime);
+    void DrawSparks();
+
+    // Phase transition
+    void StartTransition();
+    void UpdateTransition(float deltaTime);
+    void EnterPhase2();
+
+    // HP Bar
+    void DrawBossHPBar();
+
+public:
+    FirePhoenixBoss(int visualId, const EnemyStats& stats, Vector2 pos,
+                    float p1Hp, float p2Hp);
+
+    void Update(float deltaTime) override;
+    void Draw() override;
+    void Die() override;
+    void TakeDamage(float incomingDamage) override;
+
+    Phase GetPhase() const { return currentPhase; }
+};
+
 #endif // BOSSES_H

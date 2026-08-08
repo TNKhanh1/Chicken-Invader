@@ -206,8 +206,11 @@ void GameManager::StartWave(int waveIndex) {
 
     // Clear everything from the previous wave
     activeBullets.clear();
+    pendingBullets.clear();
     activeItems.clear();
+    pendingItems.clear();
     activeEnemies.clear();
+    pendingEnemies.clear();
     activeDamageTexts.clear();
 
     // Kích hoạt hiệu ứng chuyển wave (WAVE_INTRO) thay vì nhảy thẳng vào gameplay
@@ -632,11 +635,13 @@ void GameManager::Update(float deltaTime) {
                                 if (currentWave < WaveManager::GetInstance()->GetTotalWaves()) {
                                     EnterStatSelection(currentWave + 1);
                                 } else {
-                                    currentStage++;
-                                    currentWave = 1;
-                                    currentBatch = 1;
-                                    WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
-                                    EnterStatSelection(currentWave);
+                                    // Chơi xong stage, quay về menu chọn màn
+                                    ChangeState(GameState::WAVE_SELECTION);
+                                    
+                                    // Có thể hồi lại máu cho người chơi nếu muốn, hoặc reset nhẹ
+                                    if (player) {
+                                        player->Heal(player->GetMaxHp());
+                                    }
                                 }
                             }
                         }
@@ -899,6 +904,20 @@ void GameManager::Update(float deltaTime) {
 
         default:
             break;
+    }
+
+    // Flush pending entities (prevent iterator invalidation)
+    if (!pendingBullets.empty()) {
+        activeBullets.insert(activeBullets.end(), pendingBullets.begin(), pendingBullets.end());
+        pendingBullets.clear();
+    }
+    if (!pendingEnemies.empty()) {
+        activeEnemies.insert(activeEnemies.end(), pendingEnemies.begin(), pendingEnemies.end());
+        pendingEnemies.clear();
+    }
+    if (!pendingItems.empty()) {
+        activeItems.insert(activeItems.end(), pendingItems.begin(), pendingItems.end());
+        pendingItems.clear();
     }
 }
 

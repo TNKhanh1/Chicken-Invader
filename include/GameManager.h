@@ -77,8 +77,11 @@ private:
 
     // Entity lists
     std::vector<std::shared_ptr<class Bullet>> activeBullets;
+    std::vector<std::shared_ptr<class Bullet>> pendingBullets;
     std::vector<std::shared_ptr<class Enemy>> activeEnemies;
+    std::vector<std::shared_ptr<class Enemy>> pendingEnemies;
     std::vector<std::shared_ptr<class Item>> activeItems;
+    std::vector<std::shared_ptr<class Item>> pendingItems;
     std::shared_ptr<class Spaceship> player;
     
     // Wave variables
@@ -199,9 +202,9 @@ public:
     void PlayPickupSound() { /*PlaySound(sfxPickup);*/ }
     
     // Entity management
-    void AddBullet(std::shared_ptr<class Bullet> bullet) { activeBullets.push_back(bullet); }
-    void AddEnemy(std::shared_ptr<class Enemy> enemy) { activeEnemies.push_back(enemy); }
-    void AddItem(std::shared_ptr<class Item> item) { activeItems.push_back(item); }
+    void AddBullet(std::shared_ptr<class Bullet> bullet) { pendingBullets.push_back(bullet); }
+    void AddEnemy(std::shared_ptr<class Enemy> enemy) { pendingEnemies.push_back(enemy); }
+    void AddItem(std::shared_ptr<class Item> item) { pendingItems.push_back(item); }
     std::shared_ptr<class Spaceship> GetPlayer() const { return player; }
     
     // Custom Font handling
