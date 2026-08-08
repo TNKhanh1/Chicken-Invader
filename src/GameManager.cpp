@@ -22,6 +22,7 @@
 #include "../include/HypergunShootingBehavior.h"
 #include "../include/BeamWeapon.h"
 #include "../include/AllWeaponBehaviors.h"
+#include "../include/Bosses.h"
 #include <iostream>
 #include <cmath>
 #include <algorithm>
@@ -285,6 +286,8 @@ void GameManager::Init(int width, int height, const char* title) {
         snprintf(path, sizeof(path), "assets/enemy/chicken%02d_anim.png", i + 1);
         texEnemyAnims[i] = LoadTexture(path);
     }
+    texEnemyAnims[10] = LoadTexture("assets/enemy/Militarychicken_anim.png");
+    texEnemyAnims[11] = LoadTexture("assets/enemy/CI4_SuperChick_Summer_anim.png");
     
     texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
     texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
@@ -311,6 +314,9 @@ void GameManager::Init(int width, int height, const char* title) {
     texLaserCannon[2] = LoadTexture("assets/spaceship/LaserCannonMediumStrong.png");
     texLaserCannon[3] = LoadTexture("assets/spaceship/LaserCannonStrong.png");
     
+    texGrenade = LoadTexture("assets/enemy/grenade.png");
+    texKnife = LoadTexture("assets/enemy/knife.png");
+
     // Selection screen card backgrounds
     texLoi   = LoadTexture("assets/loi.png");
     texChiSo = LoadTexture("assets/chiso.png");
@@ -598,30 +604,40 @@ void GameManager::Update(float deltaTime) {
                     if (waveTimer <= 0.0f) {
                         isWaveTransitioning = false;
                         
-                        // Cố gắng spawn batch hiện tại
-                        bool batchSpawned = SpawnWaveBatch(currentWave, currentBatch);
-                        
-                        // Nếu spawn thất bại (hết batch của wave này)
-                        if (!batchSpawned) {
-                            EnterStatSelection(currentWave + 1);
+                        if (currentStage == 7) {
+                            // Bosses are already spawned during WAVE_SELECTION, so no need to spawn batches or enter stat selection.
+                        } else {
+                            // Cố gắng spawn batch hiện tại
+                            bool batchSpawned = SpawnWaveBatch(currentWave, currentBatch);
+                            
+                            // Nếu spawn thất bại (hết batch của wave này)
+                            if (!batchSpawned) {
+                                EnterStatSelection(currentWave + 1);
+                            }
                         }
                     }
                 } else if (activeEnemies.empty()) {
-                    int maxBatch = WaveManager::GetInstance()->GetMaxBatchForWave(currentWave);
-                    if (currentBatch < maxBatch) {
-                        currentBatch++;
-                        isWaveTransitioning = true;
-                        waveTimer = 3.0f;
-                    } else {
+                    if (currentStage == 7) {
                         if (activeItems.empty()) {
-                            if (currentWave < WaveManager::GetInstance()->GetTotalWaves()) {
-                                EnterStatSelection(currentWave + 1);
-                            } else {
-                                currentStage++;
-                                currentWave = 1;
-                                currentBatch = 1;
-                                WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
-                                EnterStatSelection(currentWave);
+                            currentState = GameState::GAME_OVER; // Chiến thắng Stage 7
+                        }
+                    } else {
+                        int maxBatch = WaveManager::GetInstance()->GetMaxBatchForWave(currentWave);
+                        if (currentBatch < maxBatch) {
+                            currentBatch++;
+                            isWaveTransitioning = true;
+                            waveTimer = 3.0f;
+                        } else {
+                            if (activeItems.empty()) {
+                                if (currentWave < WaveManager::GetInstance()->GetTotalWaves()) {
+                                    EnterStatSelection(currentWave + 1);
+                                } else {
+                                    currentStage++;
+                                    currentWave = 1;
+                                    currentBatch = 1;
+                                    WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
+                                    EnterStatSelection(currentWave);
+                                }
                             }
                         }
                     }
@@ -1025,7 +1041,7 @@ void GameManager::Draw() {
             DrawText("TEST STAGE & WAVE", screenWidth/2 - MeasureText("TEST STAGE & WAVE", 40)/2, 120, 40, YELLOW);
             
             // Fix Out-of-Bounds Issue: Show warning if trying to start non-existent waves
-            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 4);
+            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 4) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
             if (!isValidSelection) {
                 DrawText("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2 - 200, 180, 20, RED);
             }
@@ -1044,8 +1060,9 @@ void GameManager::Draw() {
             if (DrawButton({ (float)screenWidth/2 - 150, 310, 50, 50 }, "<")) {
                 if (testConfig.wave > 1) { testConfig.wave--; testConfig.batch = 1; }
             }
+            int currentMaxWave = (testConfig.stage == 7) ? 1 : testConfig.maxWave;
             if (DrawButton({ (float)screenWidth/2 + 100, 310, 50, 50 }, ">")) {
-                if (testConfig.wave < testConfig.maxWave) { testConfig.wave++; testConfig.batch = 1; }
+                if (testConfig.wave < currentMaxWave) { testConfig.wave++; testConfig.batch = 1; }
             }
 
             // Buttons to select Batch
@@ -1053,8 +1070,9 @@ void GameManager::Draw() {
             if (DrawButton({ (float)screenWidth/2 - 150, 410, 50, 50 }, "<")) {
                 if (testConfig.batch > 1) testConfig.batch--;
             }
+            int currentMaxBatch = (testConfig.stage == 7) ? 1 : testConfig.maxBatch;
             if (DrawButton({ (float)screenWidth/2 + 100, 410, 50, 50 }, ">")) {
-                if (testConfig.batch < testConfig.maxBatch) testConfig.batch++;
+                if (testConfig.batch < currentMaxBatch) testConfig.batch++;
             }
 
             if (DrawButton({ (float)screenWidth/2 - 100, 520, 200, 50 }, "START TEST")) {
@@ -1065,15 +1083,29 @@ void GameManager::Draw() {
                 currentWave = testConfig.wave;
                 currentBatch = testConfig.batch;
                 isWaveTransitioning = true;
-                WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
+                if (currentStage == 7) {
+                    activeEnemies.clear();
+                    activeBullets.clear();
+                    auto mcb = std::make_shared<MilitaryChickenBoss>(11, EnemyStats{150000.0f, 50.0f, 20.0f, 150.0f, 0.0f, 100}, Vector2{(float)screenWidth/2 - 150, 150.0f});
+                    auto scb = std::make_shared<SuperChickBoss>(12, EnemyStats{150000.0f, 50.0f, 20.0f, 150.0f, 0.0f, 100}, Vector2{(float)screenWidth/2 + 150, 150.0f});
+                    activeEnemies.push_back(mcb);
+                    activeEnemies.push_back(scb);
+                } else {
+                    WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
+                }
                 waveTimer = 3.0f; 
-                activeEnemies.clear();
-                activeBullets.clear();
+                if (currentStage != 7) {
+                    activeEnemies.clear();
+                    activeBullets.clear();
+                }
                 
                 // Initialize player for testing
                 if (player) {
                     player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
                     player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
+                    if (currentStage == 7) {
+                        player->MultiplyHp(3.0f);
+                    }
                 }
                 
                 if (IsKeyPressed(KEY_L)) {
@@ -1133,12 +1165,7 @@ void GameManager::Draw() {
         case GameState::TEST_ENEMY:
         case GameState::TEST_SPACESHIP:
         {
-            // Vẽ Enemies
-            for (const auto& enemy : activeEnemies) {
-                if (enemy && enemy->IsActive()) {
-                    enemy->Draw();
-                }
-            }
+            // Draw Bullets FIRST (so they render UNDER enemies)
 
             // Vẽ Bullets
             for (const auto& bullet : activeBullets) {
@@ -1240,6 +1267,15 @@ void GameManager::Draw() {
             EndBlendMode();
         }
 
+        // Vẽ Enemies ĐÈ LÊN đạn và tia lade
+        if (currentState == GameState::TEST_GAMEPLAY) {
+            for (const auto& enemy : activeEnemies) {
+                if (enemy && enemy->IsActive()) {
+                    enemy->Draw();
+                }
+            }
+        }
+
         // Vẽ Player TRÊN CÙNG để không bị đạn/tia che khuất
         if (player && player->IsActive()) {
             player->Draw();
@@ -1323,6 +1359,23 @@ void GameManager::Draw() {
             if (currentState == GameState::TEST_GAMEPLAY) {
                 if (isWaveTransitioning) {
                     DrawText(TextFormat("WAVE %d - BATCH %d", currentWave, currentBatch), screenWidth/2 - 200, screenHeight/2, 50, YELLOW);
+                }
+                
+                if (currentStage == 7) {
+                    int barCount = 0;
+                    for (const auto& enemy : activeEnemies) {
+                        if (enemy && enemy->IsActive() && enemy->role == EnemyRole::BOSS) {
+                            float hpRatio = enemy->GetHp() / enemy->GetMaxHp();
+                            if (hpRatio < 0.0f) hpRatio = 0.0f;
+                            int barY = 15 + barCount * 30; // Đặt ở mép trên cùng của màn hình
+                            DrawRectangle(screenWidth/2 - 300, barY, 600, 20, GRAY);
+                            DrawRectangle(screenWidth/2 - 300, barY, 600 * hpRatio, 20, (barCount == 0) ? RED : ORANGE);
+                            DrawRectangleLines(screenWidth/2 - 300, barY, 600, 20, WHITE);
+                            DrawText(enemy->visualId == 12 ? "SUPER CHICK" : "MILITARY CHICKEN", screenWidth/2 - 295, barY + 3, 14, WHITE);
+                            DrawText(TextFormat("%.2f%%", hpRatio * 100.0f), screenWidth/2 + 250, barY + 3, 14, WHITE);
+                            barCount++;
+                        }
+                    }
                 }
                 
                 // Di chuyển Score sang bên trái một chút để tránh đè lên nút Setting
@@ -1488,7 +1541,7 @@ void GameManager::CleanUp() {
     if (IsWindowReady()) {
         UnloadTexture(texSettingIcon);
     UnloadTexture(texSpaceshipHypergun);
-    for (int i = 0; i < 10; i++) UnloadTexture(texEnemyAnims[i]);
+    for (int i = 0; i < 12; i++) UnloadTexture(texEnemyAnims[i]);
     UnloadTexture(texAsteroid1);
     UnloadTexture(texAsteroid2);
         UnloadTexture(texEnemyBullet);
@@ -1499,6 +1552,8 @@ void GameManager::CleanUp() {
         UnloadTexture(texLightningFryer);
         for(int i=0; i<2; i++) { UnloadTexture(texIonBlaster[i]); UnloadTexture(texUtensilPoker[i]); }
         for(int i=0; i<4; i++) UnloadTexture(texLaserCannon[i]);
+        UnloadTexture(texGrenade);
+        UnloadTexture(texKnife);
         UnloadTexture(texLoi);
         UnloadTexture(texChiSo);
         

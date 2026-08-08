@@ -25,6 +25,9 @@ public:
     // Hàm xử lý khi máu <= 0
     virtual void Die() = 0;
 
+    // Thay đổi máu
+    virtual void MultiplyHp(float factor) { maxHp *= factor; currentHp = maxHp; }
+
     // Getters (Sử dụng virtual để Decorator Pattern có thể Override)
     virtual float GetHp() const;
     virtual float GetMaxHp() const;

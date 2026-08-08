@@ -80,7 +80,7 @@ public:
 
     void DropItem();
 
-    Rectangle GetHitbox() const;
+    virtual Rectangle GetHitbox() const;
 };
 
 #endif // ENEMY_H

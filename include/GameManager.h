@@ -38,7 +38,7 @@ private:
     // Player resources
     Texture2D texSpaceship;
     Texture2D texSpaceshipHypergun;
-    Texture2D texEnemyAnims[10];
+    Texture2D texEnemyAnims[12];
     Texture2D texAsteroid1;
     Texture2D texAsteroid2;
     Texture2D texBulletStrong;
@@ -102,7 +102,7 @@ private:
         int stage = 1;
         int wave = 1;
         int batch = 1;
-        int maxStage = 2;
+        int maxStage = 7;
         int maxWave = 10;
         int maxBatch = 5;
     } testConfig;
@@ -126,6 +126,8 @@ struct DamageText {
 
 public:
     std::vector<DamageText> activeDamageTexts;
+    Texture2D texGrenade;
+    Texture2D texKnife;
     // Ngăn chặn copy và assignment
     GameManager(const GameManager&) = delete;
     void operator=(const GameManager&) = delete;
@@ -166,7 +168,7 @@ public:
     Texture2D GetTexSpaceship() const { return texSpaceship; }
     Texture2D& GetTexSpaceshipHypergun() { return texSpaceshipHypergun; }
     Texture2D& GetTexEnemyAnim(int variantIndex) { 
-        if (variantIndex >= 0 && variantIndex < 10) return texEnemyAnims[variantIndex];
+        if (variantIndex >= 0 && variantIndex < 12) return texEnemyAnims[variantIndex];
         return texEnemyAnims[0]; // fallback
     }
     Texture2D& GetTexAsteroid1() { return texAsteroid1; }
@@ -199,6 +201,7 @@ public:
     // Entity management
     void AddBullet(std::shared_ptr<class Bullet> bullet) { activeBullets.push_back(bullet); }
     void AddEnemy(std::shared_ptr<class Enemy> enemy) { activeEnemies.push_back(enemy); }
+    void AddItem(std::shared_ptr<class Item> item) { activeItems.push_back(item); }
     std::shared_ptr<class Spaceship> GetPlayer() const { return player; }
     
     // Custom Font handling
