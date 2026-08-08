@@ -103,3 +103,15 @@ Implement the first 4 waves of **Stage 2** using the `chicken02` variant. This i
 
 ## 4. Reference Documents Created
 - [stage_json_reference.md](file:///e:/ChickenInvader_local/ChickenInvader/AI%20planation/stage_json_reference.md) — Complete field-by-field guide for writing `stageX.json` files, verified against C++ source.
+- [chicken_animation_reference.md](file:///e:/ChickenInvader_local/ChickenInvader/AI%20planation/chicken_animation_reference.md) — Reference for animation standardization (3-tier system).
+- [planboss01.md](file:///e:/ChickenInvader_local/ChickenInvader/AI%20planation/planboss01.md) — Detailed implementation plan for adding Boss 1 (chicken09) to Stage 1, Wave 5.
+
+---
+
+## 5. Argument (Lõi) System Fixes
+- **Analyzed all 10 Arguments** to ensure they match their in-game descriptions.
+- **Fixed Boss Hunter (Arg 3)**: It was incorrectly applying +80% bonus damage to `ASTEROID`. Changed the condition to `EnemyRole::BOSS` in `GameManager.cpp` (both normal bullets and beam weapons).
+- **Fixed Stat Windfall (Arg 1)**: Description promised "3 extra Stat Selections" but code gave flat HP/Mana/Levels to bypass loop complexity. 
+  - Refactored `GameManager.h` to add `extraStatSelectionsPending`.
+  - Updated `GameManager.cpp` to correctly chain 3 consecutive `STAT_SELECTION` states when this Argument is chosen.
+- Compiled successfully and verified the fixes.

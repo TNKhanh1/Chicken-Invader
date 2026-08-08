@@ -555,7 +555,7 @@ void GameManager::Update(float deltaTime) {
                                     bool isCrit = (GetRandomValue(0, 100) < player->GetCritChance());
                                     if (isCrit) finalDmg *= (player->GetCritDamage() / 100.0f);
 
-                                    if (player->HasArgument(3) && enemy->role == EnemyRole::ASTEROID) finalDmg *= 1.8f;
+                                    if (player->HasArgument(3) && enemy->role == EnemyRole::BOSS) finalDmg *= 1.8f;
                                     if (player->HasArgument(4)) finalDmg += enemy->GetHp() * 0.03f * deltaTime;
 
                                     enemy->TakeDamage(finalDmg);
@@ -563,7 +563,7 @@ void GameManager::Update(float deltaTime) {
                                     if (popBeamText) {
                                         float displayDmg = damageRate * 0.25f; // Sát thương tích lũy
                                         if (isCrit) displayDmg *= (player->GetCritDamage() / 100.0f);
-                                        if (player->HasArgument(3) && enemy->role == EnemyRole::ASTEROID) displayDmg *= 1.8f;
+                                        if (player->HasArgument(3) && enemy->role == EnemyRole::BOSS) displayDmg *= 1.8f;
                                         
                                         float offsetX = (float)GetRandomValue(-20, 20) + 20.0f;
                                         float lifetime = isCrit ? 0.7f : 0.45f;
@@ -689,7 +689,7 @@ void GameManager::Update(float deltaTime) {
                                 if (isCrit) {
                                     finalDamage *= (player->GetCritDamage() / 100.0f);
                                 }
-                                if (player->HasArgument(3) && enemy->role == EnemyRole::ASTEROID) { // 3: Boss Hunter
+                                if (player->HasArgument(3) && enemy->role == EnemyRole::BOSS) { // 3: Boss Hunter
                                     finalDamage *= 1.8f;
                                 }
                                 if (player->HasArgument(4)) { // 4: Armor Crusher
@@ -803,6 +803,18 @@ void GameManager::Update(float deltaTime) {
                                 shownCardIndices[k] = pool[k];
                             }
                             ChangeState(GameState::ARGUMENT_SELECTION);
+                        } else if (extraStatSelectionsPending > 0) {
+                            extraStatSelectionsPending--;
+                            int pool[6] = {0, 1, 2, 3, 4, 5};
+                            int statChoices = (player && player->HasArgument(2)) ? 4 : 3;
+                            for (int k = 0; k < statChoices; k++) {
+                                int j = k + GetRandomValue(0, 5 - k);
+                                int tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
+                                shownCardIndices[k] = pool[k];
+                            }
+                            isStatSelection = true;
+                            selectionAnimTimer = 0.0f;
+                            ChangeState(GameState::STAT_SELECTION);
                         } else {
                             StartWave(nextWaveAfterSelection);
                         }
@@ -842,14 +854,26 @@ void GameManager::Update(float deltaTime) {
                                 player->LevelUp();
                                 player->LevelUp();
                             } else if (argId == 1) { // Stat Windfall
-                                // Thay vì quay lại màn hình chọn stat (phức tạp logic vòng lặp),
-                                // Nhận ngay 3 level hoặc 3 exp/hp bonus để bù
-                                player->Heal(100.0f);
-                                player->GainMana(100.0f);
-                                player->LevelUp();
+                                extraStatSelectionsPending += 3;
                             }
                         }
-                        StartWave(nextWaveAfterSelection);
+                        
+                        if (extraStatSelectionsPending > 0) {
+                            extraStatSelectionsPending--;
+                            int pool[6] = {0, 1, 2, 3, 4, 5};
+                            int statChoices = (player && player->HasArgument(2)) ? 4 : 3;
+                            for (int k = 0; k < statChoices; k++) {
+                                int j = k + GetRandomValue(0, 5 - k);
+                                int tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
+                                shownCardIndices[k] = pool[k];
+                            }
+                            isStatSelection = true;
+                            pendingArgumentAfterStat = false;
+                            selectionAnimTimer = 0.0f;
+                            ChangeState(GameState::STAT_SELECTION);
+                        } else {
+                            StartWave(nextWaveAfterSelection);
+                        }
                         break;
                     }
                 }

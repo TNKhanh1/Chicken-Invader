@@ -66,6 +66,7 @@ private:
     int    nextWaveAfterSelection = 1;
     bool   pendingArgumentAfterStat = false;
     bool   isStatSelection          = true; // true = stat, false = argument
+    int    extraStatSelectionsPending = 0;
     int    shownCardIndices[3]    = {0, 1, 2};
 
     // Audio
