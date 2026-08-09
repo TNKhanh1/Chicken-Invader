@@ -38,7 +38,7 @@ private:
     // Player resources
     Texture2D texSpaceship;
     Texture2D texSpaceshipHypergun;
-    Texture2D texEnemyAnims[12];
+    Texture2D texEnemyAnims[13];
     Texture2D texAsteroid1;
     Texture2D texAsteroid2;
     Texture2D texBulletStrong;
@@ -171,7 +171,7 @@ public:
     Texture2D GetTexSpaceship() const { return texSpaceship; }
     Texture2D& GetTexSpaceshipHypergun() { return texSpaceshipHypergun; }
     Texture2D& GetTexEnemyAnim(int variantIndex) { 
-        if (variantIndex >= 0 && variantIndex < 12) return texEnemyAnims[variantIndex];
+        if (variantIndex >= 0 && variantIndex < 13) return texEnemyAnims[variantIndex];
         return texEnemyAnims[0]; // fallback
     }
     Texture2D& GetTexAsteroid1() { return texAsteroid1; }

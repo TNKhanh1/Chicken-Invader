@@ -288,3 +288,20 @@ generate_warped_sprite_sheet("assets/enemy/chicken11.png", "assets/enemy/chicken
 - Open test menu → Select the stage/wave using the new chicken
 - Verify animation plays smoothly at 30 FPS
 - Verify size matches the intended tier
+
+---
+
+## 8. Troubleshooting Animation Geometry (Lưu Ý Quan Trọng)
+
+Khi thay thế hoặc thêm mới một Boss/Gà có **hình thể đặc biệt** (không giống form chuẩn của `chicken01`), thuật toán warp có thể gây ra hiện tượng rách hình, cánh không đập (cứng đơ), hoặc chân di chuyển không đối xứng.
+
+### 8.1 Vấn đề hình thể (Bounding Box)
+- **Cánh không đập (chỉ rung phần lông):** Xảy ra khi phần "vai" màu đỏ của cánh nằm gọn bên trong khoảng cách Pivot mặc định (`X = 30` đến `X = 70` trên tỷ lệ 100x100). Do thuật toán giữ nguyên phần ở giữa 2 pivot, nếu vai cánh bị lọt vào vùng này, cánh sẽ bị khoá chặt cứng.
+  - **Cách fix:** Mở ảnh gốc, đo chính xác chiều ngang của phần Đầu/Thân (Torso) không tính cánh. Cập nhật biến `left_pivot` và `right_pivot` trong script Python khớp chính xác với hai bên mép của thân.
+- **Chân di chuyển cùng chiều (không đối xứng):** Xảy ra khi toạ độ `Y` bắt đầu của chân bị đặt sai (quá thấp hoặc quá cao), hoặc tâm `X` chia đôi chân (`mid_x`) bị lệch.
+  - **Cách fix:** Đo lại toạ độ `Y` bắt đầu của phần đùi/chân. Sửa `leg_start` trong script Python. Đồng thời tính lại `mid_x = (left_pivot + right_pivot) / 2` để đảm bảo chia đôi chính xác.
+
+### 8.2 Vấn đề lưu cache (Windows/IDE)
+- Khi chạy script ghi đè file `_anim.png` cũ, hệ điều hành (Windows Photos) hoặc trình xem ảnh trong IDE (VSCode) thường **lưu cache rất lâu**. 
+- Điều này dẫn đến việc script đã sửa đúng nhưng người xem vẫn thấy ảnh lỗi cũ.
+  - **Cách fix:** Luôn phải tắt/đóng hẳn tab xem ảnh và mở lại, hoặc tốt nhất là build lại game (`mingw32-make`) và chạy in-game để xem animation thực tế tránh bị lừa bởi cache.

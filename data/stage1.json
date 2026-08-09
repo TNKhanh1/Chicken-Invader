@@ -226,13 +226,13 @@
                     "batch_id": 2,
                     "visual_id": 5,
                     "role": "TANK",
-                    "count": 5,
+                    "count": 10,
                     "layout": {
                         "type": "GRID",
-                        "rows": 1,
+                        "rows": 2,
                         "cols": 5,
                         "spacing_x": 250.0,
-                        "spacing_y": 0.0,
+                        "spacing_y": 120.0,
                         "start_y": -100.0,
                         "target_base_y": 150.0
                     },

@@ -173,7 +173,7 @@ GameManager::GameManager()
     texLightningFryer = {0};
     for(int i=0; i<2; i++) { texIonBlaster[i] = {0}; texUtensilPoker[i] = {0}; }
     for(int i=0; i<4; i++) texLaserCannon[i] = {0};
-    for(int i=0; i<10; i++) texEnemyAnims[i] = {0};
+    for(int i=0; i<13; i++) texEnemyAnims[i] = {0};
     texLoi   = {0};
     texChiSo = {0};
     texSettingIcon = {0};
@@ -284,13 +284,13 @@ void GameManager::Init(int width, int height, const char* title) {
     texBulletStrong = LoadTexture("assets/spaceship/hypergun_strong.png");
     texBulletWeak = LoadTexture("assets/spaceship/hypergun_weak.png");
     
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 11; i++) {
         char path[100];
         snprintf(path, sizeof(path), "assets/enemy/chicken%02d_anim.png", i + 1);
         texEnemyAnims[i] = LoadTexture(path);
     }
-    texEnemyAnims[10] = LoadTexture("assets/enemy/Militarychicken_anim.png");
-    texEnemyAnims[11] = LoadTexture("assets/enemy/CI4_SuperChick_Summer_anim.png");
+    texEnemyAnims[11] = LoadTexture("assets/enemy/Militarychicken_anim.png");
+    texEnemyAnims[12] = LoadTexture("assets/enemy/CI4_SuperChick_Summer_anim.png");
     
     texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
     texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
@@ -1060,7 +1060,7 @@ void GameManager::Draw() {
             DrawText("TEST STAGE & WAVE", screenWidth/2 - MeasureText("TEST STAGE & WAVE", 40)/2, 120, 40, YELLOW);
             
             // Fix Out-of-Bounds Issue: Show warning if trying to start non-existent waves
-            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 4) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
+            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 5) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
             if (!isValidSelection) {
                 DrawText("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2 - 200, 180, 20, RED);
             }

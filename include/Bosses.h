@@ -28,6 +28,24 @@ public:
     void Draw() override;
 };
 
+class BouncingRedBullet : public Bullet {
+private:
+    int bounceCount;
+    int maxBounces;
+public:
+    BouncingRedBullet(Vector2 startPos, Vector2 velocity);
+    void Update(float deltaTime) override;
+    void Draw() override;
+};
+
+// --- Red Boss Bullet (Straight) ---
+class RedBossBullet : public Bullet {
+public:
+    RedBossBullet(Vector2 startPos, Vector2 velocity);
+    void Update(float deltaTime) override;
+    void Draw() override;
+};
+
 // Boss Base Class
 class Boss : public Enemy {
 protected:
@@ -150,6 +168,36 @@ public:
     void TakeDamage(float incomingDamage) override;
 
     Phase GetPhase() const { return currentPhase; }
+};
+
+// --- Eggsecutioner Boss (Stage 2, Wave 5) ---
+class EggsecutionerBoss : public Boss {
+private:
+    float attackTimer;
+    int nextSkillType;
+    float attackCooldown;
+
+    // Movement
+    float moveTimer;
+    bool isDashing;
+    Vector2 dashTarget;
+    float dashSpeed;
+    float normalSpeed;
+
+    // HP Bar
+    void DrawBossHPBar();
+
+    // Attack methods
+    void FireBouncingBullets();
+    void FireRedDarts();
+    void FireRedNova();
+
+public:
+    EggsecutionerBoss(int visualId, const EnemyStats& stats, Vector2 pos);
+
+    void Update(float deltaTime) override;
+    void Draw() override;
+    void Die() override;
 };
 
 #endif // BOSSES_H

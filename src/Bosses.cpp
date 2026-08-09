@@ -266,7 +266,7 @@ FirePhoenixBoss::FirePhoenixBoss(int visualId, const EnemyStats& stats, Vector2 
       attackTimer(0.0f),
       normalAttackCount(0),
       normalAttacksBeforeSkill(4),
-      attackCooldown(2.5f),
+      attackCooldown(2.0f),
       nextSkillType(0),
       sparkSpawnTimer(0.0f) {
     // Boss tự quản lý tấn công, không dùng egg system
@@ -380,8 +380,15 @@ void FirePhoenixBoss::FireNormalAttack() {
     float bulletSpeed = 300.0f;
     float bulletDmg = 30.0f;
 
-    int numBullets = (currentPhase == Phase::PHASE_2) ? 5 : 3;
+    int numBullets = (currentPhase == Phase::PHASE_2) ? 9 : 5;
     float spreadAngle = (currentPhase == Phase::PHASE_2) ? 30.0f : 15.0f;
+
+    auto player = gm->GetPlayer();
+    float baseAngle = 90.0f * (PI / 180.0f);
+    if (player && player->IsActive()) {
+        Vector2 target = player->GetPosition();
+        baseAngle = atan2(target.y - position.y, target.x - position.x);
+    }
 
     for (int i = 0; i < numBullets; i++) {
         // Tính góc spread: phân bố đều từ -spreadAngle đến +spreadAngle
@@ -389,7 +396,7 @@ void FirePhoenixBoss::FireNormalAttack() {
         if (numBullets > 1) {
             angleOffset = -spreadAngle + (2.0f * spreadAngle * i) / (numBullets - 1);
         }
-        float rad = (90.0f + angleOffset) * (PI / 180.0f); // 90° = hướng xuống
+        float rad = baseAngle + angleOffset * (PI / 180.0f);
         Vector2 vel = { cosf(rad) * bulletSpeed, sinf(rad) * bulletSpeed };
         gm->AddBullet(std::make_shared<FireBullet>(position, vel, bulletDmg, FireBullet::Type::NORMAL));
     }
@@ -410,20 +417,16 @@ void FirePhoenixBoss::FireLargeFireball() {
         vel = { cosf(angle) * bulletSpeed, sinf(angle) * bulletSpeed };
     }
 
-    int numFireballs = (currentPhase == Phase::PHASE_2) ? 2 : 1;
+    int numFireballs = (currentPhase == Phase::PHASE_2) ? 5 : 3;
+    float spreadAngle = 15.0f;
 
-    if (numFireballs == 1) {
-        // Bắn 1 quả lớn hướng về player
-        gm->AddBullet(std::make_shared<FireBullet>(position, vel, bulletDmg, FireBullet::Type::EXPLOSIVE));
-    } else {
-        // Phase 2: 2 quả spread nhẹ
-        float baseAngle = atan2(vel.y, vel.x);
-        for (int i = 0; i < 2; i++) {
-            float angleOffset = (i == 0) ? -15.0f : 15.0f;
-            float rad = baseAngle + angleOffset * (PI / 180.0f);
-            Vector2 finalVel = { cosf(rad) * bulletSpeed, sinf(rad) * bulletSpeed };
-            gm->AddBullet(std::make_shared<FireBullet>(position, finalVel, bulletDmg, FireBullet::Type::EXPLOSIVE));
-        }
+    float baseAngle = atan2(vel.y, vel.x);
+    for (int i = 0; i < numFireballs; i++) {
+        float angleOffset = -spreadAngle + (2.0f * spreadAngle * i) / (numFireballs > 1 ? numFireballs - 1 : 1);
+        if (numFireballs == 1) angleOffset = 0.0f;
+        float rad = baseAngle + angleOffset * (PI / 180.0f);
+        Vector2 finalVel = { cosf(rad) * bulletSpeed, sinf(rad) * bulletSpeed };
+        gm->AddBullet(std::make_shared<FireBullet>(position, finalVel, bulletDmg, FireBullet::Type::EXPLOSIVE));
     }
 
     normalAttackCount = 0;
@@ -435,7 +438,7 @@ void FirePhoenixBoss::FireRain() {
     float bulletSpeed = 180.0f;
     float bulletDmg = 20.0f;
 
-    int numBullets = (currentPhase == Phase::PHASE_2) ? 20 : 12;
+    int numBullets = (currentPhase == Phase::PHASE_2) ? 40 : 24;
 
     for (int i = 0; i < numBullets; i++) {
         float angle = (i * (360.0f / numBullets)) * (PI / 180.0f);
@@ -634,3 +637,260 @@ void FirePhoenixBoss::Draw() {
     // Vẽ thanh HP boss
     DrawBossHPBar();
 }
+// ============================================================
+// --- BouncingRedBullet Implementation ---
+// ============================================================
+
+BouncingRedBullet::BouncingRedBullet(Vector2 startPos, Vector2 velocity)
+    : Bullet(startPos, 25.0f, 0.0f, false, 0, 15.0f), bounceCount(0), maxBounces(3) {
+    SetVelocity(velocity);
+}
+
+void BouncingRedBullet::Update(float deltaTime) {
+    if (!isActive) return;
+
+    Vector2 vel = GetVelocity();
+    position.x += vel.x * deltaTime;
+    position.y += vel.y * deltaTime;
+
+    bool bounced = false;
+    if (position.x <= 0 || position.x >= 800) {
+        vel.x = -vel.x;
+        bounced = true;
+    }
+    if (position.y <= 0 || position.y >= 600) {
+        vel.y = -vel.y;
+        bounced = true;
+    }
+
+    if (bounced) {
+        SetVelocity(vel);
+        bounceCount++;
+        if (bounceCount > maxBounces) {
+            isActive = false;
+        }
+    }
+}
+
+void BouncingRedBullet::Draw() {
+    if (!isActive) return;
+    // Draw pure red glowing circle
+    DrawCircleGradient((int)position.x, (int)position.y, 20.0f, {255, 0, 0, 150}, {150, 0, 0, 0});
+    DrawCircleGradient((int)position.x, (int)position.y, 10.0f, {255, 100, 100, 255}, {255, 0, 0, 200});
+}
+
+// ============================================================
+// --- RedBossBullet Implementation ---
+// ============================================================
+
+RedBossBullet::RedBossBullet(Vector2 startPos, Vector2 velocity)
+    : Bullet(startPos, 25.0f, 0.0f, false, 0, 12.0f) {
+    SetVelocity(velocity);
+}
+
+void RedBossBullet::Update(float deltaTime) {
+    Bullet::Update(deltaTime);
+}
+
+void RedBossBullet::Draw() {
+    if (!isActive) return;
+    DrawCircleGradient((int)position.x, (int)position.y, 18.0f, {255, 0, 0, 150}, {150, 0, 0, 0});
+    DrawCircleGradient((int)position.x, (int)position.y, 8.0f, {255, 100, 100, 255}, {255, 0, 0, 200});
+}
+
+// ============================================================
+// --- Eggsecutioner Boss Implementation ---
+// ============================================================
+
+EggsecutionerBoss::EggsecutionerBoss(int visualId, const EnemyStats& stats, Vector2 pos)
+    : Boss(visualId, stats, pos),
+      attackTimer(0.0f),
+      nextSkillType(0),
+      attackCooldown(3.5f),
+      moveTimer(0.0f),
+      isDashing(false),
+      dashSpeed(800.0f),
+      normalSpeed(180.0f) {
+    canShoot = false;
+    currentHp = 40000.0f;
+    maxHp = 40000.0f;
+}
+
+void EggsecutionerBoss::FireBouncingBullets() {
+    auto gm = GameManager::GetInstance();
+    float bulletSpeed = 250.0f;
+
+    for (int i = 0; i < 5; i++) {
+        float angle = (i * (360.0f / 5.0f)) * (PI / 180.0f);
+        Vector2 vel = { cosf(angle) * bulletSpeed, sinf(angle) * bulletSpeed };
+        gm->AddBullet(std::make_shared<BouncingRedBullet>(position, vel));
+    }
+}
+
+void EggsecutionerBoss::FireRedDarts() {
+    auto gm = GameManager::GetInstance();
+    float bulletSpeed = 450.0f;
+
+    auto player = gm->GetPlayer();
+    float baseAngle = 90.0f * (PI / 180.0f);
+    if (player && player->IsActive()) {
+        Vector2 target = player->GetPosition();
+        baseAngle = atan2(target.y - position.y, target.x - position.x);
+    }
+
+    for (int i = 0; i < 3; i++) {
+        float angleOffset = -15.0f + i * 15.0f;
+        float rad = baseAngle + angleOffset * (PI / 180.0f);
+        Vector2 vel = { cosf(rad) * bulletSpeed, sinf(rad) * bulletSpeed };
+        gm->AddBullet(std::make_shared<RedBossBullet>(position, vel));
+    }
+}
+
+void EggsecutionerBoss::FireRedNova() {
+    auto gm = GameManager::GetInstance();
+    float bulletSpeed = 180.0f;
+
+    for (int i = 0; i < 36; i++) {
+        float angle = (i * 10.0f) * (PI / 180.0f);
+        Vector2 vel = { cosf(angle) * bulletSpeed, sinf(angle) * bulletSpeed };
+        gm->AddBullet(std::make_shared<RedBossBullet>(position, vel));
+    }
+}
+
+void EggsecutionerBoss::DrawBossHPBar() {
+    float barWidth = 300.0f;
+    float barHeight = 10.0f;
+    float barX = position.x - barWidth / 2.0f;
+    float barY = position.y - 120.0f;
+
+    float hpRatio = currentHp / maxHp;
+    if (hpRatio < 0.0f) hpRatio = 0.0f;
+    if (hpRatio > 1.0f) hpRatio = 1.0f;
+
+    DrawRectangle((int)barX, (int)barY, (int)barWidth, (int)barHeight, {40, 40, 40, 200});
+    DrawRectangle((int)barX, (int)barY, (int)(barWidth * hpRatio), (int)barHeight, {255, 50, 50, 255}); // Đỏ tươi
+    DrawRectangleLines((int)barX, (int)barY, (int)barWidth, (int)barHeight, WHITE);
+
+    int textW = MeasureText("THE EGG-SECUTIONER", 16);
+    DrawText("THE EGG-SECUTIONER", (int)(position.x - textW / 2), (int)(barY - 20), 16, WHITE);
+}
+
+void EggsecutionerBoss::Update(float deltaTime) {
+    Boss::Update(deltaTime);
+
+    moveTimer += deltaTime;
+    
+    if (!isDashing) {
+        // State Machine based on moveTimer
+        // 0.0s -> 12.0s: Hovering standby
+        // 12.0s -> 14.0s: Moving to new targetPos
+        
+        if (moveTimer > 14.0f) {
+            moveTimer = 0.0f;
+            // Pick new target position
+            targetPos.x = (float)GetRandomValue(200, 600);
+            targetPos.y = (float)GetRandomValue(100, 250);
+            
+            // 5% chance to Dash instead of hovering
+            if (GetRandomValue(1, 100) <= 5) {
+                isDashing = true;
+                dashTarget = { (float)GetRandomValue(100, 700), (float)GetRandomValue(100, 300) };
+            }
+        }
+        
+        if (moveTimer <= 12.0f) {
+            // Hover logic: Gently drift around targetPos (very slow, just to feel alive)
+            float driftX = targetPos.x + 30.0f * sinf(moveTimer * 1.5f);
+            float driftY = targetPos.y + 15.0f * cosf(moveTimer * 2.0f);
+            
+            Vector2 dir = { driftX - position.x, driftY - position.y };
+            float dist = sqrt(dir.x * dir.x + dir.y * dir.y);
+            if (dist > 0) {
+                dir.x /= dist;
+                dir.y /= dist;
+                position.x += dir.x * (normalSpeed * 0.3f) * deltaTime; // Slower hover
+                position.y += dir.y * (normalSpeed * 0.3f) * deltaTime;
+            }
+        } else {
+            // Reposition logic: Move to the new targetPos
+            Vector2 dir = { targetPos.x - position.x, targetPos.y - position.y };
+            float dist = sqrt(dir.x * dir.x + dir.y * dir.y);
+            if (dist > 0) {
+                dir.x /= dist;
+                dir.y /= dist;
+                // Move with smooth ease-out feel
+                float currentSpeed = normalSpeed;
+                if (dist < 50.0f) currentSpeed = normalSpeed * (dist / 50.0f);
+                if (currentSpeed < 20.0f) currentSpeed = 20.0f;
+
+                position.x += dir.x * currentSpeed * deltaTime;
+                position.y += dir.y * currentSpeed * deltaTime;
+            }
+        }
+    } else {
+        Vector2 dir = { dashTarget.x - position.x, dashTarget.y - position.y };
+        float dist = sqrt(dir.x * dir.x + dir.y * dir.y);
+        if (dist > 10.0f) {
+            dir.x /= dist;
+            dir.y /= dist;
+            position.x += dir.x * dashSpeed * deltaTime;
+            position.y += dir.y * dashSpeed * deltaTime;
+        } else {
+            isDashing = false;
+        }
+    }
+
+    attackTimer += deltaTime;
+    if (attackTimer >= attackCooldown) {
+        attackTimer = 0.0f;
+        
+        if (nextSkillType == 0) {
+            FireBouncingBullets();
+            attackCooldown = 2.0f;
+        } else if (nextSkillType == 1) {
+            FireRedDarts();
+            attackCooldown = 1.5f;
+        } else {
+            FireRedNova();
+            attackCooldown = 4.0f;
+        }
+        
+        nextSkillType = (nextSkillType + 1) % 3;
+    }
+}
+
+void EggsecutionerBoss::Draw() {
+    if (!isActive) return;
+
+    Texture2D tex = GameManager::GetInstance()->GetTexEnemyAnim(visualId - 1);
+    
+    if (tex.id == 0) return;
+    
+    // Automatically get frame dimensions from the texture
+    float frameSize = (float)tex.height;
+    
+    // Use the correctly updated currentAnimFrame from Enemy::Update
+    Rectangle srcRec = { (float)currentAnimFrame * frameSize, 0.0f, frameSize, frameSize };
+    
+    // Draw at 200x200 (Pixel perfect with the texture)
+    float destW = 200.0f; 
+    float destH = 200.0f;
+    Vector2 origin = { destW / 2.0f, destH / 2.0f };
+    
+    Color tintColor = WHITE;
+    if (hitFlashTimer > 0.0f) {
+        tintColor = {255, 100, 100, 255};
+    } else if (currentHp < maxHp * 0.3f) {
+        tintColor = {255, 200, 200, 255}; // Reddish tint when low HP
+    }
+    
+    Rectangle destRec = { position.x, position.y, destW, destH };
+    DrawTexturePro(tex, srcRec, destRec, origin, wobbleAngle, tintColor);
+
+    DrawBossHPBar();
+}
+
+void EggsecutionerBoss::Die() {
+    Boss::Die();
+}
+
