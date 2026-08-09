@@ -19,6 +19,7 @@ public:
     static std::vector<SpawnData> BuildIntersectingV(int count, float spacingX, float spacingY, float targetBaseY, float screenWidth, float screenHeight);
     static std::vector<SpawnData> BuildRandomRain(int count, float duration, float startY, float speed, float screenWidth);
     static std::vector<SpawnData> BuildTargetedPlayer(float startY, float playerX);
+    static std::vector<SpawnData> BuildRing(int count, float radius, Vector2 center);
 };
 
 #endif

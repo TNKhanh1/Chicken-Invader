@@ -13,4 +13,7 @@ void SpiralMovement::Move(Vector2& position, float moveSpeed, float deltaTime, i
     }
     position.x = center.x + std::cos(time * rotationSpeed) * radius;
     position.y = center.y + std::sin(time * rotationSpeed) * radius;
+    if (wrapAround && center.y - radius > screenHeight + 50) {
+        center.y = -100 - radius;
+    }
 }

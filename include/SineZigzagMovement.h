@@ -10,7 +10,9 @@ private:
     float amplitude = 150.0f;
     float frequency = 3.0f;
     bool initialized = false;
+    bool wrapAround;
 public:
+    SineZigzagMovement(bool wrap = true) : wrapAround(wrap) {}
     void Move(Vector2& position, float moveSpeed, float deltaTime, int screenWidth, int screenHeight) override;
 };
 

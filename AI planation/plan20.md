@@ -48,3 +48,7 @@ Hệ số sức mạnh (Power Creep) so với Stage 1 là **x1.5 lần**.
 - **Wave 6 - 9 (Cao trào Bullet Hell)**:
   - Gà Laze (Sniper): `HP 800`, Bắn tia Laze tốc độ `800 px/s`, sát thương `50`. (Đòi hỏi kỹ năng né).
 - **Wave 10 (Final Boss)**: Sẽ thiết kế ở Kế hoạch sau.
+
+
+> [!IMPORTANT]
+> LƯU Ý KHI THIẾT KẾ CÁC WAVE VÀ STAGE MỚI: Tuyệt đối không được sửa đổi, tái cấu trúc (refactor), hay làm ảnh hưởng đến logic của các wave và stage cũ đã được duyệt. Phải luôn đảm bảo tính toàn vẹn của code cũ.

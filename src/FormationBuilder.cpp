@@ -109,3 +109,22 @@ std::vector<SpawnData> FormationBuilder::BuildTargetedPlayer(float startY, float
     data.push_back({{playerX, startY}, {playerX, 0.0f}, {}});
     return data;
 }
+
+std::vector<SpawnData> FormationBuilder::BuildRing(int count, float radius, Vector2 center) {
+    std::vector<SpawnData> data;
+    if (count <= 0) return data;
+    float angleStep = 2.0f * PI / count;
+    for (int i = 0; i < count; ++i) {
+        float angle = i * angleStep;
+        float dx = std::cos(angle) * radius;
+        float dy = std::sin(angle) * radius;
+        
+        Vector2 targetPos = {center.x + dx, center.y + dy};
+        
+        // They spawn way outside the screen and move to their target
+        Vector2 startPos = {center.x + dx * 3.0f, center.y - 400.0f + dy}; 
+        
+        data.push_back({startPos, targetPos, {targetPos}});
+    }
+    return data;
+}

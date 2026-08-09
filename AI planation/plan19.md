@@ -22,3 +22,7 @@ Dưới đây là tổng hợp các tính năng và cơ chế cuối cùng đã 
 - **Chuẩn hóa Định dạng ảnh:** Quét toàn bộ hệ thống asset, chuyển đổi tất cả các file định dạng `.webp` thành `.png` chuẩn để tối ưu hóa tương thích với Raylib, sau đó dọn dẹp toàn bộ file `.webp` rác.
 - **Cân bằng Phi Thuyền:** Giữ nguyên các thông số gốc của phi thuyền trong `spaceship.csv`. Chỉ áp dụng cơ chế nhân 3 máu (x3 HP Buff) dành riêng cho người chơi khi bước vào thử thách khốc liệt của Stage 7.
 hơi.
+
+
+> [!IMPORTANT]
+> LƯU Ý KHI THIẾT KẾ CÁC WAVE VÀ STAGE MỚI: Tuyệt đối không được sửa đổi, tái cấu trúc (refactor), hay làm ảnh hưởng đến logic của các wave và stage cũ đã được duyệt. Phải luôn đảm bảo tính toàn vẹn của code cũ.

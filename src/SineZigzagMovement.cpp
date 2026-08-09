@@ -9,7 +9,7 @@ void SineZigzagMovement::Move(Vector2& position, float moveSpeed, float deltaTim
     time += deltaTime;
     position.y += moveSpeed * 0.5f * deltaTime;
     position.x = startX + std::sin(time * frequency) * amplitude;
-    if (position.y > screenHeight + 100) {
+    if (wrapAround && position.y > screenHeight + 100) {
         position.y = -100;
     }
 }

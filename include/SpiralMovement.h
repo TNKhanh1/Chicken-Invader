@@ -11,7 +11,9 @@ private:
     float rotationSpeed = 3.0f;
     Vector2 center;
     bool initialized = false;
+    bool wrapAround;
 public:
+    SpiralMovement(bool wrap = true) : wrapAround(wrap) {}
     void Move(Vector2& position, float moveSpeed, float deltaTime, int screenWidth, int screenHeight) override;
 };
 

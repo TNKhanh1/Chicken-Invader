@@ -118,7 +118,7 @@
                 },
                 {
                     "batch_id": 2,
-                    "visual_id": 2,
+                    "visual_id": 1,
                     "role": "SWARM",
                     "count": 10,
                     "layout": {
@@ -224,7 +224,7 @@
                 },
                 {
                     "batch_id": 2,
-                    "visual_id": 5,
+                    "visual_id": 1,
                     "role": "TANK",
                     "count": 10,
                     "layout": {

@@ -13,7 +13,7 @@ void VerticalZigzagMovement::Move(Vector2& position, float moveSpeed, float delt
     } else if (position.x < startX - 250.0f) {
         dx = 1.0f;
     }
-    if (position.y > screenHeight + 100) {
+    if (wrapAround && position.y > screenHeight + 100) {
         position.y = -100;
     }
 }

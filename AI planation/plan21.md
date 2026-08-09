@@ -34,11 +34,23 @@ Trong quá trình phát triển Wave 6, một số lỗi Engine đã được ph
 - **Batch 2:** Đội hình lưới (Grid) 2 hàng 5 cột, tổng cộng **10 con** `chicken03` bay từ trên xuống và nảy nhẹ (HORIZONTAL_BOUNCE drift = 0).
 - **Batch 3:** Đội hình ngang hàng ngang **8 con** `chicken03` quét ngang ở dưới đáy màn hình (HORIZONTAL_SWEEP start_y=700).
 
-### Wave 7: "The Spiral Ambush" (Sẽ triển khai tiếp)
-- **Batch 1 & 2:** Hai nhóm `chicken03` bay theo quỹ đạo hình xoắn ốc (`SpiralMovement`).
+### Wave 7: "The Spiral Ambush" (Đã hoàn thiện)
+- **Batch 1:** Đội hình chữ V lớn (9 con) rơi từ trên xuống theo chuyển động zíc-zắc đứng (`VERTICAL_ZIGZAG`).
+- **Batch 2:** Đội hình lưới (Grid 2x5) bay lượn lờ chao đảo dưới dạng lốc xoắn ốc (`SPIRAL`). Đã tích hợp thuật toán **Wrap-around** giúp gà vòng lên trên đỉnh khi rớt xuống đáy màn hình, lặp lại vô tận cho tới khi bị diệt.
 
-### Wave 8: "The Ring" (Sẽ triển khai tiếp)
-- **Batch 1:** Sử dụng thuật toán vòng tròn bao vây.
+### Wave 8: "The Ring" (Đã hoàn thiện)
+- **Batch 1:** Khởi tạo thuật toán sinh trận pháp hoàn toàn mới (OOP): `BuildRing`. 12 con gà xuất phát từ ngoài màn hình lao vào bao vây thành một vòng tròn quanh trung tâm (`WAYPOINT`).
+- **Batch 2:** Đội hình chữ V lớn (11 con) sử dụng `HORIZONTAL_BOUNCE` với gia tốc biên (drift) bằng 0. Gà bay thẳng xuống lơ lửng giữa màn hình để xả đạn.
 
-### Wave 9: "Chaos Matrix" (Sẽ triển khai tiếp)
-- Gà xuất hiện ngẫu nhiên liên tục và xả đạn đôi.
+### Wave 9: "Chaos Matrix" (Đã hoàn thiện)
+- **Batch 1:** Mưa trứng (`RANDOM_RAIN`) gồm 15 con gà rơi tự do, kết hợp thuật toán **Wrap-around** trong `StraightMovement` giúp mưa lặp lại vô tận.
+- **Batch 2:** Đội hình chữ X giao nhau (`INTERSECTING_V`). Tốc độ nén xuống mượt mà (Speed = 80) để gà bay qua bay lại nhẹ nhàng, không bị giật.
+
+---
+
+## 5. Báo Cáo Kiểm Tra Tương Thích (Regression Test)
+Đã kiểm tra kỹ lưỡng các sửa đổi đối với hệ thống Movement (`StraightMovement`, `SpiralMovement`, v.v.). **Kết quả:** Không có bất kỳ Wave nào trong Stage 1 bị ảnh hưởng, vì `STRAIGHT` và `SPIRAL` chỉ được gọi ra ở Stage 2 (Waves 7 và 9). Các tính năng cũ của Wave Manager hoàn toàn nguyên vẹn và độc lập!
+
+
+> [!IMPORTANT]
+> LƯU Ý KHI THIẾT KẾ CÁC WAVE VÀ STAGE MỚI: Tuyệt đối không được sửa đổi, tái cấu trúc (refactor), hay làm ảnh hưởng đến logic của các wave và stage cũ đã được duyệt. Phải luôn đảm bảo tính toàn vẹn của code cũ.

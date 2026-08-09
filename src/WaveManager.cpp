@@ -8,6 +8,9 @@
 #include "WaypointMovement.h"
 #include "MeteorDiveMovement.h"
 #include "HorizontalSweepMovement.h"
+#include "SpiralMovement.h"
+#include "SineZigzagMovement.h"
+#include "VerticalZigzagMovement.h"
 #include <fstream>
 #include <iostream>
 
@@ -158,10 +161,18 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                         float px = sw / 2.0f;
                         if (gm->GetPlayer()) px = gm->GetPlayer()->GetPosition().x;
                         spawnPoints = FormationBuilder::BuildTargetedPlayer(layout["start_y"], px);
+                    } else if (type == "RING") {
+                        Vector2 center = {sw / 2.0f, layout["center_y"]};
+                        spawnPoints = FormationBuilder::BuildRing(b["count"], layout["radius"], center);
                     }
                     
                     auto mov = b["movement"];
                     std::string movType = mov["type"];
+
+                    bool wrapAround = true;
+                    if (mov.contains("wrap_around")) {
+                        wrapAround = mov["wrap_around"];
+                    }
 
                     for (const auto& pt : spawnPoints) {
                         auto enemy = EnemyFactory::CreateEnemy(visualId, role, stats, pt.startPos);
@@ -174,9 +185,16 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                         } else if (movType == "METEOR_DIVE") {
                             enemy->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
                         } else if (movType == "STRAIGHT") {
-                            enemy->SetMovementBehavior(std::make_unique<StraightMovement>());
+                            bool straightWrap = mov.contains("wrap_around") ? wrapAround : false;
+                            enemy->SetMovementBehavior(std::make_unique<StraightMovement>(straightWrap));
                         } else if (movType == "HORIZONTAL_SWEEP") {
                             enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(1.0f));
+                        } else if (movType == "SPIRAL") {
+                            enemy->SetMovementBehavior(std::make_unique<SpiralMovement>(wrapAround));
+                        } else if (movType == "SINE_ZIGZAG") {
+                            enemy->SetMovementBehavior(std::make_unique<SineZigzagMovement>(wrapAround));
+                        } else if (movType == "VERTICAL_ZIGZAG") {
+                            enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>(wrapAround));
                         }
 
                         if (role == EnemyRole::ASTEROID) {
