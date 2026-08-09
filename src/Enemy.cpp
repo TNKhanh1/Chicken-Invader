@@ -106,11 +106,28 @@ void Enemy::Update(float deltaTime) {
     
     // Logic thả trứng (bắn đạn)
     if (canShoot) {
+        if (pendingDoubleShots > 0) {
+            doubleShotTimer -= deltaTime;
+            if (doubleShotTimer <= 0.0f) {
+                auto egg = std::make_shared<Bullet>(position, damage, 175.0f, false);
+                GameManager::GetInstance()->AddBullet(egg);
+                pendingDoubleShots--;
+                doubleShotTimer = 0.2f; // Delay for consecutive egg
+            }
+        }
+        
         eggDropTimer -= deltaTime;
         if (eggDropTimer <= 0.0f) {
             ResetEggTimer();
             auto egg = std::make_shared<Bullet>(position, damage, 175.0f, false);
             GameManager::GetInstance()->AddBullet(egg);
+            
+            // "gà này thì có đôi lúc thả 2 quả trứng liên tiếp"
+            // For chicken03, 30% chance to drop a second egg shortly after
+            if (visualId == 3 && GetRandomValue(1, 100) <= 30) {
+                pendingDoubleShots = 1;
+                doubleShotTimer = 0.2f;
+            }
         }
     }
     

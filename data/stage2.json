@@ -428,6 +428,91 @@
                     }
                 }
             ]
+        },
+        {
+            "wave_id": 6,
+            "batches": [
+                {
+                    "batch_id": 1,
+                    "visual_id": 3,
+                    "role": "NORMAL",
+                    "count": 11,
+                    "layout": {
+                        "type": "V_SHAPE",
+                        "spacing_x": 100.0,
+                        "spacing_y": 110.0,
+                        "start_y": -200.0,
+                        "target_base_y": 100.0,
+                        "layers": 1,
+                        "layer_spacing": 0.0
+                    },
+                    "movement": {
+                        "type": "HORIZONTAL_BOUNCE",
+                        "drift": 100.0
+                    },
+                    "stats": {
+                        "hp": 200,
+                        "damage": 25,
+                        "armor": 0,
+                        "speed": 100,
+                        "egg_rate": 2.5,
+                        "score": 20
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "visual_id": 3,
+                    "role": "NORMAL",
+                    "count": 10,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 2,
+                        "cols": 5,
+                        "spacing_x": 150.0,
+                        "spacing_y": 120.0,
+                        "start_y": -150.0,
+                        "target_base_y": 80.0
+                    },
+                    "movement": {
+                        "type": "HORIZONTAL_BOUNCE",
+                        "drift": 0.0
+                    },
+                    "stats": {
+                        "hp": 180,
+                        "damage": 30,
+                        "armor": 0,
+                        "speed": 150,
+                        "egg_rate": 1.5,
+                        "score": 25
+                    }
+                },
+                {
+                    "batch_id": 3,
+                    "visual_id": 3,
+                    "role": "NORMAL",
+                    "count": 8,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 1,
+                        "cols": 8,
+                        "spacing_x": 150.0,
+                        "spacing_y": 0.0,
+                        "start_y": 700.0,
+                        "target_base_y": 400.0
+                    },
+                    "movement": {
+                        "type": "HORIZONTAL_SWEEP"
+                    },
+                    "stats": {
+                        "hp": 150,
+                        "damage": 30,
+                        "armor": 0,
+                        "speed": 200,
+                        "egg_rate": 1.0,
+                        "score": 25
+                    }
+                }
+            ]
         }
     ]
 }

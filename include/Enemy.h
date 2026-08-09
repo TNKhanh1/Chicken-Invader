@@ -65,6 +65,8 @@ public:
 
     float eggDropTimer = 0.0f;
     bool canShoot = true;
+    int pendingDoubleShots = 0;
+    float doubleShotTimer = 0.0f;
 
     void ResetEggTimer();
 

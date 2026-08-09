@@ -7,6 +7,7 @@
 #include "HorizontalBounceMovement.h"
 #include "WaypointMovement.h"
 #include "MeteorDiveMovement.h"
+#include "HorizontalSweepMovement.h"
 #include <fstream>
 #include <iostream>
 
@@ -174,6 +175,8 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                             enemy->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
                         } else if (movType == "STRAIGHT") {
                             enemy->SetMovementBehavior(std::make_unique<StraightMovement>());
+                        } else if (movType == "HORIZONTAL_SWEEP") {
+                            enemy->SetMovementBehavior(std::make_unique<HorizontalSweepMovement>(1.0f));
                         }
 
                         if (role == EnemyRole::ASTEROID) {
