@@ -204,6 +204,7 @@ public:
     // Entity management
     void AddBullet(std::shared_ptr<class Bullet> bullet) { pendingBullets.push_back(bullet); }
     void AddEnemy(std::shared_ptr<class Enemy> enemy) { pendingEnemies.push_back(enemy); }
+    std::vector<std::shared_ptr<class Enemy>>& GetActiveEnemies() { return activeEnemies; }
     void AddItem(std::shared_ptr<class Item> item) { pendingItems.push_back(item); }
     std::shared_ptr<class Spaceship> GetPlayer() const { return player; }
     

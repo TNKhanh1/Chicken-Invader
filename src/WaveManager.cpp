@@ -38,14 +38,98 @@ bool WaveManager::LoadStage(const std::string& filepath) {
     }
 }
 
+void WaveManager::AddKill() {
+    if (isContinuousStream) {
+        currentKills++;
+    }
+}
+
 void WaveManager::Update(float deltaTime) {
+    if (isContinuousStream) {
+        if (currentKills >= targetKills) {
+            isContinuousStream = false;
+        } else {
+            if (currentKills >= 100) {
+                spawnInterval = originalSpawnInterval * 0.75f; // Tăng tần suất ra quái thêm 33% (giảm delay 25%)
+                
+                if (currentKills - lastAsteroidKillCount >= 10) {
+                    lastAsteroidKillCount += 10;
+                    
+                    int numAsteroids = GetRandomValue(1, 2);
+                    for (int i = 0; i < numAsteroids; i++) {
+                        float startX = GameManager::GetInstance()->GetScreenWidth() / 2.0f;
+                        if (GameManager::GetInstance()->GetPlayer()) {
+                            startX = GameManager::GetInstance()->GetPlayer()->GetPosition().x;
+                        }
+                        Vector2 startPos = { startX, -100.0f - i * 150.0f };
+                        int visualId = GetRandomValue(4, 5); // visualId 4 hoặc 5 là thiên thạch
+                        
+                        EnemyStats astStats;
+                        astStats.hp = 1500.0f;
+                        astStats.damage = 30.0f;
+                        // Giảm 20-30% tốc độ cho stage 3 (VD: 250 - 350 thay vì 350 - 500)
+                        astStats.speed = (float)GetRandomValue(250, 350);
+                        astStats.score = 50;
+
+                        auto enemy = EnemyFactory::CreateEnemy(visualId, EnemyRole::ASTEROID, astStats, startPos);
+                        enemy->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
+                        enemy->ResetEggTimer();
+                        GameManager::GetInstance()->AddEnemy(std::move(enemy));
+                    }
+                }
+            }
+
+            spawnTimer -= deltaTime;
+            if (spawnTimer <= 0.0f) {
+                spawnTimer = spawnInterval;
+                if (GameManager::GetInstance()->GetActiveEnemies().size() < 25) {
+                    float hpMult = 1.0f;
+                    float speedMult = 1.0f;
+                    for (const auto& ph : powerPhases) {
+                        if (spawnedCount >= ph.spawnCountThreshold) {
+                            hpMult = ph.hpMultiplier;
+                            speedMult = ph.speedMultiplier;
+                        }
+                    }
+
+                    int laneCount = 7;
+                    int laneWidth = GameManager::GetInstance()->GetScreenWidth() / laneCount;
+                    int lane = GetRandomValue(0, laneCount - 1);
+                    if (lane == lastSpawnLane) {
+                        lane = (lane + 1) % laneCount;
+                    }
+                    lastSpawnLane = lane;
+                    
+                    Vector2 startPos = { (float)(lane * laneWidth + laneWidth / 2), -100.0f };
+                    int visualId = GetRandomValue(1, 3);
+                    EnemyRole role = EnemyRole::NORMAL;
+                    
+                    auto b = continuousBatchData;
+                    EnemyStats stats;
+                    stats.hp = b["stats"]["hp"].get<float>() * hpMult;
+                    stats.damage = b["stats"]["damage"].get<float>();
+                    stats.speed = b["stats"]["speed"].get<float>() * speedMult;
+                    stats.score = b["stats"]["score"];
+
+                    auto enemy = EnemyFactory::CreateEnemy(visualId, role, stats, startPos);
+                    enemy->SetMovementBehavior(std::make_unique<StraightMovement>(false));
+                    enemy->ResetEggTimer();
+                    GameManager::GetInstance()->AddEnemy(std::move(enemy));
+                    
+                    spawnedCount++;
+                }
+            }
+        }
+    }
+
     auto gm = GameManager::GetInstance();
     
     for (auto it = delayedSpawns.begin(); it != delayedSpawns.end();) {
         it->delayTimer -= deltaTime;
         if (it->delayTimer <= 0.0f) {
-            // Parse and spawn
             auto b = it->batchData;
+            auto layout = b["layout"];
+            std::string layoutType = layout["type"];
             int visualId = b["visual_id"];
             
             std::string roleStr = b["role"];
@@ -59,18 +143,13 @@ void WaveManager::Update(float deltaTime) {
             auto s = b["stats"];
             stats.hp = s["hp"];
             stats.damage = s["damage"];
-            stats.armor = s["armor"];
             stats.speed = s["speed"];
-            stats.eggRate = s["egg_rate"];
             stats.score = s["score"];
-
-            auto layout = b["layout"];
-            std::string type = layout["type"];
             
             std::vector<SpawnData> spawnPoints;
             float sw = gm->GetScreenWidth();
             
-            if (type == "TARGETED_PLAYER") {
+            if (layoutType == "TARGETED_PLAYER") {
                 float startY = layout["start_y"];
                 float px = sw / 2.0f; // fallback
                 if (gm->GetPlayer()) {
@@ -133,9 +212,36 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                     stats.speed = s["speed"];
                     stats.eggRate = s["egg_rate"];
                     stats.score = s["score"];
-
                     auto layout = b["layout"];
-                    std::string type = layout["type"];
+                    isContinuousStream = false;
+                    if (layout["type"] == "CONTINUOUS_STREAM") {
+                        isContinuousStream = true;
+                        targetKills = layout.value("target_kills", 200);
+                        spawnInterval = layout.value("spawn_interval", 1.0f);
+                        originalSpawnInterval = spawnInterval;
+                        currentKills = 0;
+                        spawnedCount = 0;
+                        spawnTimer = 0.0f;
+                        lastSpawnLane = -1;
+                        lastAsteroidKillCount = 100;
+                        continuousBatchData = b;
+                        
+                        powerPhases.clear();
+                        if (layout.contains("phases")) {
+                            for (auto& ph : layout["phases"]) {
+                                PowerPhase pp;
+                                pp.spawnCountThreshold = ph.value("spawn_count_threshold", 0);
+                                pp.hpMultiplier = ph.value("hp_multiplier", 1.0f);
+                                pp.speedMultiplier = ph.value("speed_multiplier", 1.0f);
+                                powerPhases.push_back(pp);
+                            }
+                        } else {
+                            powerPhases.push_back({0, 1.0f, 1.0f});
+                        }
+                        return true;
+                    }
+
+                    std::string layoutType = layout["type"];
                     
                     // Handle delayed spawning
                     if (layout.contains("spawn_delay") && layout["spawn_delay"] > 0.0f) {
@@ -147,21 +253,21 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
 
                     std::vector<SpawnData> spawnPoints;
                     
-                    if (type == "V_SHAPE") {
+                    if (layoutType == "V_SHAPE") {
                         spawnPoints = FormationBuilder::BuildVShape(b["count"], layout["spacing_x"], layout["spacing_y"], layout["start_y"], layout["target_base_y"], layout["layers"], layout["layer_spacing"], sw);
-                    } else if (type == "GRID") {
+                    } else if (layoutType == "GRID") {
                         spawnPoints = FormationBuilder::BuildGrid(layout["rows"], layout["cols"], layout["spacing_x"], layout["spacing_y"], layout["start_y"], layout["target_base_y"], sw);
-                    } else if (type == "SWEEP_TO_GRID") {
+                    } else if (layoutType == "SWEEP_TO_GRID") {
                         spawnPoints = FormationBuilder::BuildSweepToGrid(layout["rows"], layout["cols_per_side"], layout["spacing_x"], layout["spacing_y"], layout["target_base_y"], sw);
-                    } else if (type == "INTERSECTING_V") {
+                    } else if (layoutType == "INTERSECTING_V") {
                         spawnPoints = FormationBuilder::BuildIntersectingV(b["count"], layout["spacing_x"], layout["spacing_y"], layout["target_base_y"], sw, sh);
-                    } else if (type == "RANDOM_RAIN") {
+                    } else if (layoutType == "RANDOM_RAIN") {
                         spawnPoints = FormationBuilder::BuildRandomRain(b["count"], layout["duration"], layout["start_y"], stats.speed, sw);
-                    } else if (type == "TARGETED_PLAYER") {
+                    } else if (layoutType == "TARGETED_PLAYER") {
                         float px = sw / 2.0f;
                         if (gm->GetPlayer()) px = gm->GetPlayer()->GetPosition().x;
                         spawnPoints = FormationBuilder::BuildTargetedPlayer(layout["start_y"], px);
-                    } else if (type == "RING") {
+                    } else if (layoutType == "RING") {
                         Vector2 center = {sw / 2.0f, layout["center_y"]};
                         spawnPoints = FormationBuilder::BuildRing(b["count"], layout["radius"], center);
                     }

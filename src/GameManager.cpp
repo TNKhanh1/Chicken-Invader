@@ -581,6 +581,7 @@ void GameManager::Update(float deltaTime) {
                                     }
 
                                     if (!enemy->IsActive()) {
+                                        WaveManager::GetInstance()->AddKill();
                                         AddScore(enemy->GetPointValue());
                                         if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
                                         if (player->HasArgument(6)) player->Heal(15.0f);
@@ -619,7 +620,7 @@ void GameManager::Update(float deltaTime) {
                             }
                         }
                     }
-                } else if (activeEnemies.empty()) {
+                } else if (activeEnemies.empty() && !WaveManager::GetInstance()->IsContinuousStream()) {
                     if (currentStage == 7) {
                         if (activeItems.empty()) {
                             currentState = GameState::GAME_OVER; // Chiến thắng Stage 7
@@ -724,6 +725,7 @@ void GameManager::Update(float deltaTime) {
                                 activeDamageTexts.push_back({{enemy->GetPosition().x + offsetX, enemy->GetPosition().y}, 
                                                             (int)finalDamage, isCrit, lifetime, lifetime});
                                 if (!enemy->IsActive()) {
+                                    WaveManager::GetInstance()->AddKill();
                                     AddScore(enemy->GetPointValue());
                                     // Blood Fury (Arg 5)
                                     if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
@@ -1060,7 +1062,7 @@ void GameManager::Draw() {
             DrawText("TEST STAGE & WAVE", screenWidth/2 - MeasureText("TEST STAGE & WAVE", 40)/2, 120, 40, YELLOW);
             
             // Fix Out-of-Bounds Issue: Show warning if trying to start non-existent waves
-            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
+            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 3 && testConfig.wave <= 1) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
             if (!isValidSelection) {
                 DrawText("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2 - 200, 180, 20, RED);
             }
@@ -1399,6 +1401,12 @@ void GameManager::Draw() {
                 
                 // Di chuyển Score sang bên trái một chút để tránh đè lên nút Setting
                 DrawText(TextFormat("Score: %d", score), screenWidth - 250, 40, 20, WHITE);
+                
+                if (WaveManager::GetInstance()->IsContinuousStream()) {
+                    int cKills = WaveManager::GetInstance()->GetCurrentKills();
+                    int tKills = WaveManager::GetInstance()->GetTargetKills();
+                    DrawText(TextFormat("KILLS: %d / %d", cKills, tKills), screenWidth/2 - 100, 40, 24, ORANGE);
+                }
 
                 if (player) {
                     float hpRatio = player->GetHp() / player->GetMaxHp();

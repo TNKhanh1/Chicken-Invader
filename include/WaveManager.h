@@ -15,11 +15,30 @@ struct DelayedSpawn {
     int wave;
 };
 
+struct PowerPhase {
+    int spawnCountThreshold;
+    float hpMultiplier;
+    float speedMultiplier;
+};
+
 class WaveManager {
 private:
     static WaveManager* instance;
     json stageData;
     std::vector<DelayedSpawn> delayedSpawns;
+
+    // Continuous Stream State
+    bool isContinuousStream = false;
+    int targetKills = 0;
+    int currentKills = 0;
+    float spawnInterval = 1.0f;
+    float originalSpawnInterval = 1.0f;
+    float spawnTimer = 0.0f;
+    int spawnedCount = 0;
+    int lastSpawnLane = -1;
+    int lastAsteroidKillCount = 100;
+    json continuousBatchData;
+    std::vector<PowerPhase> powerPhases;
 
     WaveManager();
 
@@ -33,6 +52,11 @@ public:
     int GetMaxBatchForWave(int waveId) const;
     
     void Update(float deltaTime);
+
+    void AddKill();
+    int GetCurrentKills() const { return currentKills; }
+    int GetTargetKills() const { return targetKills; }
+    bool IsContinuousStream() const { return isContinuousStream; }
 };
 
 #endif
