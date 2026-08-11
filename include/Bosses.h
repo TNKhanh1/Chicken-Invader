@@ -180,9 +180,12 @@ private:
     // Movement
     float moveTimer;
     bool isDashing;
+    bool isYielding;
     Vector2 dashTarget;
     float dashSpeed;
     float normalSpeed;
+    Vector2 currentVelocity;
+    Vector2 intendedVel;
 
     // HP Bar
     void DrawBossHPBar();

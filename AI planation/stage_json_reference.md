@@ -462,3 +462,27 @@ When the player clears the **last wave** of a stage:
 - [ ] `wave_id` numbering is sequential (1, 2, 3, ...)
 - [ ] Asteroids: `role` = `"ASTEROID"`, `movement` = `"METEOR_DIVE"`, `egg_rate` = `0.0`
 - [ ] Update `isValidSelection` in `GameManager.cpp` for the test menu
+
+---
+
+## 12. Known Bugs & Fixes (Reference)
+
+### 12.1. Nlohmann JSON `type_error.302` Crash
+- **Symptom:** Game crashes instantly upon loading a stage or spawning a batch with the exception `[json.exception.type_error.302] type must be number, but is null`.
+- **Cause:** Attempting to access an undeclared JSON key directly (e.g., `s["armor"]`) when the field is missing in `stage.json` returns a `null` object. When C++ tries to cast this `null` to `float` or `int`, it throws an exception.
+- **Fix:** Used the safe `.value()` accessor in `WaveManager.cpp` to provide a fallback default instead of crashing (e.g., `s.value("armor", 0.0f)`).
+
+### 12.2. `METEOR_SHOWER` Fails to Spawn
+- **Symptom:** `METEOR_SHOWER` batches do absolutely nothing after their `spawn_delay` expires.
+- **Cause:** The delayed spawn logic in `WaveManager::Update()` did not generate any `spawnPoints` for layout type `METEOR_SHOWER`, resulting in an empty list, so the enemies were never spawned.
+- **Fix:** Implemented specific `spawnPoints` generation logic for `METEOR_SHOWER` inside `WaveManager::Update()`, randomizing X and Y coordinates above the screen based on `b["count"]`.
+
+### 12.3. Lỗi Đội hình đè lên nhau (Overlap) khi dùng HORIZONTAL_BOUNCE
+- **Symptom:** Nhiều đàn gà bay ra và xếp chồng lên nhau ở điểm dừng cuối cùng, dù `start_y` được cấu hình cách xa nhau.
+- **Cause:** Thuật toán tính Y đích cho toàn bộ một cụm là `targetY = targetBaseY + r * spacingY`. Nếu 2 Batch khác nhau được định nghĩa `target_base_y` không cách đủ xa (Ví dụ: Đàn 2 hàng dừng ở 100 => chiếm mốc 100 và 200, Đàn 1 hàng dừng ở 150), thì Y đích của chúng sẽ giao nhau (Y=200 và Y=150 sẽ đâm xuyên nhau vì mỗi con gà cao 100px). 
+- **Fix:** Phải tính toán kỹ số hàng (`rows`) và `spacing_y` của từng Batch, đảm bảo `target_base_y` của Batch sau phải cộng dồn ít nhất bằng tổng chiều cao của Batch trước. (Ví dụ đàn trên dừng ở 100, 2 hàng khoảng cách 100 => chiếm không gian đến 200. Đàn tiếp theo phải dừng ở mức 300). Đồng thời, khoảng cách của `start_y` (khi spawn) phải y hệt như khoảng cách của `target_base_y` để tránh va chạm khi đang rơi.
+
+### 12.4. Lỗi Gà bay giật cục, co giật trái phải liên tục
+- **Symptom:** Gà di chuyển kiểu `HORIZONTAL_BOUNCE` bị kẹt ở một chỗ, rung lắc dữ dội sang hai bên.
+- **Cause:** Thuộc tính `drift` (Biên độ trượt ngang) quá nhỏ (Ví dụ: `drift = 10.0`). Với tốc độ di chuyển cao (Speed = 100), gà đạt đến giới hạn `drift` chỉ trong chưa tới `0.1s` và đảo chiều liên tục.
+- **Fix:** Tăng `drift` lên tối thiểu `100.0` - `150.0` để gà có đủ khoảng trống trượt mượt mà sang hai bên trước khi đảo chiều quay lại.

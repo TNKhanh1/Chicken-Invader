@@ -3,6 +3,7 @@
 #include "GameManager.h"
 #include "Bullet.h"
 #include <algorithm>
+#include <cmath>
 
 Enemy::Enemy(int vId, EnemyRole r, const EnemyStats& s, Vector2 pos)
     : Character(pos, s.hp, s.damage, s.armor, s.speed), pointValue(s.score) {
@@ -119,14 +120,26 @@ void Enemy::Update(float deltaTime) {
         eggDropTimer -= deltaTime;
         if (eggDropTimer <= 0.0f) {
             ResetEggTimer();
-            auto egg = std::make_shared<Bullet>(position, damage, 175.0f, false);
-            GameManager::GetInstance()->AddBullet(egg);
-            
-            // "gà này thì có đôi lúc thả 2 quả trứng liên tiếp"
-            // For chicken03, 30% chance to drop a second egg shortly after
-            if (visualId == 3 && GetRandomValue(1, 100) <= 30) {
-                pendingDoubleShots = 1;
-                doubleShotTimer = 0.2f;
+            if (visualId == 4) {
+                // chicken04: Bắn 3 viên xòe hình quạt (Fan Spread)
+                float angleSpread = 20.0f; // Góc lệch giữa các viên đạn (độ)
+                for (int i = -1; i <= 1; i++) {
+                    // Góc bắn thẳng xuống là 90 độ
+                    float rad = (90.0f + i * angleSpread) * (3.14159265f / 180.0f);
+                    Vector2 vel = { (float)cos(rad) * 175.0f, (float)sin(rad) * 175.0f };
+                    auto egg = std::make_shared<Bullet>(position, damage, 175.0f, false);
+                    egg->SetVelocity(vel);
+                    GameManager::GetInstance()->AddBullet(egg);
+                }
+            } else {
+                auto egg = std::make_shared<Bullet>(position, damage, 175.0f, false);
+                GameManager::GetInstance()->AddBullet(egg);
+                
+                // For chicken03, 30% chance to drop a second egg shortly after
+                if (visualId == 3 && GetRandomValue(1, 100) <= 30) {
+                    pendingDoubleShots = 1;
+                    doubleShotTimer = 0.2f;
+                }
             }
         }
     }

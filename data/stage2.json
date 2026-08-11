@@ -676,6 +676,37 @@
                     }
                 }
             ]
+        },
+        {
+            "wave_id": 10,
+            "batches": [
+                {
+                    "batch_id": 1,
+                    "visual_id": 11,
+                    "role": "BOSS",
+                    "count": 2,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 1,
+                        "cols": 2,
+                        "spacing_x": 600,
+                        "spacing_y": 0,
+                        "start_y": -200.0,
+                        "target_base_y": 150.0
+                    },
+                    "movement": {
+                        "type": "NONE"
+                    },
+                    "stats": {
+                        "hp": 30000,
+                        "damage": 50,
+                        "armor": 15,
+                        "speed": 180,
+                        "egg_rate": 0.0,
+                        "score": 5000
+                    }
+                }
+            ]
         }
     ]
 }

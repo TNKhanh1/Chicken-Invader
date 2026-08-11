@@ -1,0 +1,342 @@
+{
+    "waves": [
+        {
+            "wave_id": 1,
+            "batches": [
+                {
+                    "batch_id": 1,
+                    "role": "NORMAL",
+                    "count": 15,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 3,
+                        "cols": 5,
+                        "spacing_x": 120,
+                        "spacing_y": 100,
+                        "start_y": -300,
+                        "target_base_y": 100
+                    },
+                    "movement": {
+                        "type": "HORIZONTAL_BOUNCE",
+                        "drift": 150.0,
+                        "target_y": 100.0
+                    },
+                    "visual_id": 4,
+                    "stats": {
+                        "hp": 250,
+                        "damage": 20,
+                        "speed": 80,
+                        "score": 10
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "role": "NORMAL",
+                    "count": 14,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 2,
+                        "cols": 7,
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "start_y": -200,
+                        "target_base_y": 100
+                    },
+                    "movement": {
+                        "type": "SINE_ZIGZAG",
+                        "wrap_around": true
+                    },
+                    "visual_id": 1,
+                    "stats": {
+                        "hp": 200,
+                        "damage": 10,
+                        "speed": 100,
+                        "score": 10
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "role": "NORMAL",
+                    "count": 7,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 1,
+                        "cols": 7,
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "start_y": -400,
+                        "target_base_y": 50
+                    },
+                    "movement": {
+                        "type": "SINE_ZIGZAG",
+                        "wrap_around": true
+                    },
+                    "visual_id": 4,
+                    "stats": {
+                        "hp": 300,
+                        "damage": 20,
+                        "speed": 100,
+                        "score": 15
+                    }
+                }
+            ]
+        },
+        {
+            "wave_id": 2,
+            "batches": [
+                {
+                    "batch_id": 1,
+                    "role": "ASTEROID",
+                    "count": 10,
+                    "layout": {
+                        "type": "METEOR_SHOWER",
+                        "asteroid_variant": 2,
+                        "spawn_delay": 0.8
+                    },
+                    "movement": {
+                        "type": "METEOR_DIVE"
+                    },
+                    "visual_id": 1,
+                    "stats": {
+                        "hp": 800,
+                        "damage": 40,
+                        "speed": 350,
+                        "score": 25
+                    }
+                },
+                {
+                    "batch_id": 1,
+                    "role": "NORMAL",
+                    "count": 8,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 4,
+                        "cols": 2,
+                        "spacing_x": 300,
+                        "spacing_y": 150,
+                        "start_y": -200,
+                        "target_base_y": 100
+                    },
+                    "movement": {
+                        "type": "STRAIGHT",
+                        "wrap_around": true
+                    },
+                    "visual_id": 4,
+                    "stats": {
+                        "hp": 300,
+                        "damage": 20,
+                        "speed": 70,
+                        "score": 15
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "role": "NORMAL",
+                    "count": 5,
+                    "layout": {
+                        "type": "V_SHAPE",
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "start_y": 50,
+                        "target_base_y": 100,
+                        "layers": 1,
+                        "layer_spacing": 0
+                    },
+                    "movement": {
+                        "type": "VERTICAL_ZIGZAG",
+                        "wrap_around": true
+                    },
+                    "visual_id": 4,
+                    "stats": {
+                        "hp": 350,
+                        "damage": 20,
+                        "speed": 80,
+                        "score": 20
+                    }
+                }
+            ]
+        },
+        {
+            "wave_id": 3,
+            "batches": [
+                {
+                    "batch_id": 1,
+                    "role": "NORMAL",
+                    "count": 12,
+                    "layout": {
+                        "type": "SWEEP_TO_GRID",
+                        "rows": 2,
+                        "cols_per_side": 3,
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "target_base_y": 150
+                    },
+                    "movement": {
+                        "type": "HORIZONTAL_SWEEP",
+                        "wrap_around": true
+                    },
+                    "visual_id": 4,
+                    "stats": {
+                        "hp": 300,
+                        "damage": 20,
+                        "speed": 120,
+                        "score": 15
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "role": "NORMAL",
+                    "count": 7,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 1,
+                        "cols": 7,
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "start_y": -100,
+                        "target_base_y": 300
+                    },
+                    "movement": {
+                        "type": "HORIZONTAL_BOUNCE",
+                        "drift": 150.0,
+                        "target_y": 300.0
+                    },
+                    "visual_id": 2,
+                    "stats": {
+                        "hp": 800,
+                        "damage": 20,
+                        "speed": 100,
+                        "score": 20
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "role": "NORMAL",
+                    "count": 14,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 2,
+                        "cols": 7,
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "start_y": -300,
+                        "target_base_y": 100
+                    },
+                    "movement": {
+                        "type": "HORIZONTAL_BOUNCE",
+                        "drift": 150.0,
+                        "target_y": 100.0
+                    },
+                    "visual_id": 4,
+                    "stats": {
+                        "hp": 300,
+                        "damage": 20,
+                        "speed": 100,
+                        "score": 15
+                    }
+                }
+            ]
+        },
+        {
+            "wave_id": 4,
+            "batches": [
+                {
+                    "batch_id": 1,
+                    "role": "NORMAL",
+                    "count": 10,
+                    "layout": {
+                        "type": "INTERSECTING_V",
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "target_base_y": 200
+                    },
+                    "movement": {
+                        "type": "WAYPOINT"
+                    },
+                    "visual_id": 4,
+                    "stats": {
+                        "hp": 350,
+                        "damage": 20,
+                        "speed": 150,
+                        "score": 20
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "role": "NORMAL",
+                    "count": 7,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 1,
+                        "cols": 7,
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "start_y": -50,
+                        "target_base_y": 100
+                    },
+                    "movement": {
+                        "type": "STRAIGHT",
+                        "wrap_around": true
+                    },
+                    "visual_id": 1,
+                    "stats": {
+                        "hp": 250,
+                        "damage": 20,
+                        "speed": 60,
+                        "score": 15
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "role": "NORMAL",
+                    "count": 14,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 2,
+                        "cols": 7,
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "start_y": -250,
+                        "target_base_y": 200
+                    },
+                    "movement": {
+                        "type": "STRAIGHT",
+                        "wrap_around": true
+                    },
+                    "visual_id": 3,
+                    "stats": {
+                        "hp": 350,
+                        "damage": 20,
+                        "speed": 60,
+                        "score": 15
+                    }
+                },
+                {
+                    "batch_id": 2,
+                    "role": "NORMAL",
+                    "count": 14,
+                    "layout": {
+                        "type": "GRID",
+                        "rows": 2,
+                        "cols": 7,
+                        "spacing_x": 100,
+                        "spacing_y": 100,
+                        "start_y": -450,
+                        "target_base_y": 300
+                    },
+                    "movement": {
+                        "type": "STRAIGHT",
+                        "wrap_around": true
+                    },
+                    "visual_id": 4,
+                    "stats": {
+                        "hp": 400,
+                        "damage": 20,
+                        "speed": 60,
+                        "score": 15
+                    }
+                }
+            ]
+        }
+    ]
+}

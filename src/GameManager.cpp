@@ -334,7 +334,7 @@ void GameManager::Init(int width, int height, const char* title) {
     
     printf("GameManager::Init finished.\n"); fflush(stdout);
     isRunning = true;
-    currentState = GameState::MAIN_MENU; // Bắt đầu ở MAIN_MENU
+    currentState = GameState::MAIN_MENU;
 }
 
 void GameManager::Run() {
@@ -1062,7 +1062,7 @@ void GameManager::Draw() {
             DrawText("TEST STAGE & WAVE", screenWidth/2 - MeasureText("TEST STAGE & WAVE", 40)/2, 120, 40, YELLOW);
             
             // Fix Out-of-Bounds Issue: Show warning if trying to start non-existent waves
-            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 3 && testConfig.wave <= 1) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
+            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 3 && testConfig.wave <= 1) || (testConfig.stage == 4 && testConfig.wave <= 4) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
             if (!isValidSelection) {
                 DrawText("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2 - 200, 180, 20, RED);
             }

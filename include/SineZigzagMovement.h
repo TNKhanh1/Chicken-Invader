@@ -8,7 +8,7 @@ private:
     float startX;
     float time = 0.0f;
     float amplitude = 150.0f;
-    float frequency = 3.0f;
+    float frequency = 1.5f;
     bool initialized = false;
     bool wrapAround;
 public:

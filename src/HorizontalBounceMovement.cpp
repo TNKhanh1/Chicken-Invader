@@ -2,7 +2,7 @@
 #include <cmath>
 
 HorizontalBounceMovement::HorizontalBounceMovement(float targetY, float drift, float startDir) 
-    : targetY(targetY), drift(drift), direction(startDir) {}
+    : targetY(targetY), drift(drift), direction(startDir), startX(0.0f), initialized(false) {}
 
 void HorizontalBounceMovement::Move(Vector2& position, float moveSpeed, float deltaTime, int screenWidth, int screenHeight) {
     if (!initialized) {

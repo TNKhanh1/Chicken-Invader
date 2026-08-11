@@ -3,6 +3,7 @@
 #include "Meat.h"
 #include "Spaceship.h"
 #include <cmath>
+#include <raymath.h>
 
 // --- Custom Boss Bullets ---
 
@@ -704,16 +705,26 @@ void RedBossBullet::Draw() {
 
 EggsecutionerBoss::EggsecutionerBoss(int visualId, const EnemyStats& stats, Vector2 pos)
     : Boss(visualId, stats, pos),
-      attackTimer(0.0f),
       nextSkillType(0),
       attackCooldown(3.5f),
       moveTimer(0.0f),
       isDashing(false),
+      isYielding(false),
       dashSpeed(800.0f),
       normalSpeed(180.0f) {
     canShoot = false;
     currentHp = 40000.0f;
     maxHp = 40000.0f;
+    
+    // Desync at spawn so they don't look like they're dancing identically
+    auto gm = GameManager::GetInstance();
+    targetPos.x = (float)GetRandomValue(150, gm->GetScreenWidth() - 150);
+    targetPos.y = (float)GetRandomValue(100, gm->GetScreenHeight() / 2 - 50);
+    
+    attackTimer = (float)GetRandomValue(0, 20) / 10.0f; // 0.0 to 2.0s random offset
+    
+    currentVelocity = {0, 0};
+    intendedVel = {0, 0};
 }
 
 void EggsecutionerBoss::FireBouncingBullets() {
@@ -776,68 +787,133 @@ void EggsecutionerBoss::DrawBossHPBar() {
 }
 
 void EggsecutionerBoss::Update(float deltaTime) {
-    Boss::Update(deltaTime);
+    Enemy::Update(deltaTime);
+    battleTime += deltaTime;
+    wobbleTimer += deltaTime * 3.0f;
+    wobbleAngle = sin(wobbleTimer) * 20.0f;
 
     moveTimer += deltaTime;
     
-    if (!isDashing) {
-        // State Machine based on moveTimer
-        // 0.0s -> 12.0s: Hovering standby
-        // 12.0s -> 14.0s: Moving to new targetPos
+    if (moveTimer > 5.0f) {
+        moveTimer = 0.0f;
+        auto gm = GameManager::GetInstance();
+        auto player = gm->GetPlayer();
         
-        if (moveTimer > 14.0f) {
-            moveTimer = 0.0f;
-            // Pick new target position
-            targetPos.x = (float)GetRandomValue(200, 600);
-            targetPos.y = (float)GetRandomValue(100, 250);
-            
-            // 5% chance to Dash instead of hovering
-            if (GetRandomValue(1, 100) <= 5) {
-                isDashing = true;
-                dashTarget = { (float)GetRandomValue(100, 700), (float)GetRandomValue(100, 300) };
+        bool iAmTargetingPlayer = false;
+        
+        // Xác định con Boss kia
+        EggsecutionerBoss* otherBoss = nullptr;
+        for (const auto& enemy : gm->GetActiveEnemies()) {
+            if (enemy.get() != this && enemy->role == EnemyRole::BOSS && enemy->visualId == 11) {
+                otherBoss = static_cast<EggsecutionerBoss*>(enemy.get());
+                break;
             }
         }
         
-        if (moveTimer <= 12.0f) {
-            // Hover logic: Gently drift around targetPos (very slow, just to feel alive)
-            float driftX = targetPos.x + 30.0f * sinf(moveTimer * 1.5f);
-            float driftY = targetPos.y + 15.0f * cosf(moveTimer * 2.0f);
-            
-            Vector2 dir = { driftX - position.x, driftY - position.y };
-            float dist = sqrt(dir.x * dir.x + dir.y * dir.y);
-            if (dist > 0) {
-                dir.x /= dist;
-                dir.y /= dist;
-                position.x += dir.x * (normalSpeed * 0.3f) * deltaTime; // Slower hover
-                position.y += dir.y * (normalSpeed * 0.3f) * deltaTime;
+        // Xác định ai sẽ là người nhắm vào player trong chu kỳ 5 giây này
+        int cycle = (int)(battleTime / 5.0f);
+        if (otherBoss) {
+            if (cycle % 2 == 0) {
+                iAmTargetingPlayer = (this > otherBoss);
+            } else {
+                iAmTargetingPlayer = (this < otherBoss);
             }
         } else {
-            // Reposition logic: Move to the new targetPos
-            Vector2 dir = { targetPos.x - position.x, targetPos.y - position.y };
-            float dist = sqrt(dir.x * dir.x + dir.y * dir.y);
-            if (dist > 0) {
-                dir.x /= dist;
-                dir.y /= dist;
-                // Move with smooth ease-out feel
-                float currentSpeed = normalSpeed;
-                if (dist < 50.0f) currentSpeed = normalSpeed * (dist / 50.0f);
-                if (currentSpeed < 20.0f) currentSpeed = 20.0f;
+            iAmTargetingPlayer = true; // Nếu con kia chết, con này luôn nhắm player
+        }
 
-                position.x += dir.x * currentSpeed * deltaTime;
-                position.y += dir.y * currentSpeed * deltaTime;
+        if (iAmTargetingPlayer && player && player->IsActive()) {
+            // Nhắm vào vị trí quanh phi thuyền
+            Vector2 pPos = player->GetPosition();
+            targetPos.x = pPos.x + GetRandomValue(-150, 150);
+            targetPos.y = pPos.y - GetRandomValue(200, 350); 
+            
+            // Giới hạn trong màn hình
+            if (targetPos.x < 150) targetPos.x = 150;
+            if (targetPos.x > gm->GetScreenWidth() - 150) targetPos.x = gm->GetScreenWidth() - 150;
+            if (targetPos.y < 50) targetPos.y = 50;
+            if (targetPos.y > gm->GetScreenHeight() / 2 + 150) targetPos.y = gm->GetScreenHeight() / 2 + 150;
+        } else {
+            // Con còn lại sẽ nhắm ngẫu nhiên, ưu tiên bay ra xa phi thuyền để tránh va chạm
+            float playerX = (player && player->IsActive()) ? player->GetPosition().x : gm->GetScreenWidth() / 2.0f;
+            
+            if (playerX < gm->GetScreenWidth() / 2.0f) {
+                // Player bên trái -> Boss né sang phải
+                targetPos.x = (float)GetRandomValue(gm->GetScreenWidth() / 2 + 100, gm->GetScreenWidth() - 150);
+            } else {
+                // Player bên phải -> Boss né sang trái
+                targetPos.x = (float)GetRandomValue(150, gm->GetScreenWidth() / 2 - 100);
+            }
+            targetPos.y = (float)GetRandomValue(50, gm->GetScreenHeight() / 2 - 50);
+        }
+        
+        // Loại bỏ hoàn toàn Dashing (tốc biến)
+        isDashing = false;
+    }
+
+    intendedVel = {0, 0};
+    
+    Vector2 dir = { targetPos.x - position.x, targetPos.y - position.y };
+    float dist = sqrt(dir.x * dir.x + dir.y * dir.y);
+    if (dist > 0) {
+        float currentSpeed = normalSpeed;
+        if (dist < 10.0f) {
+            currentSpeed = 0.0f; // Tới nơi thì dừng lại
+        } else if (dist < 100.0f) {
+            currentSpeed = normalSpeed * (dist / 100.0f);
+            if (currentSpeed < 30.0f) currentSpeed = 30.0f;
+        }
+        intendedVel = { (dir.x / dist) * currentSpeed, (dir.y / dist) * currentSpeed };
+    }
+
+    isYielding = false;
+    auto gm = GameManager::GetInstance();
+    for (const auto& enemy : gm->GetActiveEnemies()) {
+        if (enemy.get() != this && enemy->role == EnemyRole::BOSS && enemy->visualId == 11) {
+            EggsecutionerBoss* other = static_cast<EggsecutionerBoss*>(enemy.get());
+            
+            // 1. Hard Repulsion to guarantee they never physically stick
+            Vector2 diff = { position.x - other->position.x, position.y - other->position.y };
+            float dist = sqrt(diff.x * diff.x + diff.y * diff.y);
+            float safeRadius = 260.0f; // Bán kính an toàn bao phủ toàn bộ cánh/đầu/chân
+            if (dist < safeRadius && dist > 0) {
+                float pushForce = (safeRadius - dist) * 3.0f * deltaTime;
+                position.x += (diff.x / dist) * pushForce;
+                position.y += (diff.y / dist) * pushForce;
+            }
+
+            // 2. Continuous Collision Prediction (Swept circle logic)
+            bool conflict = false;
+            for (float t = 0.2f; t <= 3.0f; t += 0.2f) {
+                Vector2 myFuture = { position.x + intendedVel.x * t, position.y + intendedVel.y * t };
+                Vector2 otherFuture = { other->position.x + other->currentVelocity.x * t, other->position.y + other->currentVelocity.y * t };
+                if (Vector2Distance(myFuture, otherFuture) < 280.0f) {
+                    conflict = true;
+                    break;
+                }
+            }
+            
+            if (conflict) {
+                if (this > other) {
+                    isYielding = true;
+                } else {
+        
+                    targetPos.x = (float)GetRandomValue(200, gm->GetScreenWidth() - 200);
+                    targetPos.y = (float)GetRandomValue(100, 350);
+                    if (isDashing) {
+                        dashTarget = { (float)GetRandomValue(200, gm->GetScreenWidth() - 200), (float)GetRandomValue(100, 350) };
+                    }
+                }
             }
         }
+    }
+
+    if (isYielding) {
+        currentVelocity = {0, 0};
     } else {
-        Vector2 dir = { dashTarget.x - position.x, dashTarget.y - position.y };
-        float dist = sqrt(dir.x * dir.x + dir.y * dir.y);
-        if (dist > 10.0f) {
-            dir.x /= dist;
-            dir.y /= dist;
-            position.x += dir.x * dashSpeed * deltaTime;
-            position.y += dir.y * dashSpeed * deltaTime;
-        } else {
-            isDashing = false;
-        }
+        currentVelocity = intendedVel;
+        position.x += currentVelocity.x * deltaTime;
+        position.y += currentVelocity.y * deltaTime;
     }
 
     attackTimer += deltaTime;

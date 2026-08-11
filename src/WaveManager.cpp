@@ -130,7 +130,7 @@ void WaveManager::Update(float deltaTime) {
             auto b = it->batchData;
             auto layout = b["layout"];
             std::string layoutType = layout["type"];
-            int visualId = b["visual_id"];
+            int visualId = b.value("visual_id", 1);
             
             std::string roleStr = b["role"];
             EnemyRole role = EnemyRole::NORMAL;
@@ -141,10 +141,12 @@ void WaveManager::Update(float deltaTime) {
 
             EnemyStats stats;
             auto s = b["stats"];
-            stats.hp = s["hp"];
-            stats.damage = s["damage"];
-            stats.speed = s["speed"];
-            stats.score = s["score"];
+            stats.hp = s.value("hp", 100.0f);
+            stats.damage = s.value("damage", 20.0f);
+            stats.armor = s.value("armor", 0.0f);
+            stats.speed = s.value("speed", 100.0f);
+            stats.eggRate = s.value("egg_rate", 3.0f);
+            stats.score = s.value("score", 10);
             
             std::vector<SpawnData> spawnPoints;
             float sw = gm->GetScreenWidth();
@@ -156,6 +158,13 @@ void WaveManager::Update(float deltaTime) {
                     px = gm->GetPlayer()->GetPosition().x;
                 }
                 spawnPoints = FormationBuilder::BuildTargetedPlayer(startY, px);
+            } else if (layoutType == "METEOR_SHOWER") {
+                int count = b.value("count", 5);
+                for (int i = 0; i < count; i++) {
+                    float px = (float)GetRandomValue(50, (int)sw - 50);
+                    float py = -100.0f - (float)GetRandomValue(0, 500);
+                    spawnPoints.push_back({ {px, py}, 0.0f });
+                }
             }
             
             for (const auto& pt : spawnPoints) {
@@ -206,12 +215,12 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
 
                     EnemyStats stats;
                     auto s = b["stats"];
-                    stats.hp = s["hp"];
-                    stats.damage = s["damage"];
-                    stats.armor = s["armor"];
-                    stats.speed = s["speed"];
-                    stats.eggRate = s["egg_rate"];
-                    stats.score = s["score"];
+                    stats.hp = s.value("hp", 100.0f);
+                    stats.damage = s.value("damage", 20.0f);
+                    stats.armor = s.value("armor", 0.0f);
+                    stats.speed = s.value("speed", 100.0f);
+                    stats.eggRate = s.value("egg_rate", 3.0f);
+                    stats.score = s.value("score", 10);
                     auto layout = b["layout"];
                     isContinuousStream = false;
                     if (layout["type"] == "CONTINUOUS_STREAM") {
