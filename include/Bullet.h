@@ -37,6 +37,7 @@ public:
     
     // Circle Hitbox & CCD Getters
     float GetRadius() const;
+    void SetRadius(float r);
     Vector2 GetCenter() const;
     Vector2 GetPrevCenter() const;
     Vector2 GetVelocity() const;

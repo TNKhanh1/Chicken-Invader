@@ -28,8 +28,9 @@ struct EnemyStats {
 
 
 class Enemy : public Character {
-private:
+protected:
     std::unique_ptr<IMovementBehavior> movementBehavior;
+private:
     int pointValue; // Điểm số khi bị giết
     float baseSizeForType() const;
 

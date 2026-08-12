@@ -59,6 +59,7 @@ float Bullet::GetDamage() const { return damage; }
 bool Bullet::IsPlayerBullet() const { return isPlayerBullet; }
 
 float Bullet::GetRadius() const { return radius; }
+void Bullet::SetRadius(float r) { radius = r; }
 Vector2 Bullet::GetCenter() const { return position; }
 Vector2 Bullet::GetPrevCenter() const { return prevPosition; }
 Vector2 Bullet::GetVelocity() const {

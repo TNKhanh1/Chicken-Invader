@@ -202,5 +202,76 @@ public:
     void Draw() override;
     void Die() override;
 };
+class BlueRoundBullet : public Bullet {
+private:
+    float glowPulse;
+public:
+    BlueRoundBullet(Vector2 startPos, Vector2 velocity, float damage);
+    void Update(float deltaTime) override;
+    void Draw() override;
+};
+
+class SnowballBullet : public Bullet {
+private:
+    float age;
+    float maxAge;
+    float startRadius;
+    float endRadius;
+    
+    struct Flake {
+        Vector2 offset;
+        float angle;
+        float speed;
+        float size;
+    };
+    std::vector<Flake> flakes;
+
+public:
+    SnowballBullet(Vector2 startPos, Vector2 velocity, float damage);
+    void Update(float deltaTime) override;
+    void Draw() override;
+};
+
+// --- Eskimo Boss (Stage 4, Wave 10) ---
+class EskimoBoss : public Boss {
+private:
+    // Movement system
+    float moveTimer;
+    Vector2 targetPos;
+    bool isMoving;
+
+    // Attack system
+    float attackTimer;
+    int normalAttackCount;
+    int normalAttacksBeforeSkill;
+    float attackCooldown;
+    
+    // Snow flakes particle system
+    struct SnowParticle {
+        Vector2 pos;
+        Vector2 velocity;
+        float alpha;
+        float size;
+    };
+    std::vector<SnowParticle> flakes;
+    float flakeSpawnTimer;
+
+    // Internal helpers
+    void SpawnSnowFlakes(float deltaTime);
+    void UpdateFlakes(float deltaTime);
+    void DrawBossHPBar();
+
+    // Attack methods
+    void FireBlueBurst();
+    void FireSnowballs();
+
+public:
+    EskimoBoss(int visualId, const EnemyStats& stats, Vector2 pos);
+
+    void Update(float deltaTime) override;
+    void Draw() override;
+    void Die() override;
+    void TakeDamage(float incomingDamage) override;
+};
 
 #endif // BOSSES_H
