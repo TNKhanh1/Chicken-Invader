@@ -70,6 +70,24 @@ Boss::Boss(int visualId, const EnemyStats& stats, Vector2 pos)
 void Boss::Update(float deltaTime) {
     Enemy::Update(deltaTime);
     
+    auto gm = GameManager::GetInstance();
+    if (gm->IsBossCutscene()) {
+        float cTimer = gm->GetCutsceneTimer();
+        // Fly down from -200 to 300 during the first 2 seconds
+        if (cTimer <= 2.0f) {
+            float startY = -200.0f;
+            float endY = 300.0f;
+            float t = cTimer / 2.0f;
+            // Ease out cubic
+            t = 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
+            position.y = startY + t * (endY - startY);
+        } else {
+            position.y = 300.0f;
+        }
+        targetPos = position; // keep target pos in sync
+        return; // Skip normal movement and attacks
+    }
+    
     battleTime += deltaTime;
     
     // Drumstick drop logic removed as requested
@@ -79,7 +97,6 @@ void Boss::Update(float deltaTime) {
     float dy = targetPos.y - position.y;
     float dist = sqrt(dx*dx + dy*dy);
     if (dist < 10.0f) {
-        auto gm = GameManager::GetInstance();
         targetPos.x = (float)GetRandomValue(150, gm->GetScreenWidth() - 150);
         targetPos.y = (float)GetRandomValue(100, gm->GetScreenHeight() / 2 - 100);
     } else {
@@ -111,6 +128,67 @@ void Boss::Draw() {
 
     Rectangle destRec = { position.x, position.y, destW, destH };
     DrawTexturePro(tex, srcRec, destRec, origin, wobbleAngle, tintColor);
+
+    // Hiển thị bong bóng thoại trong Cutscene
+    if (gm->IsBossCutscene()) {
+        float cTimer = gm->GetCutsceneTimer();
+        if (cTimer > 2.0f && cTimer <= 8.0f) {
+            std::string line1, line2;
+            if (visualId == 12) { // Military Chicken
+                line1 = "You've come far, pilot...";
+                line2 = "but this is your end!";
+            } else if (visualId == 13) { // Super Chick
+                line1 = "Prepare to be";
+                line2 = "scrambled!";
+            }
+            
+            if (!line1.empty()) {
+                float typeDuration = 2.0f; // Typewriter takes 2 seconds
+                float typeTimer = cTimer - 2.0f;
+                int totalChars = line1.length() + line2.length();
+                int charsToShow = (int)((typeTimer / typeDuration) * totalChars);
+                if (charsToShow > totalChars) charsToShow = totalChars;
+                
+                std::string disp1 = line1.substr(0, std::min(charsToShow, (int)line1.length()));
+                int rem = charsToShow - (int)line1.length();
+                std::string disp2 = rem > 0 ? line2.substr(0, rem) : "";
+                
+                int w1 = MeasureText(line1.c_str(), 20);
+                int w2 = MeasureText(line2.c_str(), 20);
+                int maxW = std::max(w1, w2);
+                int totalH = line2.empty() ? 20 : 45;
+                
+                // Bubble position
+                float bX = position.x + (visualId == 12 ? -maxW - 40.0f : 40.0f); 
+                float bY = position.y - 120.0f;
+                
+                Rectangle bubbleRec = { bX - 10, bY - 10, (float)maxW + 20, (float)totalH + 20 };
+                DrawRectangleRounded(bubbleRec, 0.2f, 10, Fade(WHITE, 0.9f));
+                DrawRectangleRoundedLinesEx(bubbleRec, 0.2f, 10, 2.0f, BLACK);
+                
+                // Bubble tail
+                Vector2 p1, p2, p3;
+                if (visualId == 12) { // Tail points right
+                    p1 = { bX + maxW - 20, bY + totalH + 10 };
+                    p3 = { bX + maxW + 10, bY + totalH + 40 };
+                    p2 = { bX + maxW, bY + totalH + 10 };
+                } else { // Tail points left
+                    p1 = { bX + 10, bY + totalH + 10 };
+                    p3 = { bX - 10, bY + totalH + 40 };
+                    p2 = { bX + 30, bY + totalH + 10 };
+                }
+                DrawTriangle(p1, p3, p2, Fade(WHITE, 0.9f));
+                DrawLineV(p1, p3, BLACK);
+                DrawLineV(p3, p2, BLACK);
+                
+                // Draw text
+                DrawText(disp1.c_str(), bX, bY, 20, BLACK);
+                if (!disp2.empty()) {
+                    DrawText(disp2.c_str(), bX, bY + 25, 20, BLACK);
+                }
+            }
+        }
+    }
 }
 
 Rectangle Boss::GetHitbox() const {
@@ -151,6 +229,8 @@ void MilitaryChickenBoss::Update(float deltaTime) {
     Boss::Update(deltaTime);
     
     auto gm = GameManager::GetInstance();
+    if (gm->IsBossCutscene()) return; // Không tấn công trong Cutscene
+    
     auto player = gm->GetPlayer();
     
     // Cứ 2 phút (120s), giảm cooldown xuống 80%
@@ -189,6 +269,8 @@ void SuperChickBoss::FireEggBurst() {
 
 void SuperChickBoss::Update(float deltaTime) {
     Boss::Update(deltaTime);
+    
+    if (GameManager::GetInstance()->IsBossCutscene()) return; // Không tấn công trong Cutscene
     
     // Cứ 2 phút (120s), giảm cooldown xuống 80%
     float cooldownMult = std::max(0.2f, (float)pow(0.8, floor(battleTime / 120.0f)));

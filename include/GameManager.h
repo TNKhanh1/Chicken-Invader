@@ -98,6 +98,10 @@ private:
     int   pendingNextWave  = 1;      // Wave sẽ bắt đầu sau khi animation kết thúc
     float waveIntroTimer   = 0.0f;   // Đếm ngược tổng thời gian intro
     float bgScrollSpeed    = 30.0f;  // Tốc độ cuộn background (px/s) — thay magic number
+
+    // --- Stage 7 Boss Cutscene ---
+    bool isBossCutscene = false;
+    float cutsceneTimer = 0.0f;
     float waveTextAlpha    = 0.0f;   // Alpha chữ WAVE X (0–255)
 
     // Test selection configuration (Encapsulated)
@@ -162,6 +166,9 @@ public:
         currentState = newState;
     }
     GameState GetCurrentState() const { return currentState; }
+
+    bool IsBossCutscene() const { return isBossCutscene; }
+    float GetCutsceneTimer() const { return cutsceneTimer; }
 
     // Screen info getters
     int GetScreenWidth() const { return screenWidth; }
