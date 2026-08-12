@@ -110,6 +110,7 @@ void WaveManager::Update(float deltaTime) {
                     stats.damage = b["stats"]["damage"].get<float>();
                     stats.speed = b["stats"]["speed"].get<float>() * speedMult;
                     stats.score = b["stats"]["score"];
+                    stats.scale = b["stats"].value("scale", 1.0f);
 
                     auto enemy = EnemyFactory::CreateEnemy(visualId, role, stats, startPos);
                     enemy->SetMovementBehavior(std::make_unique<StraightMovement>(false));
@@ -147,6 +148,7 @@ void WaveManager::Update(float deltaTime) {
             stats.speed = s.value("speed", 100.0f);
             stats.eggRate = s.value("egg_rate", 3.0f);
             stats.score = s.value("score", 10);
+            stats.scale = s.value("scale", 1.0f);
             
             std::vector<SpawnData> spawnPoints;
             float sw = gm->GetScreenWidth();
@@ -221,6 +223,7 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                     stats.speed = s.value("speed", 100.0f);
                     stats.eggRate = s.value("egg_rate", 3.0f);
                     stats.score = s.value("score", 10);
+                    stats.scale = s.value("scale", 1.0f);
                     auto layout = b["layout"];
                     isContinuousStream = false;
                     if (layout["type"] == "CONTINUOUS_STREAM") {
@@ -296,7 +299,14 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                             float drift = mov["drift"];
                             enemy->SetMovementBehavior(std::make_unique<HorizontalBounceMovement>(pt.targetPos.y, drift, 1.0f));
                         } else if (movType == "WAYPOINT") {
-                            enemy->SetMovementBehavior(std::make_unique<WaypointMovement>(pt.waypoints));
+                            std::vector<Vector2> wp = pt.waypoints;
+                            if (mov.contains("waypoints")) {
+                                wp.clear();
+                                for (auto& w : mov["waypoints"]) {
+                                    wp.push_back({w["x"].get<float>(), w["y"].get<float>()});
+                                }
+                            }
+                            enemy->SetMovementBehavior(std::make_unique<WaypointMovement>(wp));
                         } else if (movType == "METEOR_DIVE") {
                             enemy->SetMovementBehavior(std::make_unique<MeteorDiveMovement>());
                         } else if (movType == "STRAIGHT") {
@@ -309,7 +319,9 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                         } else if (movType == "SINE_ZIGZAG") {
                             enemy->SetMovementBehavior(std::make_unique<SineZigzagMovement>(wrapAround));
                         } else if (movType == "VERTICAL_ZIGZAG") {
-                            enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>(wrapAround));
+                            float dMult = mov.value("downward_speed_mult", 0.3f);
+                            float hMult = mov.value("horizontal_speed_mult", 0.5f);
+                            enemy->SetMovementBehavior(std::make_unique<VerticalZigzagMovement>(wrapAround, dMult, hMult));
                         }
 
                         if (role == EnemyRole::ASTEROID) {

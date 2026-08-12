@@ -94,10 +94,63 @@ Vì `chicken04` bắn 3 viên đạn tỏa ra xung quanh, nếu để chúng đ�
   - Hàng 1: `chicken01`
   - Hàng 2: `chicken03`
   - Hàng 3 & 4: `chicken04`
-  - Di chuyển: Rơi thẳng (`STRAIGHT`) với tốc độ rất nhanh (Speed = 60). Chúng được cấu hình xuất phát sát rạt mép trên màn hình để ngay lập tức lao ập xuống người chơi, gây áp lực cực mạnh. Bài test cuối cùng trước khi đối mặt với Boss (Wave 5).
+  - Di chuyển: Rơi thẳng (`STRAIGHT`) với tốc độ rất nhanh (Speed = 60). Chúng được cấu hình xuất phát sát rạt mép trên màn hình để ngay lập tức lao ập xuống người chơi, gây áp lực cực mạnh. Bài test cuối cùng trước khi bước vào Wave 5.
+
+---
+
+## 4. Wave 5: Thử Thách Sinh Tồn - Kẻ Hủy Diệt Đột Biến (Mutant Bullet-Hell)
+
+Theo đúng yêu cầu của bạn, Wave 5 sẽ gồm 2 Batch riêng biệt, cả hai đều sử dụng đặc trưng xòe đạn của `chicken04` nhưng sẽ có sự pha trộn giữa **Gà Kích thước Nhỏ** và **Gà Đột Biến Khổng Lồ** (Size to hơn, HP trâu hơn, Sát thương khủng hơn). 
+
+### Nâng cấp Hệ thống C++ (Bắt buộc)
+1. **Dynamic Scale:** Thêm `float scale` vào `EnemyStats`, cập nhật hàm `baseSizeForType()` và `GetHitbox()` để nhân với `scale`, cho phép vẽ gà to/nhỏ tùy ý (Đã hoàn thành).
+2. **Custom Movement Speed Multipliers:** Để đáp ứng yêu cầu "tốc độ đi xuống nhanh hơn 30% nhưng trái phải giữ nguyên" cho `VERTICAL_ZIGZAG` ở Batch 2:
+   - Sửa class `VerticalZigzagMovement` để nhận 2 tham số mới: `downwardSpeedMult` (mặc định 0.3) và `horizontalSpeedMult` (mặc định 0.5).
+   - Trong `WaveManager.cpp`, đọc 2 tham số này từ trường `movement` trong JSON.
+   - Đối với Wave 5 Batch 2, ta sẽ set `downward_speed_mult = 0.39` (tức là 0.3 + 30%).
+
+### Thiết kế Đội hình (JSON Configuration)
+
+Việc "trộn" nhiều kích thước vào một đội hình sẽ được thực hiện bằng kỹ thuật **Ghép lớp (Overlay Batches)**. Nghĩa là trong cùng 1 Batch Time, ta spawn nhiều nhóm bù trừ vị trí cho nhau.
+
+#### Batch 1: Ma trận Chữ Nhật (The Rectangle Matrix)
+Gồm 2 lớp xếp chồng nhau tạo thành một hình chữ nhật đặc:
+- **Lớp Vỏ (Gà Nhỏ):** Lưới `GRID` 3 hàng x 4 cột `chicken04` nhỏ (`scale: 1.0`, `hp: 300`). 
+- **Lớp Lõi (Gà Khổng Lồ):** Lưới `GRID` 2 hàng x 3 cột `chicken04` đột biến (`scale: 1.3`, `hp: 400`). Nằm lọt thỏm vào những khoảng trống ở giữa các con gà nhỏ.
+- **Chuyển động:** `HORIZONTAL_BOUNCE` đồng điệu.
+
+#### Batch 2: Đội Hình Tam Giác (The Triangle Spearhead)
+- **Đỉnh Tam Giác:** 1 con `chicken04` to khổng lồ (`scale: 1.5`, `hp: 600`) bay ở ngay đỉnh mũi nhọn, `target_base_y: 200`.
+- **Hai Cánh Tam Giác:** 9 con `chicken04` (`scale: 1.0`) xếp hình `V_SHAPE`, `target_base_y: 100`.
+- **Chuyển động:** `VERTICAL_ZIGZAG` với `downward_speed_mult: 0.39` (Nhanh hơn 30% khi lao xuống).
+
+---
+
+## 5. Kế hoạch Wave 6, 7, 8, 9 (Chặng đường cuối trước Boss)
+
+Theo yêu cầu, mỗi Wave sẽ có chính xác 2 Batch, đội hình đơn giản tinh tế, và chỉ sử dụng gà từ loại 1 đến 4. Dưới đây là plan chi tiết:
+
+### Wave 6: Bão Mưa Đá & Bắn Tỉa (Meteor Sniper)
+- **Batch 1:** Mưa thiên thạch `METEOR_DIVE` rơi liên tục. Cùng lúc đó, 1 hàng ngang (GRID 1x5) `chicken03` (Sniper - Bắn tỉa nhắm thẳng người chơi) lướt ngang ở mép trên màn hình. Ép người chơi phải luồn lách qua đá trong khi bị nhắm bắn.
+- **Batch 2:** 2 cột dọc `chicken02` (Tanker - Trâu bò) từ từ trôi xuống từ 2 mép trái phải màn hình. Ở giữa là 1 đàn `chicken01` (Spread - Đạn tỏa) bay zíc zắc (`SINE_ZIGZAG`) đi xuống.
+
+### Wave 7: Gọng Kìm Tỏa Đạn (Pincer Sweep)
+- **Batch 1:** 1 hàng `chicken04` (Đạn quạt) đứng lơ lửng ở trên. Hai nhóm `chicken01` (Đạn tỏa) sử dụng `SWEEP_TO_GRID` bay vòng cung từ 2 góc trái/phải màn hình vào giữa để tạo thành một lớp rào chắn đạn.
+- **Batch 2:** Chữ X cắt chéo (`INTERSECTING_V`). 2 nhóm `chicken03` (Bắn tỉa) và 2 nhóm `chicken04` bay cắt chéo qua nhau. Khi gặp nhau ở giữa màn hình, đạn của chúng sẽ hòa trộn tạo thành một mạn nhện đạn cực kỳ đẹp mắt.
+
+### Wave 8: Hộ Giá Khổng Lồ (Giant Escort)
+Sử dụng tính năng Scale vừa phát triển để tạo ra các "Tiểu Boss".
+- **Batch 1:** 1 Tiên phong Khổng lồ `chicken02` (Tanker, Scale 2.5, HP siêu trâu 3000) được bao bọc bởi một lớp vỏ chữ V (V_SHAPE) gồm 10 con `chicken01` (Scale 1.0). Tất cả di chuyển zíc zắc dọc (`VERTICAL_ZIGZAG`).
+- **Batch 2:** 2 Pháo đài Khổng lồ `chicken03` (Sniper, Scale 2.0, HP 1500) được yểm trợ bởi 2 cụm `chicken04` (Fan). Tất cả lướt ngang qua lại `HORIZONTAL_BOUNCE`.
+
+### Wave 9: Tử Chiến Tiền Phương (Vanguard Last Stand)
+Wave cuối cùng trước khi gặp Boss Stage 4, tạo ra một bức tường đạn thực sự.
+- **Batch 1 (Bức Tường Hỗn Loạn):** Dùng kỹ thuật Overlay Batch tạo một lưới `GRID` 3x5 đan xen giữa `chicken01`, `chicken03`, và `chicken04`. Chúng sẽ từ từ trôi thẳng xuống (`STRAIGHT`) chậm rãi như một chiếc máy ép khổng lồ.
+- **Batch 2 (Mũi Khoan Kép):** 2 hàng `chicken04` khổng lồ (Scale 1.5) dùng `WAYPOINT` lướt siêu tốc hình chữ Z qua lại màn hình và liên tục xả đạn quạt.
 
 ## User Review Required
 > [!IMPORTANT]
-> - Thiết kế đạn quạt (Fan spread) dựa trên góc toán học (70 độ, 90 độ, 110 độ).
-> - Kế hoạch giữ nguyên 100% logic cấu trúc cũ.
+> 1. Tính năng **tốc độ lao xuống 30%** sẽ được hiện thực hóa bằng 2 tham số `downward_speed_mult` và `horizontal_speed_mult` cực kỳ linh hoạt cho game.
+> 2. Plan cho Wave 6, 7, 8, 9 đã được xây dựng theo đúng yêu cầu: **2 Batch/Wave, Đội hình đơn giản nhưng kết hợp khéo léo, Sử dụng gà từ 1-4 và tận dụng triệt để tính năng Scale đột biến**.
+> 3. Xin vui lòng kiểm tra và phản hồi xem bạn có ưng ý với cấu trúc 4 Wave cuối này không để tôi tiến hành viết C++ và JSON luôn!
 

@@ -44,12 +44,13 @@ void Enemy::TakeDamage(float incomingDamage) {
 float Enemy::baseSizeForType() const {
     // Khôi phục lại kích thước hiển thị 100.0f mặc định cho mọi loại gà
     // Để không làm hỏng cân bằng game (Wave 3 Tank Chicken quá to)
-    return 100.0f; 
+    return 100.0f * stats.scale; 
 }
 
 Rectangle Enemy::GetHitbox() const {
     // Khôi phục lại hitbox gốc 50x50 ở tâm
-    return {position.x - 25, position.y - 25, 50, 50};
+    float s = stats.scale;
+    return {position.x - 25 * s, position.y - 25 * s, 50 * s, 50 * s};
 }
 
 void Enemy::Update(float deltaTime) {

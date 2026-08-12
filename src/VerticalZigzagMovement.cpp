@@ -6,8 +6,8 @@ void VerticalZigzagMovement::Move(Vector2& position, float moveSpeed, float delt
         startX = position.x;
         initialized = true;
     }
-    position.y += moveSpeed * 0.3f * deltaTime;
-    position.x += dx * moveSpeed * 0.5f * deltaTime;
+    position.y += moveSpeed * downwardSpeedMult * deltaTime;
+    position.x += dx * moveSpeed * horizontalSpeedMult * deltaTime;
     if (position.x > startX + 250.0f) {
         dx = -1.0f;
     } else if (position.x < startX - 250.0f) {

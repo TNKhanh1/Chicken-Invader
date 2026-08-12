@@ -23,6 +23,7 @@ struct EnemyStats {
     float speed = 100.0f;
     float eggRate = 3.0f;
     int score = 10;
+    float scale = 1.0f;
 };
 
 
