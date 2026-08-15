@@ -116,12 +116,18 @@ void Bullet::Draw() {
         }
     } else {
         // Enemy Bullet
-        Texture2D tex = GameManager::GetInstance()->GetTexEnemyBullet();
-        if (tex.id != 0) {
-            DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
-                           {position.x, position.y, 20.0f, 25.0f}, {10.0f, 12.5f}, 0.0f, WHITE);
+        if (bulletType == 3) {
+            // Procedural Red Split Bullet (chicken05)
+            DrawCircleGradient(position.x, position.y, radius, {255, 100, 100, 255}, {150, 0, 0, 255});
+            DrawCircle(position.x, position.y, radius * 0.6f, {255, 200, 200, 200});
         } else {
-            DrawCircle(position.x, position.y, 8, RED);
+            Texture2D tex = GameManager::GetInstance()->GetTexEnemyBullet();
+            if (tex.id != 0) {
+                DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height}, 
+                               {position.x, position.y, 20.0f, 25.0f}, {10.0f, 12.5f}, 0.0f, WHITE);
+            } else {
+                DrawCircle(position.x, position.y, 8, RED);
+            }
         }
     }
 }

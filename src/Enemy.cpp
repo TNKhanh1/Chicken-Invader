@@ -132,6 +132,27 @@ void Enemy::Update(float deltaTime) {
                     egg->SetVelocity(vel);
                     GameManager::GetInstance()->AddBullet(egg);
                 }
+            } else if (visualId == 5) {
+                // chicken05: Bắn 2 viên tách ra 2 hướng (V-shape lộn ngược)
+                float angleSpread = 15.0f; // Góc lệch
+                for (int i = -1; i <= 1; i+=2) {
+                    float rad = (90.0f + i * angleSpread) * (3.14159265f / 180.0f);
+                    Vector2 vel = { (float)cos(rad) * 200.0f, (float)sin(rad) * 200.0f };
+                    auto egg = std::make_shared<Bullet>(position, damage, 200.0f, false, 3);
+                    egg->SetVelocity(vel);
+                    GameManager::GetInstance()->AddBullet(egg);
+                }
+            } else if (visualId == 6) {
+                // chicken06: Bắn 3 viên đạn đỏ tỏa ra 3 hướng (3-way spread)
+                float angles[3] = {70.0f, 90.0f, 110.0f}; // Phải, Thẳng, Trái (góc màn hình)
+                for (int i = 0; i < 3; i++) {
+                    float rad = angles[i] * (3.14159265f / 180.0f);
+                    Vector2 vel = { (float)cos(rad) * 220.0f, (float)sin(rad) * 220.0f };
+                    // bulletType = 3 (Red Split/Spread Bullet)
+                    auto egg = std::make_shared<Bullet>(position, damage, 220.0f, false, 3);
+                    egg->SetVelocity(vel);
+                    GameManager::GetInstance()->AddBullet(egg);
+                }
             } else {
                 auto egg = std::make_shared<Bullet>(position, damage, 175.0f, false);
                 GameManager::GetInstance()->AddBullet(egg);
