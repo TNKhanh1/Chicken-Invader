@@ -61,10 +61,12 @@ void EggBullet::Draw() {
 
 // --- Boss Base Class ---
 
-Boss::Boss(int visualId, const EnemyStats& stats, Vector2 pos) 
-    : Enemy(visualId, EnemyRole::BOSS, stats, pos), 
-      drumstickDropTimer(0.0f), wobbleAngle(0.0f), wobbleTimer(0.0f),
-      battleTime(0.0f), targetPos(pos) {
+Boss::Boss(int visualId, const EnemyStats& stats, Vector2 pos)
+    : Enemy(visualId, EnemyRole::BOSS, stats, pos),
+      drumstickDropTimer(5.0f), wobbleAngle(0.0f), wobbleTimer(0.0f), battleTime(0.0f) {
+    canShoot = false;
+    drawScale = 1.0f;
+    targetPos = pos;
 }
 
 void Boss::Update(float deltaTime) {
@@ -116,8 +118,8 @@ void Boss::Draw() {
     auto gm = GameManager::GetInstance();
     Texture2D tex = gm->GetTexEnemyAnim(visualId - 1);
     
-    float destW = 350.0f;
-    float destH = 350.0f;
+    float destW = 350.0f * drawScale;
+    float destH = 350.0f * drawScale;
     Vector2 origin = { destW / 2.0f, destH / 2.0f };
     
     float frameSize = (float)tex.height;
@@ -192,7 +194,9 @@ void Boss::Draw() {
 }
 
 Rectangle Boss::GetHitbox() const {
-    return {position.x - 100, position.y - 100, 200, 200};
+    float hw = 100.0f * drawScale;
+    float hh = 100.0f * drawScale;
+    return { position.x - hw, position.y - hh, hw * 2.0f, hh * 2.0f };
 }
 
 // --- Military Chicken Boss ---
@@ -542,35 +546,46 @@ void FirePhoenixBoss::SpawnWingSparks(float deltaTime) {
     int sparksPerWing;
 
     if (currentPhase == Phase::PHASE_2 || currentPhase == Phase::TRANSITIONING) {
-        spawnInterval = 0.05f;
-        startAlpha = 0.8f;
-        sparksPerWing = GetRandomValue(3, 5);
+        spawnInterval = 0.03f;
+        startAlpha = 0.7f;
+        sparksPerWing = GetRandomValue(6, 12);
     } else {
-        spawnInterval = 0.1f;
-        startAlpha = 0.4f;
-        sparksPerWing = GetRandomValue(1, 2);
+        spawnInterval = 0.05f;
+        startAlpha = 0.5f;
+        sparksPerWing = GetRandomValue(3, 7);
     }
 
     if (sparkSpawnTimer >= spawnInterval) {
         sparkSpawnTimer = 0.0f;
 
-        // Spawn ở 2 bên cánh (offset relative to 350×350 boss center)
-        float wingOffsets[2] = { -120.0f, 120.0f }; // trái, phải
+        // Spawn ở 2 bên cánh (offset relative to 350x350 boss center)
+        float wingOffsets[2] = { -140.0f, 140.0f }; // trái, phải
 
         for (int w = 0; w < 2; w++) {
             for (int i = 0; i < sparksPerWing; i++) {
                 SparkParticle sp;
-                sp.pos.x = position.x + wingOffsets[w] + (float)GetRandomValue(-15, 15);
-                sp.pos.y = position.y - 30.0f + (float)GetRandomValue(-20, 20);
-                sp.velocity.x = (float)GetRandomValue(-30, 30);
-                sp.velocity.y = (float)GetRandomValue(-80, -20); // Bay lên
+                sp.isTexture = (GetRandomValue(1, 100) <= 15); // Chỉ 15% là ảnh tia lửa, 85% là chấm tròn
+                
+                sp.pos.x = position.x + wingOffsets[w] + (float)GetRandomValue(-25, 25);
+                sp.pos.y = position.y - 15.0f + (float)GetRandomValue(-20, 20);
+                sp.velocity.x = (float)GetRandomValue(-40, 40);
+                sp.velocity.y = (float)GetRandomValue(-100, -30); // Bay nhẹ hơn
                 sp.alpha = startAlpha;
-                sp.size = (float)GetRandomValue(2, 5);
+                
+                if (sp.isTexture) {
+                    sp.size = (float)GetRandomValue(1, 2) + 0.5f; // Ảnh tia lửa nhỏ hơn
+                } else {
+                    sp.size = (float)GetRandomValue(1, 3) + 0.5f; // Chấm tròn
+                }
+                
+                sp.rotation = (float)GetRandomValue(0, 360);
+                sp.rotationSpeed = (float)GetRandomValue(-120, 120);
 
                 // Màu ngẫu nhiên lửa
-                int c = GetRandomValue(0, 2);
+                int c = GetRandomValue(0, 3);
                 if (c == 0) sp.color = {255, 255, 120, 255};
                 else if (c == 1) sp.color = {255, 180, 50, 255};
+                else if (c == 2) sp.color = {255, 200, 100, 255}; 
                 else sp.color = {255, 100, 30, 255};
 
                 sparks.push_back(sp);
@@ -581,28 +596,43 @@ void FirePhoenixBoss::SpawnWingSparks(float deltaTime) {
 
 void FirePhoenixBoss::UpdateSparks(float deltaTime) {
     for (auto& sp : sparks) {
+        // Gravity effect
+        sp.velocity.y += 150.0f * deltaTime; // Rơi xuống nhẹ hơn
+        
         sp.pos.x += sp.velocity.x * deltaTime;
         sp.pos.y += sp.velocity.y * deltaTime;
-        sp.alpha -= 1.5f * deltaTime; // Fade out trong ~0.5s
-        sp.size -= 2.0f * deltaTime;  // Co dần
-        if (sp.size < 0.5f) sp.size = 0.5f;
+        sp.rotation += sp.rotationSpeed * deltaTime;
+        sp.alpha -= 0.6f * deltaTime; // Tốc độ mờ hợp lý
+        sp.size -= 1.0f * deltaTime;  
+        if (sp.size < 0.2f) sp.size = 0.2f;
     }
 
     // Xóa particles đã mờ
     sparks.erase(
         std::remove_if(sparks.begin(), sparks.end(),
-            [](const SparkParticle& s) { return s.alpha <= 0.0f; }),
+            [](const SparkParticle& s) { return s.alpha <= 0.0f || s.size <= 0.2f; }),
         sparks.end()
     );
 }
 
 void FirePhoenixBoss::DrawSparks() {
+    auto gm = GameManager::GetInstance();
     for (const auto& sp : sparks) {
         if (sp.alpha <= 0.0f) continue;
         unsigned char a = (unsigned char)(sp.alpha * 255.0f);
         Color c = { sp.color.r, sp.color.g, sp.color.b, a };
-        DrawCircleGradient((int)sp.pos.x, (int)sp.pos.y,
-                           sp.size, c, {sp.color.r, sp.color.g, sp.color.b, 0});
+        
+        if (sp.isTexture) {
+            float scale = sp.size / 3.0f;
+            Vector2 origin = { (float)gm->GetTexSpark().width / 2.0f, (float)gm->GetTexSpark().height / 2.0f };
+            Rectangle source = { 0.0f, 0.0f, (float)gm->GetTexSpark().width, (float)gm->GetTexSpark().height };
+            Rectangle dest = { sp.pos.x, sp.pos.y, gm->GetTexSpark().width * scale, gm->GetTexSpark().height * scale };
+            
+            DrawTexturePro(gm->GetTexSpark(), source, dest, origin, sp.rotation, c);
+        } else {
+            DrawCircleGradient((int)sp.pos.x, (int)sp.pos.y, 
+                               sp.size, c, {sp.color.r, sp.color.g, sp.color.b, 0});
+        }
     }
 }
 
@@ -1290,4 +1320,117 @@ void EskimoBoss::Draw() {
     }
 
     DrawBossHPBar();
+}
+
+// --- Bomber Boss (Stage 5, Wave 10) ---
+BomberBoss::BomberBoss(int visualId, const EnemyStats& stats, Vector2 pos)
+    : Boss(visualId, stats, pos), attackTimer(2.0f), attackType(0),
+      subAttackTimer(0.0f), subAttackCount(0) {
+    canShoot = false;
+    drawScale = 0.7f; // Giảm kích thước 30% cho đỡ mờ
+}
+
+void BomberBoss::DrawBossHPBar() {
+    int screenWidth = GameManager::GetInstance()->GetScreenWidth();
+    float barWidth = 400.0f;
+    float barHeight = 15.0f;
+    float x = (screenWidth - barWidth) / 2.0f;
+    float y = 20.0f;
+    
+    DrawRectangle(x, y, barWidth, barHeight, DARKGRAY);
+    float hpPercent = (float)currentHp / (float)maxHp;
+    if (hpPercent < 0) hpPercent = 0;
+    
+    Color hpColor = (hpPercent > 0.5f) ? GREEN : ((hpPercent > 0.2f) ? ORANGE : RED);
+    DrawRectangle(x, y, barWidth * hpPercent, barHeight, hpColor);
+    DrawRectangleLines(x, y, barWidth, barHeight, WHITE);
+    
+    DrawText("BOMBER CHICKEN", x + barWidth/2 - MeasureText("BOMBER CHICKEN", 10)/2, y - 15, 10, WHITE);
+}
+
+void BomberBoss::FireVShape() {
+    // 4 viên (W-Shape) thay vì 2
+    float angles[4] = {60.0f, 80.0f, 100.0f, 120.0f};
+    for (int i = 0; i < 4; i++) {
+        float rad = angles[i] * (3.14159265f / 180.0f);
+        Vector2 vel = { (float)cos(rad) * 220.0f, (float)sin(rad) * 220.0f };
+        auto egg = std::make_shared<Bullet>(position, stats.damage, 220.0f, false, 3);
+        egg->SetVelocity(vel);
+        GameManager::GetInstance()->AddBullet(egg);
+    }
+}
+
+void BomberBoss::Fire3Way() {
+    // 5 viên thay vì 3
+    float angles[5] = {60.0f, 75.0f, 90.0f, 105.0f, 120.0f};
+    for (int i = 0; i < 5; i++) {
+        float rad = angles[i] * (3.14159265f / 180.0f);
+        Vector2 vel = { (float)cos(rad) * 200.0f, (float)sin(rad) * 200.0f };
+        auto egg = std::make_shared<Bullet>(position, stats.damage, 200.0f, false, 3);
+        egg->SetVelocity(vel);
+        GameManager::GetInstance()->AddBullet(egg);
+    }
+}
+
+void BomberBoss::Fire7Way() {
+    // 13 viên thay vì 7
+    float angles[13] = {30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f, 120.0f, 130.0f, 140.0f, 150.0f};
+    for (int i = 0; i < 13; i++) {
+        float rad = angles[i] * (3.14159265f / 180.0f);
+        Vector2 vel = { (float)cos(rad) * 180.0f, (float)sin(rad) * 180.0f };
+        auto egg = std::make_shared<Bullet>(position, stats.damage, 180.0f, false, 3);
+        egg->SetVelocity(vel);
+        GameManager::GetInstance()->AddBullet(egg);
+    }
+}
+
+void BomberBoss::Update(float deltaTime) {
+    if (!isActive) return;
+    
+    Boss::Update(deltaTime);
+    
+    // Sub-attack logic for V-Shape
+    if (subAttackCount > 0) {
+        subAttackTimer -= deltaTime;
+        if (subAttackTimer <= 0.0f) {
+            FireVShape();
+            subAttackCount--;
+            if (subAttackCount > 0) {
+                subAttackTimer = 0.3f;
+            }
+        }
+    } else {
+        // Main attack cycle
+        attackTimer -= deltaTime;
+        if (attackTimer <= 0.0f) {
+            if (attackType == 0) {
+                // V-Shape bắn 5 đợt (thay vì 3)
+                subAttackCount = 5;
+                subAttackTimer = 0.0f;
+                attackTimer = 2.0f;
+                attackType = 1;
+            } else if (attackType == 1) {
+                // 3-Way (thực tế là 5 tia)
+                Fire3Way();
+                attackTimer = 1.0f; // Giảm thời gian chờ
+                attackType = 2;
+            } else if (attackType == 2) {
+                // 7-Way (thực tế là 13 tia)
+                Fire7Way();
+                attackTimer = 1.5f; // Giảm thời gian chờ
+                attackType = 0;
+            }
+        }
+    }
+}
+
+void BomberBoss::Draw() {
+    if (!isActive) return;
+    Boss::Draw();
+    DrawBossHPBar();
+}
+
+void BomberBoss::Die() {
+    if (!isActive) return;
+    Enemy::Die();
 }

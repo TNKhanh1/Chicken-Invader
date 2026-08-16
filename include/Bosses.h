@@ -54,6 +54,8 @@ protected:
     float wobbleTimer;
     float battleTime;
     Vector2 targetPos;
+    float drawScale;
+    
     
 public:
     Boss(int visualId, const EnemyStats& stats, Vector2 pos);
@@ -135,7 +137,10 @@ private:
         Vector2 velocity;
         float alpha;
         float size;
+        float rotation;
+        float rotationSpeed;
         Color color;
+        bool isTexture;
     };
     std::vector<SparkParticle> sparks;
     float sparkSpawnTimer;
@@ -272,6 +277,31 @@ public:
     void Draw() override;
     void Die() override;
     void TakeDamage(float incomingDamage) override;
+};
+// --- Bomber Boss (Stage 5, Wave 10) ---
+class BomberBoss : public Boss {
+private:
+    float attackTimer;
+    int attackType; // 0: V-Shape, 1: 3-Way, 2: 7-Way
+    
+    // Sub-attack for V-Shape combo
+    float subAttackTimer;
+    int subAttackCount;
+
+    // HP Bar
+    void DrawBossHPBar();
+
+    // Attack methods
+    void FireVShape();
+    void Fire3Way();
+    void Fire7Way();
+
+public:
+    BomberBoss(int visualId, const EnemyStats& stats, Vector2 pos);
+
+    void Update(float deltaTime) override;
+    void Draw() override;
+    void Die() override;
 };
 
 #endif // BOSSES_H

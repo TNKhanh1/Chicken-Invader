@@ -39,6 +39,9 @@ private:
     Texture2D texSpaceship;
     Texture2D texSpaceshipHypergun;
     Texture2D texEnemyAnims[13];
+    Texture2D texEggsecutionerBoss;
+    Texture2D texBomberBoss;
+    Texture2D texSpark;
     Texture2D texAsteroid1;
     Texture2D texAsteroid2;
     Texture2D texBulletStrong;
@@ -185,6 +188,7 @@ public:
     Texture2D GetTexAsteroid2() const { return texAsteroid2; }
     Texture2D GetTexBulletStrong() const { return texBulletStrong; }
     Texture2D GetTexBulletWeak() const { return texBulletWeak; }
+    Texture2D& GetTexSpark() { return texSpark; }
     Texture2D GetTexBulletPlayer() const { return texBulletPlayer; }
     Texture2D GetTexEnemyBullet() const { return texEnemyBullet; }
     Texture2D GetTexMeat() const { return texMeat; }
