@@ -131,7 +131,16 @@ void WaveManager::Update(float deltaTime) {
             auto b = it->batchData;
             auto layout = b["layout"];
             std::string layoutType = layout["type"];
-            int visualId = b.value("visual_id", 1);
+                std::vector<int> visualIds;
+                if (b.contains("visual_id")) {
+                    if (b["visual_id"].is_array()) {
+                        for (auto& v : b["visual_id"]) visualIds.push_back(v);
+                    } else {
+                        visualIds.push_back(b["visual_id"]);
+                    }
+                } else {
+                    visualIds.push_back(1);
+                }
             
             std::string roleStr = b["role"];
             EnemyRole role = EnemyRole::NORMAL;
@@ -170,7 +179,8 @@ void WaveManager::Update(float deltaTime) {
             }
             
             for (const auto& pt : spawnPoints) {
-                auto enemy = EnemyFactory::CreateEnemy(visualId, role, stats, pt.startPos);
+                int selectedVisualId = visualIds[GetRandomValue(0, visualIds.size() - 1)];
+                auto enemy = EnemyFactory::CreateEnemy(selectedVisualId, role, stats, pt.startPos);
                 
                 auto mov = b["movement"];
                 std::string movType = mov["type"];
@@ -207,7 +217,17 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
             for (const auto& b : w["batches"]) {
                 if (b["batch_id"] == batchId) {
                     
-                    int visualId = b["visual_id"];
+                    std::vector<int> visualIds;
+                    if (b.contains("visual_id")) {
+                        if (b["visual_id"].is_array()) {
+                            for (auto& v : b["visual_id"]) visualIds.push_back(v);
+                        } else {
+                            visualIds.push_back(b["visual_id"]);
+                        }
+                    } else {
+                        visualIds.push_back(1);
+                    }
+
                     std::string roleStr = b["role"];
                     EnemyRole role = EnemyRole::NORMAL;
                     if (roleStr == "SWARM") role = EnemyRole::SWARM;
@@ -293,7 +313,8 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                     }
 
                     for (const auto& pt : spawnPoints) {
-                        auto enemy = EnemyFactory::CreateEnemy(visualId, role, stats, pt.startPos);
+                        int selectedVisualId = visualIds[GetRandomValue(0, visualIds.size() - 1)];
+                        auto enemy = EnemyFactory::CreateEnemy(selectedVisualId, role, stats, pt.startPos);
                         
                         if (movType == "HORIZONTAL_BOUNCE") {
                             float drift = mov["drift"];

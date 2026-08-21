@@ -1073,7 +1073,7 @@ void GameManager::Draw() {
             DrawText("TEST STAGE & WAVE", screenWidth/2 - MeasureText("TEST STAGE & WAVE", 40)/2, 120, 40, YELLOW);
             
             // Fix Out-of-Bounds Issue: Show warning if trying to start non-existent waves
-            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 3 && testConfig.wave <= 1) || (testConfig.stage == 4 && testConfig.wave <= 10) || (testConfig.stage == 5 && testConfig.wave <= 10) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
+            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 3 && testConfig.wave <= 1) || (testConfig.stage == 4 && testConfig.wave <= 10) || (testConfig.stage == 5 && testConfig.wave <= 14) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
             if (!isValidSelection) {
                 DrawText("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2 - 200, 180, 20, RED);
             }
@@ -1092,7 +1092,7 @@ void GameManager::Draw() {
             if (DrawButton({ (float)screenWidth/2 - 150, 310, 50, 50 }, "<")) {
                 if (testConfig.wave > 1) { testConfig.wave--; testConfig.batch = 1; }
             }
-            int currentMaxWave = (testConfig.stage == 7) ? 1 : testConfig.maxWave;
+            int currentMaxWave = (testConfig.stage == 7) ? 1 : ((testConfig.stage == 5) ? 14 : testConfig.maxWave);
             if (DrawButton({ (float)screenWidth/2 + 100, 310, 50, 50 }, ">")) {
                 if (testConfig.wave < currentMaxWave) { testConfig.wave++; testConfig.batch = 1; }
             }
