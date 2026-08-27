@@ -50,11 +50,11 @@ static const CardDef ALL_ARGUMENTS[10] = {
     { "Blood Fury",
       "Each enemy kill\ngrants +2 permanent\nflat Damage." },
     { "Bloodthirst",
-      "Killing an enemy\nrestores 15 HP\nto your spaceship." },
+      "Killing an enemy\nrestores 5% of your\nMax HP." },
     { "Energy Flow",
       "Each shot fired\nrestores 2 Mana\nto your reserves." },
     { "Round Recovery",
-      "Restore 80 HP\nat the start\nof each new Wave." },
+      "Restore 30% of your\nMax HP at the start\nof each new Wave." },
     { "Fast Track",
       "Immediately gain\n3 Levels." }
 };
@@ -77,6 +77,34 @@ static const CardDef ALL_STATS[6] = {
 
 // Khởi tạo instance của Singleton bằng nullptr
 GameManager* GameManager::instance = nullptr;
+
+void GameManager::GenerateSelectionPool(bool forStat) {
+    std::vector<int> available;
+    int maxIdx = forStat ? 6 : 10;
+    
+    for (int i = 0; i < maxIdx; ++i) {
+        if (!forStat && player && player->HasArgument(i)) {
+            continue; // Skip already owned cores
+        }
+        available.push_back(i);
+    }
+    
+    int desiredChoices = (player && player->HasArgument(2)) ? 4 : 3;
+    if (available.size() < (size_t)desiredChoices) {
+        desiredChoices = available.size();
+    }
+    
+    currentNumChoices = desiredChoices;
+    
+    // Shuffle
+    for (int i = 0; i < currentNumChoices; i++) {
+        int j = i + GetRandomValue(0, available.size() - 1 - i);
+        int tmp = available[i];
+        available[i] = available[j];
+        available[j] = tmp;
+        shownCardIndices[i] = available[i];
+    }
+}
 
 // --- Implement methods for entities ---
 
@@ -201,7 +229,7 @@ void GameManager::DestroyInstance() {
 void GameManager::StartWave(int waveIndex) {
     // Round Recovery (Arg 8)
     if (player && player->HasArgument(8)) {
-        player->Heal(80.0f);
+        player->Heal(player->GetMaxHp() * 0.30f);
     }
 
     // Clear everything from the previous wave
@@ -234,13 +262,7 @@ void GameManager::EnterStatSelection(int nextWave) {
     isStatSelection         = true;
     selectionAnimTimer      = 0.0f;
 
-    // Chọn 3 stat ngẫu nhiên không trùng nhau
-    int pool[6] = {0, 1, 2, 3, 4, 5};
-    for (int i = 0; i < 3; i++) {
-        int j = i + GetRandomValue(0, 5 - i);
-        int tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
-        shownCardIndices[i] = pool[i];
-    }
+    GenerateSelectionPool(true);
     ChangeState(GameState::STAT_SELECTION);
 }
 
@@ -592,7 +614,7 @@ void GameManager::Update(float deltaTime) {
                                             WaveManager::GetInstance()->AddKill();
                                             AddScore(enemy->GetPointValue());
                                             if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
-                                            if (player->HasArgument(6)) player->Heal(15.0f);
+                                            if (player->HasArgument(6)) player->Heal(player->GetMaxHp() * 0.05f);
                                             PlayExplosionSound();
                                             auto meat = std::make_shared<Meat>(enemy->GetPosition(),
                                                 Vector2{(float)GetRandomValue(-100, 100), -200.0f});
@@ -745,7 +767,7 @@ void GameManager::Update(float deltaTime) {
                                     // Blood Fury (Arg 5)
                                     if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
                                     // Bloodthirst (Arg 6)
-                                    if (player->HasArgument(6)) player->Heal(15.0f);
+                                    if (player->HasArgument(6)) player->Heal(player->GetMaxHp() * 0.05f);
                                     
                                     PlayExplosionSound();
                                     auto meat = std::make_shared<Meat>(enemy->GetPosition(),
@@ -832,26 +854,14 @@ void GameManager::Update(float deltaTime) {
                         
                         if (extraStatSelectionsPending > 0) {
                             extraStatSelectionsPending--;
-                            int pool[6] = {0, 1, 2, 3, 4, 5};
-                            int statChoices = (player && player->HasArgument(2)) ? 4 : 3;
-                            for (int k = 0; k < statChoices; k++) {
-                                int j = k + GetRandomValue(0, 5 - k);
-                                int tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
-                                shownCardIndices[k] = pool[k];
-                            }
+                            GenerateSelectionPool(true);
                             isStatSelection = true;
                             selectionAnimTimer = 0.0f;
                             ChangeState(GameState::STAT_SELECTION);
                         } else if (pendingArgumentAfterStat) {
                             isStatSelection = false;
                             selectionAnimTimer = 0.0f;
-                            int pool[10] = {0,1,2,3,4,5,6,7,8,9};
-                            int argChoices = (player && player->HasArgument(2)) ? 4 : 3;
-                            for (int k = 0; k < argChoices; k++) {
-                                int j = k + GetRandomValue(0, 9 - k);
-                                int tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
-                                shownCardIndices[k] = pool[k];
-                            }
+                            GenerateSelectionPool(false);
                             ChangeState(GameState::ARGUMENT_SELECTION);
                         } else {
                             StartWave(nextWaveAfterSelection);
@@ -898,13 +908,7 @@ void GameManager::Update(float deltaTime) {
                         
                         if (extraStatSelectionsPending > 0) {
                             extraStatSelectionsPending--;
-                            int pool[6] = {0, 1, 2, 3, 4, 5};
-                            int statChoices = (player && player->HasArgument(2)) ? 4 : 3;
-                            for (int k = 0; k < statChoices; k++) {
-                                int j = k + GetRandomValue(0, 5 - k);
-                                int tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
-                                shownCardIndices[k] = pool[k];
-                            }
+                            GenerateSelectionPool(true);
                             isStatSelection = true;
                             pendingArgumentAfterStat = false;
                             selectionAnimTimer = 0.0f;
@@ -1485,11 +1489,10 @@ void GameManager::Draw() {
             DrawRectangle(0, 0, screenWidth, screenHeight, {0, 0, 0, 170});
 
             // 3. Tính toán layout và animation
-            int numChoices = (player && player->HasArgument(2)) ? 4 : 3;
             const float CARD_W  = 320.0f;
             const float CARD_H  = 490.0f;
             const float GAP     = 40.0f;
-            const float totalW  = numChoices * CARD_W + (numChoices - 1) * GAP;
+            const float totalW  = currentNumChoices * CARD_W + (currentNumChoices - 1) * GAP;
             const float startX  = (screenWidth  - totalW) / 2.0f;
             const float finalY  = (screenHeight - CARD_H) / 2.0f;
 
@@ -1516,7 +1519,7 @@ void GameManager::Draw() {
             Texture2D& cardTex = isStat ? texChiSo : texLoi;
             Vector2 mouse = GetMousePosition();
 
-            for (int i = 0; i < numChoices; i++) {
+            for (int i = 0; i < currentNumChoices; i++) {
                 float cx = startX + i * (CARD_W + GAP);
                 Rectangle cardRect = { cx, cardY, CARD_W, CARD_H };
                 bool hovered = CheckCollisionPointRec(mouse, cardRect);
@@ -1566,8 +1569,8 @@ void GameManager::Draw() {
                 );
 
                 // Mô tả (font nhỏ, nhiều dòng bằng \n trong chuỗi)
-                // Căn lề trái của mô tả thụt vào sâu hơn (textArea.x + 25) để né hoàn toàn phần cánh trang trí
-                DrawText(def.description, (int)(textArea.x + 25), (int)(nameY + 50), 16, (Color){220, 220, 220, 230});
+                // Căn lề trái dịch sang phải (textArea.x + 35) để text gói trong khoảng 200px
+                DrawText(def.description, (int)(textArea.x + 35), (int)(nameY + 50), 18, (Color){220, 220, 220, 230});
 
                 // 5d. Hiệu ứng hover: viền vàng/xanh sáng
                 if (hovered) {

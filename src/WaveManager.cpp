@@ -302,6 +302,13 @@ bool WaveManager::SpawnBatch(int waveId, int batchId) {
                     } else if (layoutType == "RING") {
                         Vector2 center = {sw / 2.0f, layout["center_y"]};
                         spawnPoints = FormationBuilder::BuildRing(b["count"], layout["radius"], center);
+                    } else if (layoutType == "METEOR_SHOWER") {
+                        int count = b.value("count", 5);
+                        for (int i = 0; i < count; i++) {
+                            float px = (float)GetRandomValue(50, (int)sw - 50);
+                            float py = -100.0f - (float)GetRandomValue(0, 500);
+                            spawnPoints.push_back({ {px, py}, 0.0f });
+                        }
                     }
                     
                     auto mov = b["movement"];

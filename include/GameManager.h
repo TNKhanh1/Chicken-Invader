@@ -70,7 +70,10 @@ private:
     bool   pendingArgumentAfterStat = false;
     bool   isStatSelection          = true; // true = stat, false = argument
     int    extraStatSelectionsPending = 0;
-    int    shownCardIndices[3]    = {0, 1, 2};
+    int    shownCardIndices[4]    = {0, 1, 2, 3};
+    int    currentNumChoices      = 3;
+    
+    void GenerateSelectionPool(bool forStat);
 
     // Audio
     Sound sfxShoot;
