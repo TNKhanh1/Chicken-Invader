@@ -225,7 +225,12 @@ void GameManager::StartWave(int waveIndex) {
 
 void GameManager::EnterStatSelection(int nextWave) {
     nextWaveAfterSelection  = nextWave;
-    pendingArgumentAfterStat = (nextWave == 5 || nextWave == 10 || nextWave == 15);
+    if (currentStage == 6) {
+        pendingArgumentAfterStat = true; // Stage 6 always gives a core
+        extraStatSelectionsPending = 2;  // Pick 3 stats total (1 initial + 2 extra)
+    } else {
+        pendingArgumentAfterStat = (nextWave == 5 || nextWave == 10 || nextWave == 15);
+    }
     isStatSelection         = true;
     selectionAnimTimer      = 0.0f;
 
@@ -650,8 +655,6 @@ void GameManager::Update(float deltaTime) {
                                 } else {
                                     // Chơi xong stage, quay về menu chọn màn
                                     ChangeState(GameState::WAVE_SELECTION);
-                                    
-                                    // Có thể hồi lại máu cho người chơi nếu muốn, hoặc reset nhẹ
                                     if (player) {
                                         player->Heal(player->GetMaxHp());
                                     }
@@ -827,18 +830,7 @@ void GameManager::Update(float deltaTime) {
                     if (CheckCollisionPointRec(GetMousePosition(), cardRect)) {
                         // Áp dụng chỉ số ở đây (nếu có logic cộng chỉ số, tuỳ ý)
                         
-                        if (pendingArgumentAfterStat) {
-                            isStatSelection = false;
-                            selectionAnimTimer = 0.0f;
-                            int pool[10] = {0,1,2,3,4,5,6,7,8,9};
-                            int argChoices = (player && player->HasArgument(2)) ? 4 : 3;
-                            for (int k = 0; k < argChoices; k++) {
-                                int j = k + GetRandomValue(0, 9 - k);
-                                int tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
-                                shownCardIndices[k] = pool[k];
-                            }
-                            ChangeState(GameState::ARGUMENT_SELECTION);
-                        } else if (extraStatSelectionsPending > 0) {
+                        if (extraStatSelectionsPending > 0) {
                             extraStatSelectionsPending--;
                             int pool[6] = {0, 1, 2, 3, 4, 5};
                             int statChoices = (player && player->HasArgument(2)) ? 4 : 3;
@@ -850,6 +842,17 @@ void GameManager::Update(float deltaTime) {
                             isStatSelection = true;
                             selectionAnimTimer = 0.0f;
                             ChangeState(GameState::STAT_SELECTION);
+                        } else if (pendingArgumentAfterStat) {
+                            isStatSelection = false;
+                            selectionAnimTimer = 0.0f;
+                            int pool[10] = {0,1,2,3,4,5,6,7,8,9};
+                            int argChoices = (player && player->HasArgument(2)) ? 4 : 3;
+                            for (int k = 0; k < argChoices; k++) {
+                                int j = k + GetRandomValue(0, 9 - k);
+                                int tmp = pool[k]; pool[k] = pool[j]; pool[j] = tmp;
+                                shownCardIndices[k] = pool[k];
+                            }
+                            ChangeState(GameState::ARGUMENT_SELECTION);
                         } else {
                             StartWave(nextWaveAfterSelection);
                         }
@@ -1074,7 +1077,7 @@ void GameManager::Draw() {
             DrawText("TEST STAGE & WAVE", screenWidth/2 - MeasureText("TEST STAGE & WAVE", 40)/2, 120, 40, YELLOW);
             
             // Fix Out-of-Bounds Issue: Show warning if trying to start non-existent waves
-            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 3 && testConfig.wave <= 1) || (testConfig.stage == 4 && testConfig.wave <= 10) || (testConfig.stage == 5 && testConfig.wave <= 15) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
+            bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 3 && testConfig.wave <= 1) || (testConfig.stage == 4 && testConfig.wave <= 10) || (testConfig.stage == 5 && testConfig.wave <= 15) || (testConfig.stage == 6 && testConfig.wave <= 5) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
             if (!isValidSelection) {
                 DrawText("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2 - 200, 180, 20, RED);
             }
@@ -1093,7 +1096,7 @@ void GameManager::Draw() {
             if (DrawButton({ (float)screenWidth/2 - 150, 310, 50, 50 }, "<")) {
                 if (testConfig.wave > 1) { testConfig.wave--; testConfig.batch = 1; }
             }
-            int currentMaxWave = (testConfig.stage == 7) ? 1 : ((testConfig.stage == 5) ? 15 : testConfig.maxWave);
+            int currentMaxWave = (testConfig.stage == 7) ? 1 : ((testConfig.stage == 5) ? 15 : ((testConfig.stage == 6) ? 5 : testConfig.maxWave));
             if (DrawButton({ (float)screenWidth/2 + 100, 310, 50, 50 }, ">")) {
                 if (testConfig.wave < currentMaxWave) { testConfig.wave++; testConfig.batch = 1; }
             }
@@ -1137,6 +1140,10 @@ void GameManager::Draw() {
                     activeEnemies.clear();
                     activeBullets.clear();
                 }
+                activeItems.clear();
+                extraStatSelectionsPending = 0;
+                pendingArgumentAfterStat = false;
+                score = 0;
                 
                 // Initialize player for testing
                 if (player) {
@@ -1157,7 +1164,11 @@ void GameManager::Draw() {
                     }
                 }
 
-                ChangeState(GameState::TEST_GAMEPLAY);
+                if (currentStage == 6 && currentWave == 1) {
+                    EnterStatSelection(1);
+                } else {
+                    ChangeState(GameState::TEST_GAMEPLAY);
+                }
             }
             if (DrawButton({ (float)screenWidth/2 - 100, 600, 200, 50 }, "BACK")) {
                 ChangeState(GameState::TEST_MENU);
