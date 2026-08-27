@@ -304,4 +304,32 @@ public:
     void Die() override;
 };
 
+// --- VoidChickenBoss (Stage 5 Wave 15) ---
+class VoidChickenBoss : public Boss {
+private:
+    enum class State {
+        IDLE_MOVE,
+        ATTACK_NORMAL,
+        SKILL_LASER,
+        SKILL_HOMING
+    } state;
+
+    float stateTimer;
+    float attackTimer;
+    float shootAngle;
+    int shotsFired;
+
+    void TransitionTo(State newState);
+    void DrawBossHPBar();
+    void FireNormalAttack();
+    void FireLaserSkill();
+    void FireHomingSkill();
+    
+public:
+    VoidChickenBoss(int visualId, const EnemyStats& stats, Vector2 startPos);
+    void Update(float deltaTime) override;
+    void Draw() override;
+    void Die() override;
+};
+
 #endif // BOSSES_H

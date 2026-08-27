@@ -42,4 +42,15 @@ public:
     void UpdatePosition(Vector2& pos, float& angle, float speed, float deltaTime) override;
 };
 
+// Quỹ đạo tự tìm mục tiêu (Homing)
+class HomingTrajectory : public IBulletTrajectory {
+private:
+    float turnSpeed; // Radian per second
+    float currentAngle;
+    bool isInit;
+public:
+    HomingTrajectory(float initialAngleDeg, float turnSpeedRadSec);
+    void UpdatePosition(Vector2& pos, float& angle, float speed, float deltaTime) override;
+};
+
 #endif // BULLET_TRAJECTORY_H

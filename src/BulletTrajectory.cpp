@@ -1,5 +1,7 @@
 #include "BulletTrajectory.h"
 #include <cmath>
+#include "GameManager.h"
+#include "Spaceship.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -20,6 +22,45 @@ void StraightTrajectory::UpdatePosition(Vector2& pos, float& angle, float speed,
     pos.x += direction.x * speed * deltaTime;
     pos.y += direction.y * speed * deltaTime;
     angle = std::atan2(direction.y, direction.x) * (180.0f / M_PI) + 90.0f;
+}
+
+// --- HomingTrajectory ---
+HomingTrajectory::HomingTrajectory(float initialAngleDeg, float turnSpeedRadSec) 
+    : turnSpeed(turnSpeedRadSec), currentAngle(initialAngleDeg), isInit(false) {}
+
+void HomingTrajectory::UpdatePosition(Vector2& pos, float& angle, float speed, float deltaTime) {
+    if (!isInit) {
+        angle = currentAngle;
+        isInit = true;
+    }
+    
+    auto gm = GameManager::GetInstance();
+    if (gm && gm->GetPlayer()) {
+        Vector2 pPos = gm->GetPlayer()->GetPosition();
+        float dy = pPos.y - pos.y;
+        float dx = pPos.x - pos.x;
+        float targetAngle = std::atan2(dy, dx) * (180.0f / M_PI) + 90.0f;
+        
+        while (targetAngle < 0.0f) targetAngle += 360.0f;
+        while (targetAngle >= 360.0f) targetAngle -= 360.0f;
+        
+        float diff = targetAngle - angle;
+        while (diff < -180.0f) diff += 360.0f;
+        while (diff > 180.0f) diff -= 360.0f;
+        
+        if (std::abs(diff) < turnSpeed * deltaTime) {
+            angle = targetAngle;
+        } else {
+            angle += (diff > 0 ? turnSpeed : -turnSpeed) * deltaTime;
+        }
+        
+        while (angle < 0.0f) angle += 360.0f;
+        while (angle >= 360.0f) angle -= 360.0f;
+    }
+    
+    float rad = angle * (M_PI / 180.0f);
+    pos.x += std::sin(rad) * speed * deltaTime;
+    pos.y += -std::cos(rad) * speed * deltaTime;
 }
 
 // --- SpreadTrajectory ---

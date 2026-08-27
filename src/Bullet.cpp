@@ -3,7 +3,7 @@
 #include "GameManager.h"
 
 Bullet::Bullet(Vector2 startPos, float dmg, float spd, bool playerBullet, int type, float r) 
-    : GameObject(startPos), speed(spd), damage(dmg), isPlayerBullet(playerBullet), velocity({0, 0}), hasCustomVelocity(false), prevPosition(startPos), bulletType(type), radius(r), angle(0.0f), trajectory(nullptr) {}
+    : GameObject(startPos), speed(spd), damage(dmg), isPlayerBullet(playerBullet), velocity({0, 0}), hasCustomVelocity(false), prevPosition(startPos), bulletType(type), radius(r), angle(0.0f), activeTimer(0.0f), maxLifetime(0.0f), trajectory(nullptr) {}
 
 void Bullet::SetVelocity(Vector2 vel) {
     velocity = vel;
@@ -26,7 +26,13 @@ void Bullet::Reset(Vector2 startPos, float dmg, float spd, bool playerBullet, in
     velocity = {0, 0};
     trajectory = nullptr;
     angle = 0.0f;
+    activeTimer = 0.0f;
+    maxLifetime = 0.0f;
     isActive = true;
+}
+
+void Bullet::SetMaxLifetime(float time) {
+    maxLifetime = time;
 }
 
 void Bullet::Init() {
@@ -36,6 +42,14 @@ void Bullet::Update(float deltaTime) {
     if (!isActive) return;
 
     prevPosition = position;
+    
+    if (maxLifetime > 0.0f) {
+        activeTimer += deltaTime;
+        if (activeTimer >= maxLifetime) {
+            isActive = false;
+            return;
+        }
+    }
 
     if (trajectory) {
         trajectory->UpdatePosition(position, angle, speed, deltaTime);
@@ -120,6 +134,38 @@ void Bullet::Draw() {
             // Procedural Red Split Bullet (chicken05)
             DrawCircleGradient(position.x, position.y, radius, {255, 100, 100, 255}, {150, 0, 0, 255});
             DrawCircle(position.x, position.y, radius * 0.6f, {255, 200, 200, 200});
+        } else if (bulletType == 4) {
+            // Homing Triangle (Red) — nhỏ, đều, gọn
+            float rad = angle * (PI / 180.0f);
+            // Tip nhọn theo hướng bay
+            Vector2 p1 = { position.x + std::sin(rad) * radius * 1.5f, position.y - std::cos(rad) * radius * 1.5f };
+            // Hai đáy đối xứng hai bên hướng vuông góc
+            float sideRad = rad + PI / 2.0f;
+            Vector2 p2 = { position.x + std::sin(sideRad) * radius * 0.7f - std::sin(rad) * radius * 0.5f,
+                           position.y - std::cos(sideRad) * radius * 0.7f + std::cos(rad) * radius * 0.5f };
+            Vector2 p3 = { position.x - std::sin(sideRad) * radius * 0.7f - std::sin(rad) * radius * 0.5f,
+                           position.y + std::cos(sideRad) * radius * 0.7f + std::cos(rad) * radius * 0.5f };
+            // Vẽ fill đỏ cùng màu với đạn tròn
+            DrawTriangle(p1, p3, p2, {255, 100, 100, 255}); // CCW
+            // Vẽ viền ngoài đỏ sẫm
+            DrawTriangleLines(p1, p3, p2, {150, 0, 0, 255});
+            // Chấm sáng tâm màu hồng nhạt (giống đạn tròn)
+            DrawCircle((int)position.x, (int)position.y, radius * 0.25f, {255, 200, 200, 200});
+        } else if (bulletType == 5) {
+            // Laser Segment (Red) — 3-layer glow cho đẹp
+            float rad = angle * (PI / 180.0f);
+            float length = 45.0f;
+            Vector2 p1 = { position.x - std::sin(rad) * length / 2.0f, position.y + std::cos(rad) * length / 2.0f };
+            Vector2 p2 = { position.x + std::sin(rad) * length / 2.0f, position.y - std::cos(rad) * length / 2.0f };
+            // Lớp ngoài: hào quang đỏ mờ
+            DrawLineEx(p1, p2, radius * 3.5f, {255, 40, 40, 80});
+            // Lớp giữa: thân laser đỏ đậm
+            DrawLineEx(p1, p2, radius * 2.0f, {255, 60, 60, 210});
+            // Lớp trong: lõi trắng hồng sáng
+            DrawLineEx(p1, p2, radius * 0.7f, {255, 210, 210, 255});
+            // Điểm sáng ở hai đầu
+            DrawCircle((int)p1.x, (int)p1.y, radius * 0.8f, {255, 150, 150, 200});
+            DrawCircle((int)p2.x, (int)p2.y, radius * 0.8f, {255, 150, 150, 200});
         } else {
             Texture2D tex = GameManager::GetInstance()->GetTexEnemyBullet();
             if (tex.id != 0) {

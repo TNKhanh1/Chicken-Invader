@@ -961,6 +961,33 @@
           }
         }
       ]
+    },
+    {
+      "wave_id": 15,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 14,
+          "role": "BOSS",
+          "count": 1,
+          "layout": {
+            "type": "TARGETED_PLAYER",
+            "start_y": -150.0
+          },
+          "movement": {
+            "type": "NONE"
+          },
+          "stats": {
+            "hp": 2000,
+            "damage": 50,
+            "armor": 30,
+            "speed": 100,
+            "egg_rate": 2.0,
+            "score": 1500,
+            "scale": 1.0
+          }
+        }
+      ]
     }
   ]
 }

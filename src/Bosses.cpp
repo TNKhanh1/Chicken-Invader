@@ -1434,3 +1434,164 @@ void BomberBoss::Die() {
     if (!isActive) return;
     Enemy::Die();
 }
+
+// --- VoidChickenBoss (Stage 5 Wave 15) ---
+
+VoidChickenBoss::VoidChickenBoss(int visualId, const EnemyStats& stats, Vector2 startPos)
+    : Boss(visualId, stats, startPos),
+      state(State::IDLE_MOVE), stateTimer(0.0f),
+      attackTimer(0.0f), shootAngle(0.0f), shotsFired(0) {
+    canShoot = false;
+    drawScale = 0.75f; // Giảm kích thước 25% theo yêu cầu
+}
+
+// Biến lưu số lần đánh thường
+static int normalAttackCount = 0;
+
+void VoidChickenBoss::TransitionTo(State newState) {
+    state    = newState;
+    stateTimer = 0.0f;
+    attackTimer = 0.0f;
+    shotsFired  = 0;
+    shootAngle  = 0.0f;
+}
+
+// --- Bắn thường: 3 viên đạn tròn đỏ theo chùm -20°/0°/+20° ---
+void VoidChickenBoss::FireNormalAttack() {
+    auto gm = GameManager::GetInstance();
+    for (int i = -1; i <= 1; i++) {
+        float angleDeg = 180.0f + i * 20.0f;      // 160°, 180°, 200° (hướng xuống)
+        auto traj = std::make_shared<SpreadTrajectory>(angleDeg);
+        auto bullet = std::make_shared<Bullet>(position, stats.damage, 320.0f, false, 3, 14.0f);
+        bullet->SetTrajectory(traj);
+        gm->AddBullet(bullet);
+    }
+}
+
+// --- Kỹ năng 1: Tia laser đỏ hướng về player (Tăng sức mạnh) ---
+void VoidChickenBoss::FireLaserSkill() {
+    auto gm = GameManager::GetInstance();
+    float angleDeg = 180.0f;  
+    if (gm->GetPlayer()) {
+        Vector2 pp = gm->GetPlayer()->GetPosition();
+        float dx = pp.x - position.x;
+        float dy = pp.y - position.y;
+        angleDeg = std::atan2(dy, dx) * (180.0f / PI) + 90.0f;
+    }
+    // Bắn 3 tia laser cùng lúc tạo thành chùm laser rộng hơn
+    for (int i = -1; i <= 1; i++) {
+        float laserAngle = angleDeg + i * 15.0f; 
+        auto traj   = std::make_shared<SpreadTrajectory>(laserAngle);
+        auto bullet = std::make_shared<Bullet>(position, stats.damage * 2.0f, 750.0f, false, 5, 8.0f);
+        bullet->SetTrajectory(traj);
+        gm->AddBullet(bullet);
+    }
+}
+
+// --- Kỹ năng 2: Đạn tam giác homing bắn xung quanh (Tăng sức mạnh) ---
+void VoidChickenBoss::FireHomingSkill() {
+    auto gm = GameManager::GetInstance();
+    const int  numBullets  = 16; // Tăng từ 12 lên 16 viên
+    const float turnSpeedDeg = 80.0f;  // HomingTrajectory dùng degrees/s (không phải radian/s)
+    for (int i = 0; i < numBullets; i++) {
+        float initialAngle = i * (360.0f / numBullets);  
+        auto traj   = std::make_shared<HomingTrajectory>(initialAngle, turnSpeedDeg);
+        std::shared_ptr<Bullet> b = std::make_shared<Bullet>(position, stats.damage * 1.5f, 250.0f, false, 4, 11.0f);
+        
+        // Đạn tự hủy sau 12 giây
+        b->SetMaxLifetime(12.0f);
+        
+        // Quỹ đạo homing về phía player
+        b->SetTrajectory(traj);
+        gm->AddBullet(b);
+    }
+}
+
+void VoidChickenBoss::Update(float deltaTime) {
+    if (!isActive) return;
+    Boss::Update(deltaTime);
+    if (GameManager::GetInstance()->IsBossCutscene()) return;
+
+    stateTimer  += deltaTime;
+    attackTimer += deltaTime;
+
+    switch (state) {
+        case State::IDLE_MOVE: {
+            // Di chuyển lắc lư nhẹ theo sin, hướng về y=150 nếu chưa tới
+            position.x += std::sin(GetTime() * 1.2f) * stats.speed * 0.8f * deltaTime;
+            if (position.y < 150.0f) position.y += stats.speed * deltaTime;
+
+            if (stateTimer > 2.0f) {
+                // Đánh thường là chủ đạo, dùng 2-3 lần mới xài skill
+                if (normalAttackCount < 2 || (normalAttackCount == 2 && GetRandomValue(0, 1) == 0)) {
+                    TransitionTo(State::ATTACK_NORMAL);
+                } else {
+                    int r = GetRandomValue(1, 2);
+                    if (r == 1) TransitionTo(State::SKILL_LASER);
+                    else        TransitionTo(State::SKILL_HOMING);
+                    normalAttackCount = 0; // Reset đếm sau khi dùng skill
+                }
+            }
+            break;
+        }
+        case State::ATTACK_NORMAL: {
+            // Bắn 8 lượt, mỗi lượt 3 viên, cách 0.25s
+            position.x += std::sin(GetTime() * 1.2f) * stats.speed * 0.4f * deltaTime;
+            if (attackTimer >= 0.25f && shotsFired < 8) {
+                attackTimer = 0.0f;
+                shotsFired++;
+                FireNormalAttack();
+            }
+            if (stateTimer > 2.5f) {
+                normalAttackCount++;
+                TransitionTo(State::IDLE_MOVE);
+            }
+            break;
+        }
+        case State::SKILL_LASER: {
+            // Bắn 5 đợt chùm laser, cách 0.4s
+            if (attackTimer >= 0.4f && shotsFired < 5) {
+                attackTimer = 0.0f;
+                shotsFired++;
+                FireLaserSkill();
+            }
+            if (stateTimer > 2.5f) TransitionTo(State::IDLE_MOVE);
+            break;
+        }
+        case State::SKILL_HOMING: {
+            // Chờ 0.5s rồi xả 1 lần 16 viên tam giác homing, xả 2 đợt cách nhau 1s
+            if (attackTimer >= 1.0f && shotsFired < 2) {
+                attackTimer = 0.0f;
+                shotsFired++;
+                FireHomingSkill();
+            }
+            if (stateTimer > 3.0f) TransitionTo(State::IDLE_MOVE);
+            break;
+        }
+    }
+}
+
+void VoidChickenBoss::DrawBossHPBar() {
+    int sw = GameManager::GetInstance()->GetScreenWidth();
+    float barW = 450.0f, barH = 16.0f;
+    float x = (sw - barW) / 2.0f, y = 20.0f;
+    DrawRectangle((int)x, (int)y, (int)barW, (int)barH, DARKGRAY);
+    float pct = (maxHp > 0.0f) ? (currentHp / maxHp) : 0.0f;
+    if (pct < 0.0f) pct = 0.0f;
+    Color c = (pct > 0.5f) ? GREEN : ((pct > 0.2f) ? ORANGE : RED);
+    DrawRectangle((int)x, (int)y, (int)(barW * pct), (int)barH, c);
+    DrawRectangleLines((int)x, (int)y, (int)barW, (int)barH, WHITE);
+    const char* name = "VOID CHICKEN";
+    DrawText(name, (int)(x + barW / 2.0f - MeasureText(name, 11) / 2.0f), (int)(y - 16), 11, WHITE);
+}
+
+void VoidChickenBoss::Draw() {
+    if (!isActive) return;
+    Boss::Draw();
+    DrawBossHPBar();
+}
+
+void VoidChickenBoss::Die() {
+    if (!isActive) return;
+    Enemy::Die();
+}

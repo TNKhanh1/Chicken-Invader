@@ -18,6 +18,9 @@ private:
     float radius;   // Bán kính Circle Hitbox
     float angle;    // Góc quay hiện tại của đạn
     
+    float activeTimer; // Bộ đếm thời gian tồn tại
+    float maxLifetime; // Thời gian sống tối đa (0 = vĩnh viễn)
+    
     std::shared_ptr<IBulletTrajectory> trajectory; // Strategy Pattern cho quỹ đạo
 
 public:
@@ -41,6 +44,8 @@ public:
     Vector2 GetCenter() const;
     Vector2 GetPrevCenter() const;
     Vector2 GetVelocity() const;
+    
+    void SetMaxLifetime(float time);
     
     // Legacy Rectangle Hitbox
     Rectangle GetHitbox() const;

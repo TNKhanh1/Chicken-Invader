@@ -11,6 +11,8 @@ std::unique_ptr<Enemy> EnemyFactory::CreateEnemy(int visualId, EnemyRole role, c
             return std::make_unique<EskimoBoss>(visualId, stats, position);
         } else if (visualId == 7) {
             return std::make_unique<BomberBoss>(visualId, stats, position);
+        } else if (visualId == 14) {
+            return std::make_unique<VoidChickenBoss>(visualId, stats, position);
         }
     }
     auto enemy = std::make_unique<Enemy>(visualId, role, stats, position);
