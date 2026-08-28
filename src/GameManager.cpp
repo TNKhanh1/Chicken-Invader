@@ -747,6 +747,10 @@ void GameManager::Update(float deltaTime) {
                             float radius = bullet->GetRadius();
                             Rectangle enemyBox = enemy->GetHitbox();
                             
+                            // Prevent destroying enemies before they even enter the screen
+                            if (enemyBox.y + enemyBox.height < 0) continue;
+
+                            
                             // 1. Kiểm tra va chạm hình tròn tĩnh cơ bản
                             bool hit = CheckCollisionCircleRec(currCenter, radius, enemyBox);
                             
