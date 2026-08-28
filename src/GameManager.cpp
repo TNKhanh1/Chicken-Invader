@@ -1194,6 +1194,7 @@ void GameManager::Draw() {
                 extraStatSelectionsPending = 0;
                 pendingArgumentAfterStat = false;
                 score = 0;
+                CoinManager::GetInstance()->ResetSession();
                 
                 // Initialize player for testing
                 if (player) {

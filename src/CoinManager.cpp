@@ -81,6 +81,7 @@ void CoinManager::CalculateStageBonus(int currentWave, int totalWaves, bool isWi
 void CoinManager::CommitSessionCoins() {
     totalCoins += sessionCoins + stageBonusCoins;
     Save();
+    ResetSession();
 }
 
 void CoinManager::ResetSession() {
