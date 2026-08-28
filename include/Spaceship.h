@@ -108,6 +108,12 @@ public:
     virtual void GainExp(float amount);
 
     virtual void GainMana(float amount);
+    
+    // Trạng thái kích hoạt Mana (Ultimate/Overdrive)
+    bool isManaActive = false;
+    virtual bool IsManaActive() const { return isManaActive; }
+    virtual void ActivateMana();
+    virtual void DeactivateMana();
 
     virtual void LevelUp();
 

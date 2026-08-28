@@ -519,10 +519,12 @@ void GameManager::Update(float deltaTime) {
 
             if (player && player->IsActive()) {
                 Vector2 pos = player->GetPosition();
-                if (IsKeyDown(KEY_W)) pos.y -= player->GetMoveSpeed() * deltaTime;
-                if (IsKeyDown(KEY_S)) pos.y += player->GetMoveSpeed() * deltaTime;
-                if (IsKeyDown(KEY_A)) pos.x -= player->GetMoveSpeed() * deltaTime;
-                if (IsKeyDown(KEY_D)) pos.x += player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) pos.y -= player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) pos.y += player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) pos.x -= player->GetMoveSpeed() * deltaTime;
+                if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) pos.x += player->GetMoveSpeed() * deltaTime;
+                
+                if (IsKeyPressed(KEY_M)) player->ActivateMana();
                 
                 if (IsKeyPressed(KEY_L)) player->LevelUp();
                 if (IsKeyPressed(KEY_H) && !debugSandboxMode) showDebugHitboxes = !showDebugHitboxes;
@@ -1464,9 +1466,16 @@ void GameManager::Draw() {
                     float manaRatio = player->GetCurrentMana() / player->GetMaxMana();
                     if (manaRatio > 1.0f) manaRatio = 1.0f;
                     DrawRectangle(20, 135, 200, 15, GRAY);
-                    DrawRectangle(20, 135, (int)(200 * manaRatio), 15, PURPLE);
+                    
+                    Color manaColor = PURPLE;
+                    if (player->IsManaActive()) {
+                        // Nhấp nháy màu sắc khi Mana đang active
+                        manaColor = (GetTime() * 10.0 - (int)(GetTime() * 10.0) > 0.5) ? MAGENTA : PURPLE;
+                    }
+                    
+                    DrawRectangle(20, 135, (int)(200 * manaRatio), 15, manaColor);
                     DrawRectangleLines(20, 135, 200, 15, DARKGRAY);
-                    DrawText(TextFormat("MANA: %.0f/%.0f", player->GetCurrentMana(), player->GetMaxMana()), 25, 137, 12, WHITE);
+                    DrawText(TextFormat("MANA: %.0f/%.0f%s", player->GetCurrentMana(), player->GetMaxMana(), player->IsManaActive() ? " (ACTIVE)" : ""), 25, 137, 12, WHITE);
                 }
             }
             break;

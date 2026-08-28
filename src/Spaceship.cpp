@@ -35,7 +35,7 @@ float Spaceship::GetAttackSpeed() const {
     // Giảm tốc bắn 15% toàn cục theo yêu cầu (Global Fire Rate Nerf)
     return attackSpeed * 0.85f; 
 }
-int Spaceship::GetLevel() const { return level; }
+int Spaceship::GetLevel() const { return isManaActive ? 11 : level; }
 void Spaceship::SetLevel(int newLevel) {
     level = newLevel;
     if (level < 1) level = 1;
@@ -113,6 +113,16 @@ void Spaceship::Update(float deltaTime) {
     if (thrusterIntensity > 0.3f) {
         thrusterIntensity -= 1.6f * deltaTime;
         if (thrusterIntensity < 0.3f) thrusterIntensity = 0.3f;
+    }
+
+    // Cập nhật trạng thái Mana
+    if (isManaActive) {
+        currentMana -= (maxMana / 5.0f) * deltaTime; // Tiêu hao hết trong 5 giây
+        if (currentMana <= 0.0f) {
+            currentMana = 0.0f;
+            DeactivateMana();
+        }
+        Notify(EventType::PLAYER_MANA_CHANGED, std::to_string(currentMana));
     }
 
     prevPosition = position;
@@ -211,12 +221,24 @@ void Spaceship::GainExp(float amount) {
 }
 
 void Spaceship::GainMana(float amount) {
-    if (currentMana < maxMana) {
+    if (isManaActive) return; // Không hồi mana khi đang dùng
 
+    if (currentMana < maxMana) {
         currentMana += amount;
         if (currentMana > maxMana) currentMana = maxMana;
         Notify(EventType::PLAYER_MANA_CHANGED, std::to_string(currentMana));
     }
+}
+
+void Spaceship::ActivateMana() {
+    if (currentMana >= maxMana && !isManaActive) {
+        isManaActive = true;
+        // Tùy chỉnh thêm các buff nếu cần
+    }
+}
+
+void Spaceship::DeactivateMana() {
+    isManaActive = false;
 }
 
 void Spaceship::LevelUp() {
