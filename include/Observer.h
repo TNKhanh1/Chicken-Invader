@@ -11,7 +11,8 @@ enum class EventType {
     PLAYER_EXP_GAINED,
     PLAYER_LEVEL_UP,
     ENEMY_DIED,
-    BOSS_SPAWNED
+    BOSS_SPAWNED,
+    COIN_EARNED
 };
 
 // Interface cho Observer (Người lắng nghe/nhận sự kiện)

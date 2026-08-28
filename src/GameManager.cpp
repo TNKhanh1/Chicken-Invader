@@ -26,6 +26,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include "../include/CoinManager.h"
 
 // ---------------------------------------------------------
 // Dữ liệu tĩnh cho màn hình chọn Argument (lõi) và Chỉ Số (stat)
@@ -212,6 +213,22 @@ GameManager::~GameManager() {
     CleanUp();
 }
 
+void GameManager::AddObserver(IObserver* observer) {
+    if (std::find(observers.begin(), observers.end(), observer) == observers.end()) {
+        observers.push_back(observer);
+    }
+}
+
+void GameManager::RemoveObserver(IObserver* observer) {
+    observers.erase(std::remove(observers.begin(), observers.end(), observer), observers.end());
+}
+
+void GameManager::Notify(EventType event, const std::string& data) {
+    for (auto* observer : observers) {
+        observer->OnNotify(event, data);
+    }
+}
+
 GameManager* GameManager::GetInstance() {
     if (instance == nullptr) {
         instance = new GameManager();
@@ -302,6 +319,10 @@ void GameManager::Init(int width, int height, const char* title) {
     texBackgrounds[2] = LoadTexture("assets/background1.png");
     texBackgrounds[3] = LoadTexture("assets/background2.png");
     texSettingIcon = LoadTexture("assets/setting.png");
+    texCoin = LoadTexture("assets/coin.png");
+    CoinManager::GetInstance()->Load();
+    AddObserver(CoinManager::GetInstance());
+    CoinManager::GetInstance()->ResetSession();
     
     // Tải dữ liệu phi thuyền
     SpaceshipDataManager::GetInstance()->LoadCSV("assets/spaceship/spaceship.csv");
@@ -615,6 +636,8 @@ void GameManager::Update(float deltaTime) {
                                         if (!enemy->IsActive()) {
                                             WaveManager::GetInstance()->AddKill();
                                             AddScore(enemy->GetPointValue());
+                                            int coin = CoinManager::GetInstance()->GetKillCoin(enemy.get());
+                                            Notify(EventType::ENEMY_DIED, std::to_string(coin));
                                             if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
                                             if (player->HasArgument(6)) player->Heal(player->GetMaxHp() * 0.05f);
                                             PlayExplosionSound();
@@ -678,6 +701,9 @@ void GameManager::Update(float deltaTime) {
                                     EnterStatSelection(currentWave + 1);
                                 } else {
                                     // Chơi xong stage, quay về menu chọn màn
+                                    int totalW = WaveManager::GetInstance()->GetTotalWaves();
+                                    CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, true);
+                                    CoinManager::GetInstance()->CommitSessionCoins();
                                     ChangeState(GameState::WAVE_SELECTION);
                                     if (player) {
                                         player->Heal(player->GetMaxHp());
@@ -766,6 +792,8 @@ void GameManager::Update(float deltaTime) {
                                 if (!enemy->IsActive()) {
                                     WaveManager::GetInstance()->AddKill();
                                     AddScore(enemy->GetPointValue());
+                                    int coin = CoinManager::GetInstance()->GetKillCoin(enemy.get());
+                                    Notify(EventType::ENEMY_DIED, std::to_string(coin));
                                     // Blood Fury (Arg 5)
                                     if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
                                     // Bloodthirst (Arg 6)
@@ -816,6 +844,9 @@ void GameManager::Update(float deltaTime) {
 
                 // Game Over Check
                 if (player && player->GetHp() <= 0) {
+                    int totalW = WaveManager::GetInstance()->GetTotalWaves();
+                    CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, false);
+                    CoinManager::GetInstance()->CommitSessionCoins();
                     currentState = GameState::GAME_OVER;
                 }
             }
@@ -1031,7 +1062,16 @@ void GameManager::Draw() {
             DrawText("GAME OVER!", screenWidth/2 - 120, 200, 40, RED);
             DrawText(TextFormat("FINAL SCORE: %d", score), screenWidth/2 - 100, 260, 25, DARKGRAY);
             
-            if (DrawButton({(float)screenWidth/2 - 120, 350, 240, 50}, "BACK TO MENU")) {
+            DrawText(TextFormat("COINS EARNED THIS RUN: %d + %d (stage bonus) = %d",
+                CoinManager::GetInstance()->GetSessionCoins(),
+                CoinManager::GetInstance()->GetStageBonusCoins(),
+                CoinManager::GetInstance()->GetSessionCoins() + CoinManager::GetInstance()->GetStageBonusCoins()),
+                screenWidth/2 - 270, 320, 20, GOLD);
+            DrawText(TextFormat("TOTAL COINS: %d", CoinManager::GetInstance()->GetTotalCoins()),
+                screenWidth/2 - 120, 360, 22, YELLOW);
+            DrawTextureEx(texCoin, {(float)screenWidth/2 - 160, 355}, 0.0f, 0.5f, WHITE);
+            
+            if (DrawButton({(float)screenWidth/2 - 120, 420, 240, 50}, "BACK TO MENU")) {
                 currentState = GameState::MAIN_MENU;
                 // Reset Game
                 score = 0;

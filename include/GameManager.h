@@ -3,13 +3,14 @@
 
 #include "raylib.h"
 #include "GameState.h"
+#include "Observer.h"
 #include <vector>
 #include <memory>
 
 // (struct MeatItem đã được chuyển thành class Meat trong Item.h)
 
 // Singleton Pattern
-class GameManager {
+class GameManager : public ISubject {
 private:
     // Instance duy nhất của game
     static GameManager* instance;
@@ -34,6 +35,7 @@ private:
     // Textures
     Texture2D texBackgrounds[4];
     Texture2D texSettingIcon;
+    Texture2D texCoin;
     
     // Player resources
     Texture2D texSpaceship;
@@ -82,6 +84,7 @@ private:
     Music bgMusic;
 
     // Entity lists
+    std::vector<IObserver*> observers;
     std::vector<std::shared_ptr<class Bullet>> activeBullets;
     std::vector<std::shared_ptr<class Bullet>> pendingBullets;
     std::vector<std::shared_ptr<class Enemy>> activeEnemies;
@@ -162,6 +165,13 @@ public:
     // Các hàm cho vòng lặp
     void Update(float deltaTime);
     void Draw();
+
+    // ISubject implementation
+    void AddObserver(IObserver* observer) override;
+    void RemoveObserver(IObserver* observer) override;
+    void Notify(EventType event, const std::string& data) override;
+    
+    int GetCurrentWave() const { return currentWave; }
     
     // UI Helpers
     bool DrawButton(Rectangle bounds, const char* text);
