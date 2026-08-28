@@ -53,8 +53,15 @@ public:
 
     virtual void AddArgument(int argId) override;
     virtual bool HasArgument(int argId) const override;
+    virtual const std::vector<int>& GetActiveArguments() const override;
+    
     virtual void AddPermanentDamage(float amt) override;
     virtual float GetPermanentDamageBonus() const override;
+    virtual void AddPermanentMaxHp(float amt) override;
+    virtual void AddPermanentArmor(float amt) override;
+    virtual void AddPermanentFireRate(float pct) override;
+    virtual void AddPermanentCritChance(float amt) override;
+    virtual void AddPermanentCritDamage(float amt) override;
 
     void Init() override;
     void Update(float deltaTime) override;

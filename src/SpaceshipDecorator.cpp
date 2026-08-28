@@ -44,8 +44,15 @@ void SpaceshipDecorator::Heal(float amount) { coreShip->Heal(amount); }
 
 void SpaceshipDecorator::AddArgument(int argId) { coreShip->AddArgument(argId); }
 bool SpaceshipDecorator::HasArgument(int argId) const { return coreShip->HasArgument(argId); }
+const std::vector<int>& SpaceshipDecorator::GetActiveArguments() const { return coreShip->GetActiveArguments(); }
 void SpaceshipDecorator::AddPermanentDamage(float amt) { coreShip->AddPermanentDamage(amt); }
 float SpaceshipDecorator::GetPermanentDamageBonus() const { return coreShip->GetPermanentDamageBonus(); }
+
+void SpaceshipDecorator::AddPermanentMaxHp(float amt) { coreShip->AddPermanentMaxHp(amt); }
+void SpaceshipDecorator::AddPermanentArmor(float amt) { coreShip->AddPermanentArmor(amt); }
+void SpaceshipDecorator::AddPermanentFireRate(float pct) { coreShip->AddPermanentFireRate(pct); }
+void SpaceshipDecorator::AddPermanentCritChance(float amt) { coreShip->AddPermanentCritChance(amt); }
+void SpaceshipDecorator::AddPermanentCritDamage(float amt) { coreShip->AddPermanentCritDamage(amt); }
 
 void SpaceshipDecorator::Init() { coreShip->Init(); }
 void SpaceshipDecorator::Update(float deltaTime) { coreShip->Update(deltaTime); }

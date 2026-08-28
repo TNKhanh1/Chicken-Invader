@@ -120,11 +120,12 @@ void StatsPanel::Draw(const Spaceship* player, int screenHeight) const {
     cy += 20.0f;
 
     // --- LÕI (ARGUMENTS) ---
-    snprintf(buf, sizeof(buf), "[ ARGUMENTS (%d owned) ]", (int)player->activeArguments.size());
+    const auto& args = player->GetActiveArguments();
+    snprintf(buf, sizeof(buf), "[ ARGUMENTS (%d owned) ]", (int)args.size());
     DrawText(buf, (int)slideX + 20, (int)cy, 22, GOLD);
     cy += 35.0f;
 
-    for (int argId : player->activeArguments) {
+    for (int argId : args) {
         if (argId >= 0 && argId < 10) {
             DrawText(TextFormat("- %s", ARGUMENT_NAMES[argId]), (int)cx, (int)cy, 20, SKYBLUE);
             cy += 24.0f;

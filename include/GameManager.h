@@ -38,6 +38,10 @@ private:
     Texture2D texBackgrounds[4];
     Texture2D texSettingIcon;
     Texture2D texCoin;
+
+    Texture2D texSwordItem;
+    Texture2D texShieldItem;
+    Texture2D texHeartItem;
     
     // Player resources
     Texture2D texSpaceship;
@@ -207,6 +211,10 @@ public:
     Texture2D GetTexBulletPlayer() const { return texBulletPlayer; }
     Texture2D GetTexEnemyBullet() const { return texEnemyBullet; }
     Texture2D GetTexMeat() const { return texMeat; }
+    
+    Texture2D GetTexSwordItem() const { return texSwordItem; }
+    Texture2D GetTexShieldItem() const { return texShieldItem; }
+    Texture2D GetTexHeartItem() const { return texHeartItem; }
     
     // Weapon Asset Getters
     Texture2D GetTexPlasmaRifle() const { return texPlasmaRifle; }

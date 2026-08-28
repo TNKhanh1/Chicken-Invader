@@ -56,6 +56,8 @@ void Spaceship::Update(float deltaTime) {
         fireTimer -= deltaTime;
     }
     
+    UpdateBuffs(deltaTime);
+
     // Cập nhật animation giật lùi nảy súng (Weapon Recoil Animation)
     if (recoilTimer > 0.0f) {
         recoilTimer -= deltaTime;
@@ -272,5 +274,52 @@ void Spaceship::AddArgument(int argId) {
 
 bool Spaceship::HasArgument(int argId) const {
     return std::find(activeArguments.begin(), activeArguments.end(), argId) != activeArguments.end();
+}
+
+void Spaceship::ApplyBuff(BuffType type, float duration) {
+    if (type == BuffType::SWORD) {
+        activeBuff.swordActive = true;
+        activeBuff.swordTimer = duration;
+    } else if (type == BuffType::SHIELD) {
+        activeBuff.shieldActive = true;
+        activeBuff.shieldTimer = duration;
+    }
+}
+
+void Spaceship::UpdateBuffs(float deltaTime) {
+    if (activeBuff.swordActive) {
+        activeBuff.swordTimer -= deltaTime;
+        if (activeBuff.swordTimer <= 0.0f) {
+            activeBuff.swordActive = false;
+        }
+    }
+    if (activeBuff.shieldActive) {
+        activeBuff.shieldTimer -= deltaTime;
+        if (activeBuff.shieldTimer <= 0.0f) {
+            activeBuff.shieldActive = false;
+        }
+    }
+}
+
+void Spaceship::ClearAllBuffs() {
+    activeBuff.swordActive = false;
+    activeBuff.swordTimer = 0.0f;
+    activeBuff.shieldActive = false;
+    activeBuff.shieldTimer = 0.0f;
+}
+
+float Spaceship::GetDamage() const {
+    float base = Character::GetDamage();
+    if (activeBuff.swordActive) {
+        base *= 1.25f;
+    }
+    return base;
+}
+
+void Spaceship::TakeDamage(float incomingDamage) {
+    if (activeBuff.shieldActive) {
+        incomingDamage *= 0.7f;
+    }
+    Character::TakeDamage(incomingDamage);
 }
 

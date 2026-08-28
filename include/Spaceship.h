@@ -8,6 +8,14 @@
 #include <memory>
 #include <algorithm>
 #include <string>
+enum class BuffType { SWORD, SHIELD };
+
+struct ActiveBuff {
+    bool swordActive = false;
+    float swordTimer = 0.0f;
+    bool shieldActive = false;
+    float shieldTimer = 0.0f;
+};
 
 // Lớp Phi Thuyền chính
 class Spaceship : public Character, public ISubject {
@@ -24,6 +32,9 @@ private:
     float maxExp;
     std::string name;
     std::string currentWeapon = "Hypergun";
+
+    // --- BUFF SYSTEM ---
+    ActiveBuff activeBuff;
 
     // Strategy Pattern
     std::unique_ptr<IShootingBehavior> shootingBehavior;
@@ -75,13 +86,19 @@ public:
 
     // --- ARGUMENT SYSTEM ---
     std::vector<int> activeArguments;
+    virtual const std::vector<int>& GetActiveArguments() const { return activeArguments; }
     virtual void AddArgument(int argId);
     virtual bool HasArgument(int argId) const;
 
     float permanentDamageBonus = 0.0f;
     virtual void AddPermanentDamage(float amt) { permanentDamageBonus += amt; }
     virtual float GetPermanentDamageBonus() const { return permanentDamageBonus; }
-
+    
+    virtual void AddPermanentMaxHp(float amt) { maxHp += amt; currentHp += amt; }
+    virtual void AddPermanentArmor(float amt) { armor += amt; }
+    virtual void AddPermanentFireRate(float pct) { attackSpeed *= (1.0f + pct); }
+    virtual void AddPermanentCritChance(float amt) { critChance += amt; }
+    virtual void AddPermanentCritDamage(float amt) { critDamage += amt; }
     void Draw() override;
 
     void Die() override;
@@ -118,6 +135,18 @@ public:
     virtual void LevelUp();
 
     virtual void Heal(float amount);
+
+    // --- BUFF METHODS ---
+    void ApplyBuff(BuffType type, float duration);
+    void UpdateBuffs(float deltaTime);
+    void ClearAllBuffs();
+    bool HasSwordBuff() const { return activeBuff.swordActive; }
+    bool HasShieldBuff() const { return activeBuff.shieldActive; }
+    float GetSwordTimer() const { return activeBuff.swordTimer; }
+    float GetShieldTimer() const { return activeBuff.shieldTimer; }
+
+    virtual float GetDamage() const override;
+    virtual void TakeDamage(float incomingDamage) override;
 };
 
 #endif // SPACESHIP_H

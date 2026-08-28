@@ -27,6 +27,8 @@
 #include <cmath>
 #include <algorithm>
 #include "../include/CoinManager.h"
+#include "../include/ItemDropManager.h"
+#include "../include/PowerUpItem.h"
 
 // ---------------------------------------------------------
 // Dữ liệu tĩnh cho màn hình chọn Argument (lõi) và Chỉ Số (stat)
@@ -284,6 +286,7 @@ void GameManager::EnterStatSelection(int nextWave) {
 }
 
 bool GameManager::SpawnWaveBatch(int wave, int batch) {
+    ItemDropManager::GetInstance()->OnNewBatchStarted();
     return WaveManager::GetInstance()->SpawnBatch(wave, batch);
 }
 
@@ -345,6 +348,10 @@ void GameManager::Init(int width, int height, const char* title) {
     texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
     texEnemyBullet = LoadTexture("assets/egg.png"); 
     texMeat = LoadTexture("assets/meat.png");
+    
+    texSwordItem = LoadTexture("assets/SwordItem.png");
+    texShieldItem = LoadTexture("assets/ShieldItem.png");
+    texHeartItem = LoadTexture("assets/HeartItem.png");
     
     // Tải trọn bộ asset đồ họa của các loại vũ khí
     texPlasmaRifle = LoadTexture("assets/spaceship/plasma_rifle.png");
@@ -644,6 +651,12 @@ void GameManager::Update(float deltaTime) {
                                             auto meat = std::make_shared<Meat>(enemy->GetPosition(),
                                                 Vector2{(float)GetRandomValue(-100, 100), -200.0f});
                                             activeItems.push_back(meat);
+
+                                            if (enemy->role != EnemyRole::BOSS) {
+                                                auto drop = ItemDropManager::GetInstance()->TryDrop(
+                                                    enemy.get(), player.get(), currentStage);
+                                                if (drop) activeItems.push_back(drop);
+                                            }
                                         }
                                     }
                                 }
@@ -707,6 +720,7 @@ void GameManager::Update(float deltaTime) {
                                     ChangeState(GameState::WAVE_SELECTION);
                                     if (player) {
                                         player->Heal(player->GetMaxHp());
+                                        player->ClearAllBuffs();
                                     }
                                 }
                             }
@@ -807,6 +821,12 @@ void GameManager::Update(float deltaTime) {
                                     auto meat = std::make_shared<Meat>(enemy->GetPosition(),
                                         Vector2{(float)GetRandomValue(-100, 100), -200.0f});
                                     activeItems.push_back(meat);
+
+                                    if (enemy->role != EnemyRole::BOSS) {
+                                        auto drop = ItemDropManager::GetInstance()->TryDrop(
+                                            enemy.get(), player.get(), currentStage);
+                                        if (drop) activeItems.push_back(drop);
+                                    }
                                 }
                                 break; // Chống một viên đạn ăn trúng 2 mục tiêu cùng lúc
                             }
@@ -841,6 +861,11 @@ void GameManager::Update(float deltaTime) {
                                 AddScore(50);
                                 player->GainExp(10.0f);
                                 PlayPickupSound();
+                            } else if (item->GetType() == ItemType::SWORD ||
+                                       item->GetType() == ItemType::SHIELD ||
+                                       item->GetType() == ItemType::HEART_POWERUP) {
+                                auto* powerUp = dynamic_cast<PowerUpItem*>(item.get());
+                                if (powerUp) powerUp->OnPickup(player.get());
                             }
                         }
                     }
@@ -851,6 +876,7 @@ void GameManager::Update(float deltaTime) {
                     int totalW = WaveManager::GetInstance()->GetTotalWaves();
                     CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, false);
                     CoinManager::GetInstance()->CommitSessionCoins();
+                    player->ClearAllBuffs();
                     currentState = GameState::GAME_OVER;
                 }
             }
@@ -887,8 +913,18 @@ void GameManager::Update(float deltaTime) {
                 for (int i = 0; i < numChoices; i++) {
                     Rectangle cardRect = { startX + i * (CARD_W + GAP), cardY, CARD_W, CARD_H };
                     if (CheckCollisionPointRec(GetMousePosition(), cardRect)) {
-                        // Áp dụng chỉ số ở đây (nếu có logic cộng chỉ số, tuỳ ý)
-                        
+                        // Áp dụng chỉ số
+                        int statIdx = shownCardIndices[i];
+                        if (player) {
+                            switch (statIdx) {
+                                case 0: player->AddPermanentMaxHp(30.0f); break;       // Max HP +30
+                                case 1: player->AddPermanentDamage(5.0f); break;       // Damage +5
+                                case 2: player->AddPermanentArmor(3.0f); break;        // Armor +3
+                                case 3: player->AddPermanentFireRate(0.10f); break;    // Fire Rate +10%
+                                case 4: player->AddPermanentCritChance(0.10f); break;  // Crit Chance +10%
+                                case 5: player->AddPermanentCritDamage(0.30f); break;  // Crit Damage +30%
+                            }
+                        }
                         if (extraStatSelectionsPending > 0) {
                             extraStatSelectionsPending--;
                             GenerateSelectionPool(true);
@@ -1498,6 +1534,17 @@ void GameManager::Draw() {
                     DrawRectangleLines(20, 80, 200, 20, DARKGRAY);
                     
                     DrawText(TextFormat("HP: %.0f/%.0f", player->GetHp(), player->GetMaxHp()), 25, 82, 16, BLACK);
+                    
+                    float iconX = 230.0f;
+                    if (player->HasSwordBuff()) {
+                        DrawTexturePro(texSwordItem, {0, 0, (float)texSwordItem.width, (float)texSwordItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
+                        DrawText(TextFormat("%.0fs", player->GetSwordTimer()), (int)iconX, 108, 12, ORANGE);
+                        iconX += 40.0f;
+                    }
+                    if (player->HasShieldBuff()) {
+                        DrawTexturePro(texShieldItem, {0, 0, (float)texShieldItem.width, (float)texShieldItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
+                        DrawText(TextFormat("%.0fs", player->GetShieldTimer()), (int)iconX, 108, 12, SKYBLUE);
+                    }
                     
                     // Draw EXP Bar
                     float expRatio = player->GetCurrentExp() / player->GetMaxExp();
