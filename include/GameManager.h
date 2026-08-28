@@ -4,6 +4,7 @@
 #include "raylib.h"
 #include "GameState.h"
 #include "Observer.h"
+#include "StatsPanel.h"
 #include <vector>
 #include <memory>
 
@@ -14,6 +15,7 @@ class GameManager : public ISubject {
 private:
     // Instance duy nhất của game
     static GameManager* instance;
+    StatsPanel statsPanel;
 
     // Các biến trạng thái của trò chơi
     GameState currentState;

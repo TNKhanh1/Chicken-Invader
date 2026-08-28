@@ -1522,6 +1522,9 @@ void GameManager::Draw() {
                     DrawRectangleLines(20, 135, 200, 15, DARKGRAY);
                     DrawText(TextFormat("MANA: %.0f/%.0f%s", player->GetCurrentMana(), player->GetMaxMana(), player->IsManaActive() ? " (ACTIVE)" : ""), 25, 137, 12, WHITE);
                 }
+                // --- Stats Panel (Tab overlay) ---
+                statsPanel.Update(GetFrameTime(), IsKeyDown(KEY_TAB));
+                if (player) statsPanel.Draw(player.get(), screenHeight);
             }
             break;
         }
