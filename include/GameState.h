@@ -3,6 +3,7 @@
 
 // Enum định nghĩa các trạng thái của game
 enum class GameState {
+    TITLE_SCREEN,
     MAIN_MENU,
     PLAYING,
     PAUSED,

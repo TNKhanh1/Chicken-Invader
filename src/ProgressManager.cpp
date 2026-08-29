@@ -43,6 +43,11 @@ void ProgressManager::SaveProgress() {
     }
 }
 
+void ProgressManager::ResetAllProgress() {
+    highestUnlockedStage = 1;
+    SaveProgress();
+}
+
 int ProgressManager::GetHighestUnlockedStage() const {
     return highestUnlockedStage;
 }

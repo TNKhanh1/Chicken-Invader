@@ -534,7 +534,8 @@ void GameManager::Init(int width, int height, const char* title) {
 
     printf("GameManager::Init finished.\n"); fflush(stdout);
     isRunning = true;
-    currentState = GameState::MAIN_MENU;
+    titleScreen = new TitleScreen(screenWidth, screenHeight);
+    currentState = GameState::TITLE_SCREEN;
 }
 
 void GameManager::Run() {
@@ -612,7 +613,7 @@ void GameManager::Update(float deltaTime) {
 
     // Handle State Transitions and specific state logic
     switch (currentState) {
-        case GameState::MAIN_MENU:
+case GameState::MAIN_MENU:
         case GameState::TEST_MENU:
         case GameState::GAME_OVER:
         case GameState::SETTINGS:
@@ -1337,6 +1338,24 @@ void GameManager::Draw() {
             break;
         }
             
+        case GameState::TITLE_SCREEN:
+        {
+            if (titleScreen) {
+                TitleAction action = titleScreen->UpdateAndDraw(GetFrameTime());
+                if (action == TitleAction::CONTINUE) {
+                    titleScreen->Reset();
+                    ChangeState(GameState::MAIN_MENU);
+                } else if (action == TitleAction::NEW_GAME) {
+                    CoinManager::GetInstance()->ResetAllProgress();
+                    ProgressManager::GetInstance()->ResetAllProgress();
+                    if (mainMenuUI) mainMenuUI->UpdateStageStatus();
+                    titleScreen->Reset();
+                    ChangeState(GameState::MAIN_MENU);
+                }
+            }
+            break;
+        }
+        
         case GameState::MAIN_MENU:
         {
             if (mainMenuUI) {
@@ -2135,6 +2154,10 @@ void GameManager::CleanUp() {
     if (summaryScreen) {
         delete summaryScreen;
         summaryScreen = nullptr;
+    }
+    if (titleScreen) {
+        delete titleScreen;
+        titleScreen = nullptr;
     }
 
     RuneManager::DestroyInstance();

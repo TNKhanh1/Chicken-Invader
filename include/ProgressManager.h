@@ -21,6 +21,7 @@ public:
 
     void LoadProgress();
     void SaveProgress();
+    void ResetAllProgress();
 
     int GetHighestUnlockedStage() const;
     void UnlockStage(int stage);

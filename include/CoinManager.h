@@ -39,6 +39,9 @@ public:
     // Reset lại số coin của session khi bắt đầu ván mới
     void ResetSession();
 
+    // Xóa toàn bộ coin, lưu file
+    void ResetAllProgress();
+
     // Getters
     int GetTotalCoins() const { return totalCoins; }
     int GetSessionCoins() const { return sessionCoins; }

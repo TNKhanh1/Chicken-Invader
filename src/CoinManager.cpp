@@ -89,6 +89,13 @@ void CoinManager::ResetSession() {
     stageBonusCoins = 0;
 }
 
+void CoinManager::ResetAllProgress() {
+    totalCoins = 0;
+    sessionCoins = 0;
+    stageBonusCoins = 0;
+    Save();
+}
+
 bool CoinManager::SpendCoins(int amount) {
     if (amount < 0 || amount > totalCoins) {
         return false;

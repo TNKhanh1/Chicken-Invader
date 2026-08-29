@@ -11,8 +11,9 @@
 #include <memory>
 
 class ShopUI;
-class RuneSelectionUI;
+#include "RuneSelectionUI.h"
 #include "SummaryScreen.h"
+#include "TitleScreen.h"
 
 // (struct MeatItem đã được chuyển thành class Meat trong Item.h)
 
@@ -26,6 +27,7 @@ private:
     ShopUI* shopUI = nullptr;
     RuneSelectionUI* runeUI = nullptr;
     SummaryScreen* summaryScreen = nullptr;
+    TitleScreen* titleScreen = nullptr;
 
     // Các biến trạng thái của trò chơi
     GameState currentState;
