@@ -11,7 +11,11 @@ class FontManager {
 private:
     static FontManager* instance;
     std::unordered_map<std::string, Font> fonts;
+    std::unordered_map<std::string, std::string> fontPaths;
     
+    int codepoints[1000];
+    int count;
+
     FontManager() {}
     ~FontManager() { UnloadFonts(); }
 
@@ -22,8 +26,11 @@ public:
     void LoadFonts();
     void UnloadFonts();
 
-    // Lấy font theo ID
-    Font GetFont(const std::string& fontId) const;
+    // Làm tròn kích thước font để giảm thiểu load nhiều texture
+    int GetNearestFontSize(int targetSize);
+
+    // Lấy font theo ID và kích thước
+    Font GetFont(const std::string& fontId, int fontSize);
 
     // Hàm tiện ích bọc lại DrawTextEx
     // Mặc định dùng font "Modern" (Inter-Bold)

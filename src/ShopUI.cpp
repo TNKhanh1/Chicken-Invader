@@ -77,9 +77,10 @@ void ShopUI::HandleWeaponInput() {
     int itemsPerRow = 3;
     float itemW = 250.0f;
     float itemH = 150.0f;
-    float startX = 50.0f;
-    float startY = 180.0f + scrollOffset;
     float spacing = 20.0f;
+    float totalW = itemsPerRow * itemW + (itemsPerRow - 1) * spacing;
+    float startX = (screenWidth - totalW) / 2.0f;
+    float startY = 180.0f + scrollOffset;
 
     for (size_t i = 0; i < weapons.size(); ++i) {
         int row = i / itemsPerRow;
@@ -104,9 +105,10 @@ void ShopUI::HandleEggInput() {
     int itemsPerRow = 5;
     float itemW = 120.0f;
     float itemH = 150.0f;
-    float startX = 50.0f;
-    float startY = 180.0f + scrollOffset;
     float spacing = 20.0f;
+    float totalW = itemsPerRow * itemW + (itemsPerRow - 1) * spacing;
+    float startX = (screenWidth - totalW) / 2.0f;
+    float startY = 180.0f + scrollOffset;
 
     for (size_t i = 0; i < eggs.size(); ++i) {
         int row = i / itemsPerRow;
@@ -177,9 +179,10 @@ void ShopUI::DrawWeaponTab() {
     int itemsPerRow = 3;
     float itemW = 250.0f;
     float itemH = 150.0f;
-    float startX = 50.0f;
-    float startY = 180.0f + scrollOffset;
     float spacing = 20.0f;
+    float totalW = itemsPerRow * itemW + (itemsPerRow - 1) * spacing;
+    float startX = (screenWidth - totalW) / 2.0f;
+    float startY = 180.0f + scrollOffset;
 
     for (size_t i = 0; i < weapons.size(); ++i) {
         int row = i / itemsPerRow;
@@ -217,13 +220,13 @@ void ShopUI::DrawWeaponTab() {
         
         // Status
         if (isSelected) {
-            FontManager::GetInstance()->DrawGameTextCentered("EQUIPPED", rect.x + itemW/2, rect.y + 80, 18, GREEN, "Retro");
+            FontManager::GetInstance()->DrawGameTextCentered("EQUIPPED", rect.x + itemW/2, rect.y + 80, 18, GREEN, "Modern");
         } else if (isUnlocked) {
             FontManager::GetInstance()->DrawGameTextCentered("CLICK TO SELECT", rect.x + itemW/2, rect.y + 80, 16, SKYBLUE, "Modern");
         } else {
             char priceStr[32];
             snprintf(priceStr, sizeof(priceStr), "PRICE: %d", weapons[i].price);
-            FontManager::GetInstance()->DrawGameTextCentered(priceStr, rect.x + itemW/2, rect.y + 80, 18, YELLOW, "Retro");
+            FontManager::GetInstance()->DrawGameTextCentered(priceStr, rect.x + itemW/2, rect.y + 80, 18, YELLOW, "Modern");
         }
     }
 }
@@ -236,9 +239,10 @@ void ShopUI::DrawEggTab() {
     int itemsPerRow = 5;
     float itemW = 120.0f;
     float itemH = 150.0f;
-    float startX = 50.0f;
-    float startY = 180.0f + scrollOffset;
     float spacing = 20.0f;
+    float totalW = itemsPerRow * itemW + (itemsPerRow - 1) * spacing;
+    float startX = (screenWidth - totalW) / 2.0f;
+    float startY = 180.0f + scrollOffset;
 
     for (size_t i = 0; i < eggs.size(); ++i) {
         int skinIndex = 0;
@@ -290,13 +294,13 @@ void ShopUI::DrawEggTab() {
 
         // Status
         if (isSelected) {
-            FontManager::GetInstance()->DrawGameTextCentered("EQUIPPED", rect.x + itemW/2, rect.y + 110, 14, GREEN, "Retro");
+            FontManager::GetInstance()->DrawGameTextCentered("EQUIPPED", rect.x + itemW/2, rect.y + 110, 14, GREEN, "Modern");
         } else if (isUnlocked) {
             FontManager::GetInstance()->DrawGameTextCentered("OWNED", rect.x + itemW/2, rect.y + 110, 14, SKYBLUE, "Modern");
         } else {
             char priceStr[32];
             snprintf(priceStr, sizeof(priceStr), "%d COIN", eggs[i].price);
-            FontManager::GetInstance()->DrawGameTextCentered(priceStr, rect.x + itemW/2, rect.y + 110, 14, YELLOW, "Retro");
+            FontManager::GetInstance()->DrawGameTextCentered(priceStr, rect.x + itemW/2, rect.y + 110, 14, YELLOW, "Modern");
         }
     }
 }
