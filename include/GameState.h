@@ -9,6 +9,7 @@ enum class GameState {
     SHOP,
     ENCYCLOPEDIA, // Sách bách khoa toàn thư
     GAME_OVER,
+    SUMMARY,
     
     // Test states
     TEST_MENU,

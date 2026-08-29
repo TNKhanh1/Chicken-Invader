@@ -29,6 +29,7 @@
 #include "ShopUI.h"
 #include "RuneManager.h"
 #include "RuneSelectionUI.h"
+#include "SummaryScreen.h"
 #include <iostream>
 #include <cmath>
 #include <algorithm>
@@ -342,6 +343,7 @@ void GameManager::StartStage(int stageId, GameMode mode) {
     currentWave = 1;
     currentBatch = 1;
     currentGameMode = mode;
+    isTestMode = false;
     
     if (currentStage != 7) {
         WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
@@ -427,6 +429,7 @@ void GameManager::Init(int width, int height, const char* title) {
     mainMenuUI = new MenuManager(screenWidth, screenHeight);
     shopUI = new ShopUI(screenWidth, screenHeight);
     runeUI = new RuneSelectionUI(screenWidth, screenHeight);
+    summaryScreen = new SummaryScreen(screenWidth, screenHeight);
     
     // Khởi tạo FontManager và tải fonts
     FontManager::GetInstance()->LoadFonts();
@@ -570,6 +573,18 @@ bool GameManager::DrawButton(Rectangle bounds, const char* text) {
     return clicked;
 }
 
+void GameManager::EnterSummary(SummaryResult result) {
+    int totalW = WaveManager::GetInstance()->GetTotalWaves();
+    bool isWin = (result == SummaryResult::WIN);
+    CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, isWin);
+    CoinManager::GetInstance()->CommitSessionCoins();
+    summaryScreen->Show(result, score,
+        CoinManager::GetInstance()->GetSessionCoins(),
+        CoinManager::GetInstance()->GetStageBonusCoins(),
+        CoinManager::GetInstance()->GetTotalCoins());
+    ChangeState(GameState::SUMMARY);
+}
+
 void GameManager::Update(float deltaTime) {
     if (pendingEggSkinLoad) {
         std::string eggPath = ShopManager::GetInstance()->GetSelectedEggTexturePath();
@@ -579,6 +594,18 @@ void GameManager::Update(float deltaTime) {
     }
 
     // UpdateMusicStream(bgMusic);
+
+    // Dynamic background in menus
+    if (currentState != GameState::TEST_GAMEPLAY &&
+        currentState != GameState::TEST_ENEMY &&
+        currentState != GameState::TEST_SPACESHIP &&
+        currentState != GameState::WAVE_INTRO &&
+        currentState != GameState::STAT_SELECTION &&
+        currentState != GameState::ARGUMENT_SELECTION) {
+        
+        bgY += 30.0f * deltaTime;
+        if (bgY >= 2.0f * screenHeight) bgY -= 2.0f * screenHeight;
+    }
 
     // Handle State Transitions and specific state logic
     switch (currentState) {
@@ -810,6 +837,7 @@ void GameManager::Update(float deltaTime) {
                                         if (!enemy->IsActive()) {
                                             WaveManager::GetInstance()->AddKill();
                                             AddScore(enemy->GetPointValue());
+                                            player->GainExp(enemy->GetPointValue() * 0.5f);
                                             int coin = CoinManager::GetInstance()->GetKillCoin(enemy.get());
                                             Notify(EventType::ENEMY_DIED, std::to_string(coin));
                                             if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
@@ -924,16 +952,22 @@ void GameManager::Update(float deltaTime) {
                                 if (currentWave < WaveManager::GetInstance()->GetTotalWaves()) {
                                     EnterStatSelection(currentWave + 1);
                                 } else {
-                                    // Chơi xong stage, quay về menu chọn màn
-                                    int totalW = WaveManager::GetInstance()->GetTotalWaves();
-                                    CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, true);
-                                    CoinManager::GetInstance()->CommitSessionCoins();
                                     ProgressManager::GetInstance()->UnlockStage(currentStage + 1);
                                     if (mainMenuUI) mainMenuUI->UpdateStageStatus();
-                                    if (player) player->ResetToBaseStats();
-                                    if (player2) player2->ResetToBaseStats();
-                                    RuneManager::GetInstance()->ResetForNewStage();
-                                    ChangeState(GameState::MAIN_MENU);
+                                    
+                                    if (isTestMode) {
+                                        if (player) {
+                                            player->Heal(player->GetMaxHp());
+                                            player->ClearAllBuffs();
+                                        }
+                                        if (player2) {
+                                            player2->Heal(player2->GetMaxHp());
+                                            player2->ClearAllBuffs();
+                                        }
+                                        ChangeState(GameState::MAIN_MENU);
+                                    } else {
+                                        EnterSummary(SummaryResult::WIN);
+                                    }
                                 }
                             }
                         }
@@ -1023,6 +1057,7 @@ void GameManager::Update(float deltaTime) {
                                 if (!enemy->IsActive()) {
                                     WaveManager::GetInstance()->AddKill();
                                     AddScore(enemy->GetPointValue());
+                                    shooter->GainExp(enemy->GetPointValue() * 0.5f);
                                     int coin = CoinManager::GetInstance()->GetKillCoin(enemy.get());
                                     Notify(EventType::ENEMY_DIED, std::to_string(coin));
                                     // Blood Fury (Arg 5)
@@ -1112,12 +1147,14 @@ void GameManager::Update(float deltaTime) {
                 bool p2Dead = (currentGameMode != GameMode::SINGLE_PLAYER) ? (!player2 || player2->GetHp() <= 0) : true;
                 
                 if (p1Dead && p2Dead) {
-                    int totalW = WaveManager::GetInstance()->GetTotalWaves();
-                    CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, false);
-                    CoinManager::GetInstance()->CommitSessionCoins();
                     if (player) player->ClearAllBuffs();
                     if (player2) player2->ClearAllBuffs();
-                    currentState = GameState::GAME_OVER;
+                    
+                    if (isTestMode) {
+                        currentState = GameState::GAME_OVER;
+                    } else {
+                        EnterSummary(SummaryResult::LOSE);
+                    }
                 }
             }
 
@@ -1130,7 +1167,26 @@ void GameManager::Update(float deltaTime) {
                 [](const std::shared_ptr<Item>& i) { return !i->IsActive(); }), activeItems.end());
             break;
         }
-
+        
+        case GameState::SUMMARY:
+        {
+            if (summaryScreen) {
+                summaryScreen->Update();
+                if (summaryScreen->IsBackRequested()) {
+                    if (player) {
+                        player->ResetToBaseStats();
+                        player->ClearAllBuffs();
+                    }
+                    if (player2) {
+                        player2->ResetToBaseStats();
+                        player2->ClearAllBuffs();
+                    }
+                    RuneManager::GetInstance()->ResetForNewStage();
+                    ChangeState(GameState::MAIN_MENU);
+                }
+            }
+            break;
+        }
 
         // --- Xử lý màn hình chọn Chỉ Số ---
         case GameState::STAT_SELECTION:
@@ -1469,7 +1525,15 @@ void GameManager::Draw() {
                 if (testConfig.wave < currentMaxWave) { testConfig.wave++; testConfig.batch = 1; }
             }
 
-            // Buttons to select Batch
+            if (DrawButton({ (float)screenWidth/2 - 100, 520, 200, 50 }, "FIGHT BOSS")) {
+                testConfig.stage = 7;
+                testConfig.wave = 1;
+                testConfig.batch = 1;
+                isTestMode = true;
+                ChangeState(GameState::TEST_GAMEPLAY);
+            }
+            
+            // Select Batch
             FontManager::GetInstance()->DrawGameText(TextFormat("BATCH: %d", testConfig.batch), screenWidth/2 - 70, 420, 30, WHITE, "Modern");
             if (DrawButton({ (float)screenWidth/2 - 150, 410, 50, 50 }, "<")) {
                 if (testConfig.batch > 1) testConfig.batch--;
@@ -1536,6 +1600,7 @@ void GameManager::Draw() {
                 if (currentStage == 6 && currentWave == 1) {
                     EnterStatSelection(1);
                 } else {
+                    isTestMode = true;
                     ChangeState(GameState::TEST_GAMEPLAY);
                 }
             }
@@ -1766,14 +1831,18 @@ void GameManager::Draw() {
                 FontManager::GetInstance()->DrawGameText(TextFormat("Vu khi hien tai: [ %s ] - Level: [ %d / 11 ]", wName, wLv), 160, 42, 16, GREEN, "Modern");
             }
             
-            // Nút BACK
-            if (DrawButton({20, 20, 100, 40}, "BACK")) {
-                currentState = GameState::TEST_MENU;
-                activeEnemies.clear();
-                activeBullets.clear();
-                activeItems.clear();
-                if (player) {
-                    player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
+            // Draw BACK button in playing state
+            if (DrawButton({ 20, 20, 100, 40 }, "BACK")) {
+                if (isTestMode) {
+                    currentState = GameState::TEST_MENU;
+                    activeEnemies.clear();
+                    activeBullets.clear();
+                    activeItems.clear();
+                    if (player) {
+                        player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
+                    }
+                } else {
+                    EnterSummary(SummaryResult::QUIT);
                 }
             }
             
@@ -2029,6 +2098,14 @@ void GameManager::Draw() {
             break;
         }
 
+        case GameState::SUMMARY:
+        {
+            if (summaryScreen) {
+                summaryScreen->Draw();
+            }
+            break;
+        }
+
         default:
             break;
     }
@@ -2055,6 +2132,10 @@ void GameManager::CleanUp() {
     if (runeUI) {
         delete runeUI;
         runeUI = nullptr;
+    }
+    if (summaryScreen) {
+        delete summaryScreen;
+        summaryScreen = nullptr;
     }
 
     RuneManager::DestroyInstance();

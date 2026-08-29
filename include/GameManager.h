@@ -12,6 +12,7 @@
 
 class ShopUI;
 class RuneSelectionUI;
+#include "SummaryScreen.h"
 
 // (struct MeatItem đã được chuyển thành class Meat trong Item.h)
 
@@ -24,6 +25,7 @@ private:
     MenuManager* mainMenuUI = nullptr;
     ShopUI* shopUI = nullptr;
     RuneSelectionUI* runeUI = nullptr;
+    SummaryScreen* summaryScreen = nullptr;
 
     // Các biến trạng thái của trò chơi
     GameState currentState;
@@ -142,6 +144,7 @@ private:
         int maxWave = 10;
         int maxBatch = 5;
     } testConfig;
+    bool isTestMode = false;
 
 struct DamageText {
     Vector2 position;
@@ -182,6 +185,9 @@ public:
     bool SpawnWaveBatch(int wave, int batch);
     void EnterStatSelection(int nextWave); // Chuyển vào màn hình chọn chỉ số
     void StartStage(int stageId, GameMode mode);
+    void EnterSummary(SummaryResult result);
+
+    Texture2D GetTexCoin() const { return texCoin; }
 
     // Các hàm cho vòng lặp
     void Update(float deltaTime);
