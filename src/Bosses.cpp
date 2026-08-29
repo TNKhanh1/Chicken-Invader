@@ -236,7 +236,7 @@ void MilitaryChickenBoss::Update(float deltaTime) {
     auto gm = GameManager::GetInstance();
     if (gm->IsBossCutscene()) return; // Không tấn công trong Cutscene
     
-    auto player = gm->GetPlayer();
+    auto player = gm->GetNearestPlayer(position);
     
     // Cứ 2 phút (120s), giảm cooldown xuống 80%
     float cooldownMult = std::max(0.2f, (float)pow(0.8, floor(battleTime / 120.0f)));
@@ -251,7 +251,7 @@ void MilitaryChickenBoss::Update(float deltaTime) {
     if (knifeTimer >= (GetRandomValue(400, 500) / 100.0f) * cooldownMult) {
         knifeTimer = 0.0f;
         if (player && player->IsActive()) {
-            ThrowKnives(player.get());
+            ThrowKnives(player);
         }
     }
 }
@@ -471,7 +471,7 @@ void FirePhoenixBoss::FireNormalAttack() {
     int numBullets = (currentPhase == Phase::PHASE_2) ? 9 : 5;
     float spreadAngle = (currentPhase == Phase::PHASE_2) ? 30.0f : 15.0f;
 
-    auto player = gm->GetPlayer();
+    auto player = gm->GetNearestPlayer(position);
     float baseAngle = 90.0f * (PI / 180.0f);
     if (player && player->IsActive()) {
         Vector2 target = player->GetPosition();
@@ -497,7 +497,7 @@ void FirePhoenixBoss::FireLargeFireball() {
     float bulletSpeed = 200.0f;
     float bulletDmg = 80.0f;
 
-    auto player = gm->GetPlayer();
+    auto player = gm->GetNearestPlayer(position);
     Vector2 vel = { 0.0f, bulletSpeed };
     if (player && player->IsActive()) {
         Vector2 target = player->GetHitbox().y < position.y ? Vector2{player->GetHitbox().x, position.y + 500.0f} : Vector2{player->GetHitbox().x, player->GetHitbox().y};
@@ -855,7 +855,7 @@ void EggsecutionerBoss::FireRedDarts() {
     auto gm = GameManager::GetInstance();
     float bulletSpeed = 450.0f;
 
-    auto player = gm->GetPlayer();
+    auto player = gm->GetNearestPlayer(position);
     float baseAngle = 90.0f * (PI / 180.0f);
     if (player && player->IsActive()) {
         Vector2 target = player->GetPosition();
@@ -910,7 +910,7 @@ void EggsecutionerBoss::Update(float deltaTime) {
     if (moveTimer > 5.0f) {
         moveTimer = 0.0f;
         auto gm = GameManager::GetInstance();
-        auto player = gm->GetPlayer();
+        auto player = gm->GetNearestPlayer(position);
         
         bool iAmTargetingPlayer = false;
         
@@ -1473,8 +1473,8 @@ void VoidChickenBoss::FireNormalAttack() {
 void VoidChickenBoss::FireLaserSkill() {
     auto gm = GameManager::GetInstance();
     float angleDeg = 180.0f;  
-    if (gm->GetPlayer()) {
-        Vector2 pp = gm->GetPlayer()->GetPosition();
+    if (gm->GetNearestPlayer(position)) {
+        Vector2 pp = gm->GetNearestPlayer(position)->GetPosition();
         float dx = pp.x - position.x;
         float dy = pp.y - position.y;
         angleDeg = std::atan2(dy, dx) * (180.0f / PI) + 90.0f;

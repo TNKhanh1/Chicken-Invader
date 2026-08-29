@@ -97,3 +97,9 @@ bool CoinManager::SpendCoins(int amount) {
     Save();
     return true;
 }
+
+void CoinManager::AddCoins(int amount) {
+    if (amount <= 0) return;
+    totalCoins += amount;
+    Save();
+}

@@ -111,6 +111,8 @@ public:
     virtual void SetWeapon(const std::string& weaponName);
     virtual std::string GetWeapon() const { return currentWeapon; }
     virtual void ReloadStatsFromCSV();
+    virtual void ResetToBaseStats();
+
 
     virtual void SetTextureOverride(Texture2D tex) { customTexture = tex; hasCustomTexture = true; }
 

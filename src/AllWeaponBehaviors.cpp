@@ -33,6 +33,7 @@ void NeutronGunBehavior::Shoot(Spaceship* ship) {
         auto bullet = std::make_shared<Bullet>(spawnPos, dmg, speed, true, bulletType, radius);
         // Áp dụng SpreadTrajectory để từng viên đạn tung ra theo góc độ hình quạt uy lực
         bullet->SetTrajectory(std::make_shared<SpreadTrajectory>(angle));
+        bullet->SetShooter(ship);
         gm->AddBullet(bullet);
     }
     gm->PlayShootSound();
@@ -54,6 +55,7 @@ void RiddlerBehavior::Shoot(Spaceship* ship) {
         float angle = startAngle + i * step;
         auto bullet = std::make_shared<Bullet>(pos, dmg, 650.0f, true, 6, 12.0f); // Type 6: Riddler
         bullet->SetTrajectory(std::make_shared<SpreadTrajectory>(angle));
+        bullet->SetShooter(ship);
         gm->AddBullet(bullet);
     }
     gm->PlayShootSound();
@@ -76,6 +78,7 @@ void IonBlasterBehavior::Shoot(Spaceship* ship) {
     for (float ang : angles) {
         auto bullet = std::make_shared<Bullet>(pos, dmg, 550.0f, true, bulletType, 16.0f);
         bullet->SetTrajectory(std::make_shared<SpreadTrajectory>(ang));
+        bullet->SetShooter(ship);
         gm->AddBullet(bullet);
     }
     gm->PlayShootSound();
@@ -98,6 +101,7 @@ void UtensilPokerBehavior::Shoot(Spaceship* ship) {
         auto bullet = std::make_shared<Bullet>(spawnPos, dmg, 480.0f, true, bulletType, 15.0f);
         // Giảm tốc độ lắc lượn của dĩa (từ 3.0f xuống 2.5f)
         bullet->SetTrajectory(std::make_shared<OscillatingTrajectory>((i % 2 == 0 ? 0.0f : 5.0f), 2.5f, 14.0f));
+        bullet->SetShooter(ship);
         gm->AddBullet(bullet);
     }
     gm->PlayShootSound();

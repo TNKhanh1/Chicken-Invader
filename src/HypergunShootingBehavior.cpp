@@ -70,6 +70,7 @@ void HypergunShootingBehavior::Shoot(Spaceship* ship) {
         float finalDmg = type == 1 ? dmg * 1.5f : dmg * 0.5f; // Strong = 1.5x, Weak = 0.5x
         auto bullet = std::make_shared<Bullet>(startPos, finalDmg, speed, true, type);
         bullet->SetVelocity(velocity);
+        bullet->SetShooter(ship);
         GameManager::GetInstance()->AddBullet(bullet);
     };
 

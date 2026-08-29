@@ -52,6 +52,9 @@ public:
 
     // Tiêu thụ coin (cho cửa hàng/runes sau này)
     bool SpendCoins(int amount);
+
+    // Dùng khi hoàn tiền nút RESET trên rune screen
+    void AddCoins(int amount);
 };
 
 #endif // COINMANAGER_H

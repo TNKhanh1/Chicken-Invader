@@ -21,7 +21,8 @@ enum class GameState {
     STAT_SELECTION,       // Màn hình chọn chỉ số - hiện trước mỗi wave
     ARGUMENT_SELECTION,   // Màn hình chọn argument (lõi) - hiện trước wave 5/10/15
     WAVE_INTRO,           // Hiệu ứng chuyển wave: warp speed background + chữ WAVE X
-    PLAYER_SELECT         // Màn hình chọn chế độ 1P/2P/AI
+    PLAYER_SELECT,        // Màn hình chọn chế độ 1P/2P/AI
+    RUNE_SELECTION        // Màn hình chọn Runes đầu game
 };
 
 #endif // GAME_STATE_H

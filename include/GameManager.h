@@ -11,6 +11,7 @@
 #include <memory>
 
 class ShopUI;
+class RuneSelectionUI;
 
 // (struct MeatItem đã được chuyển thành class Meat trong Item.h)
 
@@ -22,6 +23,7 @@ private:
     StatsPanel statsPanel;
     MenuManager* mainMenuUI = nullptr;
     ShopUI* shopUI = nullptr;
+    RuneSelectionUI* runeUI = nullptr;
 
     // Các biến trạng thái của trò chơi
     GameState currentState;
@@ -251,6 +253,7 @@ public:
     // Entity management
     void AddBullet(std::shared_ptr<class Bullet> bullet) { pendingBullets.push_back(bullet); }
     void AddEnemy(std::shared_ptr<class Enemy> enemy) { pendingEnemies.push_back(enemy); }
+    Spaceship* GetNearestPlayer(Vector2 from) const;
     std::vector<std::shared_ptr<class Enemy>>& GetActiveEnemies() { return activeEnemies; }
     void AddItem(std::shared_ptr<class Item> item) { pendingItems.push_back(item); }
     std::shared_ptr<class Spaceship> GetPlayer() const { return player; }

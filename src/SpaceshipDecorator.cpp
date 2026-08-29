@@ -31,6 +31,7 @@ void SpaceshipDecorator::SetShootingBehavior(std::unique_ptr<IShootingBehavior> 
 void SpaceshipDecorator::SetWeapon(const std::string& weaponName) { coreShip->SetWeapon(weaponName); }
 std::string SpaceshipDecorator::GetWeapon() const { return coreShip->GetWeapon(); }
 void SpaceshipDecorator::ReloadStatsFromCSV() { coreShip->ReloadStatsFromCSV(); }
+void SpaceshipDecorator::ResetToBaseStats() { coreShip->ResetToBaseStats(); }
 void SpaceshipDecorator::TriggerRecoil() { coreShip->TriggerRecoil(); }
 float SpaceshipDecorator::GetRecoilOffset() const { return coreShip->GetRecoilOffset(); }
 float SpaceshipDecorator::GetThrusterIntensity() const { return coreShip->GetThrusterIntensity(); }

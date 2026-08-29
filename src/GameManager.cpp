@@ -27,6 +27,8 @@
 #include "FontManager.h"
 #include "ShopManager.h"
 #include "ShopUI.h"
+#include "RuneManager.h"
+#include "RuneSelectionUI.h"
 #include <iostream>
 #include <cmath>
 #include <algorithm>
@@ -261,6 +263,28 @@ GameManager* GameManager::GetInstance() {
     return instance;
 }
 
+Spaceship* GameManager::GetNearestPlayer(Vector2 from) const {
+    Spaceship* p1 = player.get();
+    Spaceship* p2 = player2.get();
+    
+    if (!p1 && !p2) return nullptr;
+    if (p1 && !p1->IsActive()) p1 = nullptr;
+    if (p2 && !p2->IsActive()) p2 = nullptr;
+    
+    if (p1 && p2) {
+        Vector2 pos1 = p1->GetPosition();
+        Vector2 pos2 = p2->GetPosition();
+        float d1 = (pos1.x - from.x) * (pos1.x - from.x) + (pos1.y - from.y) * (pos1.y - from.y);
+        float d2 = (pos2.x - from.x) * (pos2.x - from.x) + (pos2.y - from.y) * (pos2.y - from.y);
+        return (d1 < d2) ? p1 : p2;
+    } else if (p1) {
+        return p1;
+    } else if (p2) {
+        return p2;
+    }
+    return nullptr;
+}
+
 void GameManager::DestroyInstance() {
     if (instance != nullptr) {
         delete instance;
@@ -335,8 +359,8 @@ void GameManager::StartStage(int stageId, GameMode mode) {
         player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
         player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
     } else {
+        player->ResetToBaseStats();
         player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
-        player->Heal(player->GetMaxHp());
     }
     
     std::string savedWeapon = ShopManager::GetInstance()->GetSelectedWeapon();
@@ -351,8 +375,8 @@ void GameManager::StartStage(int stageId, GameMode mode) {
             player2->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
             player2->SetTextureOverride(texSpaceship2);
         } else {
+            player2->ResetToBaseStats();
             player2->SetPosition({(float)screenWidth/2 + 80, (float)screenHeight - 100});
-            player2->Heal(player2->GetMaxHp());
         }
         
         if (!savedWeapon.empty()) {
@@ -361,6 +385,8 @@ void GameManager::StartStage(int stageId, GameMode mode) {
     } else {
         if (player2) player2.reset();
     }
+    
+    RuneManager::GetInstance()->ApplyAll(player.get(), player2 ? player2.get() : nullptr);
     
     pendingEggSkinLoad = true;
     
@@ -399,9 +425,14 @@ void GameManager::Init(int width, int height, const char* title) {
 
     // Khởi tạo giao diện UI
     mainMenuUI = new MenuManager(screenWidth, screenHeight);
+    shopUI = new ShopUI(screenWidth, screenHeight);
+    runeUI = new RuneSelectionUI(screenWidth, screenHeight);
     
     // Khởi tạo FontManager và tải fonts
     FontManager::GetInstance()->LoadFonts();
+
+    // Tải thông tin shop (đã unlock skin)
+    ShopManager::GetInstance()->Load();
 
     // Khởi tạo các textures
     // InitAudioDevice();
@@ -493,7 +524,6 @@ void GameManager::Init(int width, int height, const char* title) {
         player->SetWeapon(savedWeapon);
     }
     
-    shopUI = new ShopUI(screenWidth, screenHeight);
     shopUI->Init();
 
     printf("GameManager::Init finished.\n"); fflush(stdout);
@@ -562,6 +592,18 @@ void GameManager::Update(float deltaTime) {
         case GameState::SHOP:
             if (shopUI) shopUI->Update();
             break;
+
+        case GameState::RUNE_SELECTION:
+        {
+            if (runeUI) {
+                runeUI->Update(deltaTime);
+                if (runeUI->IsStartRequested() || IsKeyPressed(KEY_SPACE)) {
+                    runeUI->ResetStartFlag();
+                    StartStage(pendingStageFromMenu, currentGameMode);
+                }
+            }
+            break;
+        }
 
         case GameState::WAVE_INTRO:
         {
@@ -632,6 +674,7 @@ void GameManager::Update(float deltaTime) {
         case GameState::TEST_SPACESHIP:
         {
             WaveManager::GetInstance()->Update(deltaTime);
+            RuneManager::GetInstance()->UpdateAll(player.get(), player2.get(), deltaTime);
             
             // --- Background Scrolling ---
             bgY += bgScrollSpeed * deltaTime; // Tốc độ cuộn background động
@@ -887,11 +930,10 @@ void GameManager::Update(float deltaTime) {
                                     CoinManager::GetInstance()->CommitSessionCoins();
                                     ProgressManager::GetInstance()->UnlockStage(currentStage + 1);
                                     if (mainMenuUI) mainMenuUI->UpdateStageStatus();
+                                    if (player) player->ResetToBaseStats();
+                                    if (player2) player2->ResetToBaseStats();
+                                    RuneManager::GetInstance()->ResetForNewStage();
                                     ChangeState(GameState::MAIN_MENU);
-                                    if (player) {
-                                        player->Heal(player->GetMaxHp());
-                                        player->ClearAllBuffs();
-                                    }
                                 }
                             }
                         }
@@ -959,15 +1001,16 @@ void GameManager::Update(float deltaTime) {
                             }
                             
                             if (hit) {
-                                bool isCrit = (GetRandomValue(0, 100) < player->GetCritChance());
-                                float finalDamage = bullet->GetDamage() + player->GetPermanentDamageBonus();
+                                Spaceship* shooter = bullet->GetShooter() ? bullet->GetShooter() : player.get();
+                                bool isCrit = (GetRandomValue(0, 100) < shooter->GetCritChance());
+                                float finalDamage = bullet->GetDamage() + shooter->GetPermanentDamageBonus();
                                 if (isCrit) {
-                                    finalDamage *= (player->GetCritDamage() / 100.0f);
+                                    finalDamage *= (shooter->GetCritDamage() / 100.0f);
                                 }
-                                if (player->HasArgument(3) && enemy->role == EnemyRole::BOSS) { // 3: Boss Hunter
+                                if (shooter->HasArgument(3) && enemy->role == EnemyRole::BOSS) { // 3: Boss Hunter
                                     finalDamage *= 1.8f;
                                 }
-                                if (player->HasArgument(4)) { // 4: Armor Crusher
+                                if (shooter->HasArgument(4)) { // 4: Armor Crusher
                                     finalDamage += enemy->GetHp() * 0.03f;
                                 }
                                 bullet->SetActive(false);
@@ -983,9 +1026,9 @@ void GameManager::Update(float deltaTime) {
                                     int coin = CoinManager::GetInstance()->GetKillCoin(enemy.get());
                                     Notify(EventType::ENEMY_DIED, std::to_string(coin));
                                     // Blood Fury (Arg 5)
-                                    if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
+                                    if (shooter->HasArgument(5)) shooter->AddPermanentDamage(2.0f);
                                     // Bloodthirst (Arg 6)
-                                    if (player->HasArgument(6)) player->Heal(player->GetMaxHp() * 0.05f);
+                                    if (shooter->HasArgument(6)) shooter->Heal(shooter->GetMaxHp() * 0.05f);
                                     
                                     PlayExplosionSound();
                                     auto meat = std::make_shared<Meat>(enemy->GetPosition(),
@@ -994,7 +1037,7 @@ void GameManager::Update(float deltaTime) {
 
                                     if (enemy->role != EnemyRole::BOSS) {
                                         auto drop = ItemDropManager::GetInstance()->TryDrop(
-                                            enemy.get(), player.get(), currentStage);
+                                            enemy.get(), shooter, currentStage);
                                         if (drop) activeItems.push_back(drop);
                                     }
                                 }
@@ -1057,7 +1100,14 @@ void GameManager::Update(float deltaTime) {
                     }
                 }
 
-                // Game Over Check
+                // Game Over Check & Revive
+                if (player && player->GetHp() <= 0) {
+                    RuneManager::GetInstance()->TryRevive(player.get(), false);
+                }
+                if (player2 && player2->GetHp() <= 0) {
+                    RuneManager::GetInstance()->TryRevive(player2.get(), true);
+                }
+
                 bool p1Dead = !player || player->GetHp() <= 0;
                 bool p2Dead = (currentGameMode != GameMode::SINGLE_PLAYER) ? (!player2 || player2->GetHp() <= 0) : true;
                 
@@ -1067,8 +1117,6 @@ void GameManager::Update(float deltaTime) {
                     CoinManager::GetInstance()->CommitSessionCoins();
                     if (player) player->ClearAllBuffs();
                     if (player2) player2->ClearAllBuffs();
-                    ProgressManager::GetInstance()->UnlockStage(currentStage + 1);
-                    if (mainMenuUI) mainMenuUI->UpdateStageStatus();
                     currentState = GameState::GAME_OVER;
                 }
             }
@@ -1109,12 +1157,12 @@ void GameManager::Update(float deltaTime) {
                         int statIdx = shownCardIndices[i];
                         if (player) {
                             switch (statIdx) {
-                                case 0: player->AddPermanentMaxHp(30.0f); break;       // Max HP +30
-                                case 1: player->AddPermanentDamage(5.0f); break;       // Damage +5
-                                case 2: player->AddPermanentArmor(3.0f); break;        // Armor +3
-                                case 3: player->AddPermanentFireRate(0.10f); break;    // Fire Rate +10%
-                                case 4: player->AddPermanentCritChance(0.10f); break;  // Crit Chance +10%
-                                case 5: player->AddPermanentCritDamage(0.30f); break;  // Crit Damage +30%
+                                case 0: player->AddPermanentMaxHp(30.0f); if (player2) player2->AddPermanentMaxHp(30.0f); break;
+                                case 1: player->AddPermanentDamage(5.0f); if (player2) player2->AddPermanentDamage(5.0f); break;
+                                case 2: player->AddPermanentArmor(3.0f); if (player2) player2->AddPermanentArmor(3.0f); break;
+                                case 3: player->AddPermanentFireRate(0.10f); if (player2) player2->AddPermanentFireRate(0.10f); break;
+                                case 4: player->AddPermanentCritChance(0.10f); if (player2) player2->AddPermanentCritChance(0.10f); break;
+                                case 5: player->AddPermanentCritDamage(0.30f); if (player2) player2->AddPermanentCritDamage(0.30f); break;
                             }
                         }
                         if (extraStatSelectionsPending > 0) {
@@ -1162,10 +1210,16 @@ void GameManager::Update(float deltaTime) {
                         int argId = shownCardIndices[i];
                         if (player) {
                             player->AddArgument(argId);
+                            if (player2) player2->AddArgument(argId);
                             if (argId == 9) { // Fast Track
                                 player->LevelUp();
                                 player->LevelUp();
                                 player->LevelUp();
+                                if (player2) {
+                                    player2->LevelUp();
+                                    player2->LevelUp();
+                                    player2->LevelUp();
+                                }
                             } else if (argId == 1) { // Stat Windfall
                                 extraStatSelectionsPending += 3;
                             }
@@ -1233,6 +1287,12 @@ void GameManager::Draw() {
             if (shopUI) shopUI->Draw();
             break;
             
+        case GameState::RUNE_SELECTION:
+        {
+            if (runeUI) runeUI->Draw();
+            break;
+        }
+            
         case GameState::MAIN_MENU:
         {
             if (mainMenuUI) {
@@ -1263,13 +1323,19 @@ void GameManager::Draw() {
             Rectangle backBtn   = { (float)screenWidth/2 - 100, (float)screenHeight - 150, 200, 50 };
 
             if (DrawButton(singleBtn, "1 PLAYER")) {
-                StartStage(pendingStageFromMenu, GameMode::SINGLE_PLAYER);
+                currentGameMode = GameMode::SINGLE_PLAYER;
+                RuneManager::GetInstance()->ResetForNewStage();
+                ChangeState(GameState::RUNE_SELECTION);
             }
             if (DrawButton(doubleBtn, "2 PLAYERS")) {
-                StartStage(pendingStageFromMenu, GameMode::TWO_PLAYERS);
+                currentGameMode = GameMode::TWO_PLAYERS;
+                RuneManager::GetInstance()->ResetForNewStage();
+                ChangeState(GameState::RUNE_SELECTION);
             }
             if (DrawButton(aiBtn, "1P + AI")) {
-                StartStage(pendingStageFromMenu, GameMode::PLAYER_AND_AI);
+                currentGameMode = GameMode::PLAYER_AND_AI;
+                RuneManager::GetInstance()->ResetForNewStage();
+                ChangeState(GameState::RUNE_SELECTION);
             }
             if (DrawButton(backBtn, "BACK")) {
                 ChangeState(GameState::MAIN_MENU);
@@ -1327,14 +1393,15 @@ void GameManager::Draw() {
             DrawTextureEx(texCoin, {(float)screenWidth/2 - 160, 355}, 0.0f, 0.5f, WHITE);
             
             if (DrawButton({(float)screenWidth/2 - 120, 420, 240, 50}, "BACK TO MENU")) {
+                RuneManager::GetInstance()->ResetForNewStage();
                 currentState = GameState::MAIN_MENU;
                 // Reset Game
                 score = 0;
                 activeEnemies.clear();
                 activeBullets.clear();
                 activeItems.clear();
-                player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
-                player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
+                if (player) player->ResetToBaseStats();
+                if (player2) player2->ResetToBaseStats();
             }
             break;
         }
@@ -1633,10 +1700,14 @@ void GameManager::Draw() {
 
         // Vẽ Player TRÊN CÙNG để không bị đạn/tia che khuất
         if (player && player->IsActive()) {
-            player->Draw();
+            if (RuneManager::GetInstance()->GetReviveBlinkAlpha(false) > 0.5f) {
+                player->Draw();
+            }
         }
         if (player2 && player2->IsActive()) {
-            player2->Draw();
+            if (RuneManager::GetInstance()->GetReviveBlinkAlpha(true) > 0.5f) {
+                player2->Draw();
+            }
         }
 
         // --- VẼ FLOATING DAMAGE TEXT ---
@@ -1971,48 +2042,45 @@ void GameManager::CleanUp() {
     }
     if (IsWindowReady()) {
         UnloadTexture(texSettingIcon);
+    }
+    
+    if (mainMenuUI) {
+        delete mainMenuUI;
+        mainMenuUI = nullptr;
+    }
+    if (shopUI) {
+        delete shopUI;
+        shopUI = nullptr;
+    }
+    if (runeUI) {
+        delete runeUI;
+        runeUI = nullptr;
+    }
+
+    RuneManager::DestroyInstance();
+    ShopManager::GetInstance()->Save();
+    ShopManager::DestroyInstance();
+    ItemDropManager::DestroyInstance();
+    CoinManager::DestroyInstance();
+
     UnloadTexture(texSpaceshipHypergun);
     UnloadTexture(texSpaceship2);
     for (int i = 0; i < 20; i++) UnloadTexture(texEnemyAnims[i]);
     UnloadTexture(texAsteroid1);
     UnloadTexture(texAsteroid2);
-        UnloadTexture(texEnemyBullet);
-        UnloadTexture(texMeat);
-        UnloadTexture(texPlasmaRifle);
-        for(int i=0; i<3; i++) UnloadTexture(texNeutronGun[i]);
-        UnloadTexture(texRiddler);
-        UnloadTexture(texLightningFryer);
-        for(int i=0; i<2; i++) { UnloadTexture(texIonBlaster[i]); UnloadTexture(texUtensilPoker[i]); }
-        for(int i=0; i<4; i++) UnloadTexture(texLaserCannon[i]);
-        UnloadTexture(texGrenade);
-        UnloadTexture(texKnife);
-        UnloadTexture(texLoi);
-        UnloadTexture(texChiSo);
-        
-        // UnloadSound(sfxShoot);
-        // UnloadSound(sfxExplosion);
-        // UnloadSound(sfxPickup);
-        // UnloadMusicStream(bgMusic);
-        // CloseAudioDevice();
-    }
+    for(int i=0; i<3; i++) UnloadTexture(texNeutronGun[i]);
+    UnloadTexture(texRiddler);
+    UnloadTexture(texLightningFryer);
+    for(int i=0; i<2; i++) { UnloadTexture(texIonBlaster[i]); UnloadTexture(texUtensilPoker[i]); }
+    for(int i=0; i<4; i++) UnloadTexture(texLaserCannon[i]);
+    UnloadTexture(texGrenade);
+    UnloadTexture(texKnife);
+    UnloadTexture(texLoi);
+    UnloadTexture(texChiSo);
     
-    if (shopUI) {
-        delete shopUI;
-        shopUI = nullptr;
-    }
-    
-    ShopManager::GetInstance()->Save();
-    ShopManager::DestroyInstance();
-
     if (player2) player2.reset();
 
-    // Unload fonts
     FontManager::GetInstance()->DestroyInstance();
-        
-    if (mainMenuUI) {
-        delete mainMenuUI;
-        mainMenuUI = nullptr;
-    }
         
     if (IsWindowReady()) {
         CloseWindow();

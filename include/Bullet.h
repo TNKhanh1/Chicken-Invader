@@ -5,11 +5,14 @@
 #include "BulletTrajectory.h"
 #include <memory>
 
+class Spaceship; // Forward declaration
+
 class Bullet : public GameObject {
 private:
     float speed;
     float damage;
     bool isPlayerBullet;
+    Spaceship* shooter;
     Vector2 velocity;
     bool hasCustomVelocity;
     Vector2 prevPosition;
@@ -38,6 +41,9 @@ public:
     bool IsPlayerBullet() const;
     int GetBulletType() const { return bulletType; }
     
+    Spaceship* GetShooter() const { return shooter; }
+    void SetShooter(Spaceship* s) { shooter = s; }
+
     // Circle Hitbox & CCD Getters
     float GetRadius() const;
     void SetRadius(float r);

@@ -158,6 +158,14 @@ void Spaceship::ReloadStatsFromCSV() {
               << " | Crit: " << critChance << "%" << std::endl;
 }
 
+void Spaceship::ResetToBaseStats() {
+    level = 1;
+    ReloadStatsFromCSV();
+    permanentDamageBonus = 0.0f;
+    activeArguments.clear();
+    ClearAllBuffs();
+}
+
 void Spaceship::SetWeapon(const std::string& weaponName) {
     name = weaponName;
     currentWeapon = weaponName;

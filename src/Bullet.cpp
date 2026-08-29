@@ -3,7 +3,12 @@
 #include "GameManager.h"
 
 Bullet::Bullet(Vector2 startPos, float dmg, float spd, bool playerBullet, int type, float r) 
-    : GameObject(startPos), speed(spd), damage(dmg), isPlayerBullet(playerBullet), velocity({0, 0}), hasCustomVelocity(false), prevPosition(startPos), bulletType(type), radius(r), angle(0.0f), activeTimer(0.0f), maxLifetime(0.0f), trajectory(nullptr) {}
+    : GameObject(startPos), damage(dmg), speed(spd), isPlayerBullet(playerBullet), 
+      hasCustomVelocity(false), velocity({0.0f, 0.0f}), prevPosition(startPos), 
+      bulletType(type), radius(r), activeTimer(0.0f), maxLifetime(0.0f), shooter(nullptr) {
+    
+    trajectory = nullptr; // Mặc định không có quỹ đạo
+}
 
 void Bullet::SetVelocity(Vector2 vel) {
     velocity = vel;
@@ -20,15 +25,15 @@ void Bullet::Reset(Vector2 startPos, float dmg, float spd, bool playerBullet, in
     damage = dmg;
     speed = spd;
     isPlayerBullet = playerBullet;
+    hasCustomVelocity = false;
+    velocity = {0.0f, 0.0f};
     bulletType = type;
     radius = r;
-    hasCustomVelocity = false;
-    velocity = {0, 0};
-    trajectory = nullptr;
-    angle = 0.0f;
+    isActive = true;
     activeTimer = 0.0f;
     maxLifetime = 0.0f;
-    isActive = true;
+    trajectory = nullptr;
+    shooter = nullptr;
 }
 
 void Bullet::SetMaxLifetime(float time) {
