@@ -89,6 +89,9 @@ static const CardDef ALL_STATS[6] = {
 // Khởi tạo instance của Singleton bằng nullptr
 GameManager* GameManager::instance = nullptr;
 
+static Vector2 autoLockTargetPos2 = {0,0};
+static float beamTextTimer2 = 0.0f;
+static bool isAutoLocked2 = false;
 void GameManager::GenerateSelectionPool(bool forStat) {
     std::vector<int> available;
     int maxIdx = forStat ? 6 : 10;
@@ -195,7 +198,7 @@ void Spaceship::Draw() {
 
     if (tex.id != 0) {
         Rectangle sourceRec = hasCustomTexture ? 
-                              Rectangle{0, 0, (float)tex.width, (float)tex.height} : 
+                              Rectangle{41.0f, 50.0f, 108.0f, 106.0f} : 
                               Rectangle{36.0f, 201.0f, 108.0f, 95.0f};
                               
         DrawTexturePro(
@@ -717,6 +720,90 @@ void GameManager::Update(float deltaTime) {
             }
             if (bgY >= 2.0f * screenHeight) bgY -= 2.0f * screenHeight;
             
+            auto ProcessBeamWeapon = [&](Spaceship* p, bool isFiring, Vector2& lockTargetPos, float& textTimer, bool& isLocked) {
+                if (!p || !p->IsActive() || !isFiring) return;
+                std::string wpn = p->GetWeapon();
+                bool isBeam = (wpn == "Lightning_Fryer" || wpn == "Plasma_Rifle" || wpn == "Laser_Cannon");
+                if (!isBeam) {
+                    if (p->CanFire()) p->Fire();
+                    return;
+                }
+                if (p->CanFire()) p->Fire();
+                Vector2 origin = { p->GetPosition().x, p->GetPosition().y - 20.0f };
+                Vector2 endPos = { origin.x, -100.0f };
+                float beamWidth = 30.0f;
+                float damageRate = (p->GetDamage() + p->GetPermanentDamageBonus() + 40.0f) * 4.0f * 0.85f;
+                
+                isLocked = false;
+                if (wpn == "Lightning_Fryer") {
+                    static LightningFryerBehavior fryerAim;
+                    float aimAngle = 0.0f;
+                    isLocked = fryerAim.FindNearestTarget(origin, activeEnemies, lockTargetPos, aimAngle);
+                    if (isLocked) endPos = lockTargetPos;
+                    beamWidth = 25.0f;
+                } else if (wpn == "Plasma_Rifle") {
+                    beamWidth = 30.0f + p->GetLevel() * 8.0f;
+                } else if (wpn == "Laser_Cannon") {
+                    beamWidth = 20.0f + p->GetLevel() * 4.0f;
+                    damageRate *= 1.2f;
+                }
+                lockTargetPos = endPos;
+
+                if (currentState == GameState::TEST_GAMEPLAY || currentState == GameState::TEST_ENEMY) {
+                    Vector2 v = { endPos.x - origin.x, endPos.y - origin.y };
+                    float vLenSq = v.x * v.x + v.y * v.y;
+                    if (vLenSq > 0.0f) {
+                        bool popBeamText = false;
+                        textTimer += deltaTime;
+                        if (textTimer >= 0.25f) {
+                            popBeamText = true;
+                            textTimer = 0.0f;
+                        }
+                        for (auto& enemy : activeEnemies) {
+                            if (!enemy || !enemy->IsActive()) continue;
+                            Vector2 ePos = enemy->GetPosition();
+                            Vector2 w = { ePos.x - origin.x, ePos.y - origin.y };
+                            float t = std::max(0.0f, std::min(1.0f, (w.x * v.x + w.y * v.y) / vLenSq));
+                            Vector2 closest = { origin.x + t * v.x, origin.y + t * v.y };
+                            float dx = ePos.x - closest.x;
+                            float dy = ePos.y - closest.y;
+                            if ((dx * dx + dy * dy) <= (35.0f + beamWidth / 2.0f) * (35.0f + beamWidth / 2.0f)) {
+                                float finalDmg = damageRate * deltaTime;
+                                bool isCrit = (GetRandomValue(0, 100) < p->GetCritChance());
+                                if (isCrit) finalDmg *= (p->GetCritDamage() / 100.0f);
+                                if (p->HasArgument(3) && enemy->role == EnemyRole::BOSS) finalDmg *= 1.8f;
+                                if (p->HasArgument(4)) finalDmg += enemy->GetHp() * 0.03f * deltaTime;
+                                enemy->TakeDamage(finalDmg);
+                                if (popBeamText) {
+                                    float displayDmg = damageRate * 0.25f;
+                                    if (isCrit) displayDmg *= (p->GetCritDamage() / 100.0f);
+                                    if (p->HasArgument(3) && enemy->role == EnemyRole::BOSS) displayDmg *= 1.8f;
+                                    float offsetX = (float)GetRandomValue(-20, 20) + 20.0f;
+                                    float lifetime = isCrit ? 0.7f : 0.45f;
+                                    activeDamageTexts.push_back({{enemy->GetPosition().x + offsetX, enemy->GetPosition().y}, (int)displayDmg, isCrit, lifetime, lifetime});
+                                }
+                                if (!enemy->IsActive()) {
+                                    WaveManager::GetInstance()->AddKill();
+                                    AddScore(enemy->GetPointValue());
+                                    p->GainExp(enemy->GetPointValue() * 0.5f);
+                                    int coin = CoinManager::GetInstance()->GetKillCoin(enemy.get());
+                                    Notify(EventType::ENEMY_DIED, std::to_string(coin));
+                                    if (p->HasArgument(5)) p->AddPermanentDamage(2.0f);
+                                    if (p->HasArgument(6)) p->Heal(p->GetMaxHp() * 0.05f);
+                                    PlayExplosionSound();
+                                    auto meat = std::make_shared<Meat>(enemy->GetPosition(), Vector2{(float)GetRandomValue(-100, 100), -200.0f});
+                                    activeItems.push_back(meat);
+                                    if (enemy->role != EnemyRole::BOSS) {
+                                        auto drop = ItemDropManager::GetInstance()->TryDrop(enemy.get(), p, currentStage);
+                                        if (drop) activeItems.push_back(drop);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
             // --- Player Logic ---
             // --- WEAPON SANDBOX CONTROLS & PLAYER LOGIC ---
             if (IsKeyPressed(KEY_F1)) debugSandboxMode = !debugSandboxMode; // Bật / tắt sandbox
@@ -763,105 +850,7 @@ void GameManager::Update(float deltaTime) {
 
                 isAutoLocked = false;
                 if (!isBossCutscene) {
-                    if (isBeamWeapon && IsKeyDown(KEY_SPACE)) {
-                        if (player->CanFire()) {
-                            player->Fire(); // Kích hoạt hiệu ứng nảy giật (Recoil) liên hồi khi xả tia laser/beam
-                        }
-                        Vector2 origin = { player->GetPosition().x, player->GetPosition().y - 20.0f };
-                        Vector2 endPos = { origin.x, -100.0f };
-                        float beamWidth = 30.0f;
-                        // Giảm damage rate của tia lade 15% tương ứng với global attack speed nerf
-                        float damageRate = (player->GetDamage() + player->GetPermanentDamageBonus() + 40.0f) * 4.0f * 0.85f;
-
-                        if (weapon == "Lightning_Fryer") {
-                            static LightningFryerBehavior fryerAim;
-                            float aimAngle = 0.0f;
-                            isAutoLocked = fryerAim.FindNearestTarget(origin, activeEnemies, autoLockTargetPos, aimAngle);
-                            if (isAutoLocked) {
-                                endPos = autoLockTargetPos;
-                            }
-                            beamWidth = 25.0f;
-                        } else if (weapon == "Plasma_Rifle") {
-                            beamWidth = 30.0f + player->GetLevel() * 8.0f;
-                        } else if (weapon == "Laser_Cannon") {
-                            beamWidth = 20.0f + player->GetLevel() * 4.0f;
-                            damageRate *= 1.2f;
-                        }
-                        autoLockTargetPos = endPos;
-
-                        // XỬ LÝ VA CHẠM ĐOẠN THẲNG (LINE-SEGMENT COLLISION) CHO TẤT CẢ QUÁI VẬT TRÊN ĐƯỜNG TIA
-                        if (currentState == GameState::TEST_GAMEPLAY || currentState == GameState::TEST_ENEMY) {
-                            Vector2 v = { endPos.x - origin.x, endPos.y - origin.y };
-                            float vLenSq = v.x * v.x + v.y * v.y;
-                            if (vLenSq > 0.0f) {
-                                bool popBeamText = false;
-                                beamTextTimer += deltaTime;
-                                if (beamTextTimer >= 0.25f) {
-                                    popBeamText = true;
-                                    beamTextTimer = 0.0f;
-                                }
-
-                                for (auto& enemy : activeEnemies) {
-                                    if (!enemy || !enemy->IsActive()) continue;
-                                    Vector2 ePos = enemy->GetPosition();
-                                    Vector2 w = { ePos.x - origin.x, ePos.y - origin.y };
-                                    float t = (w.x * v.x + w.y * v.y) / vLenSq;
-                                    t = std::max(0.0f, std::min(1.0f, t));
-                                    Vector2 closest = { origin.x + t * v.x, origin.y + t * v.y };
-                                    float dx = ePos.x - closest.x;
-                                    float dy = ePos.y - closest.y;
-                                    float distSq = dx * dx + dy * dy;
-                                    
-                                    float threshold = 35.0f + (beamWidth / 2.0f);
-                                    if (distSq <= threshold * threshold) {
-                                        float finalDmg = damageRate * deltaTime;
-                                        bool isCrit = (GetRandomValue(0, 100) < player->GetCritChance());
-                                        if (isCrit) finalDmg *= (player->GetCritDamage() / 100.0f);
-
-                                        if (player->HasArgument(3) && enemy->role == EnemyRole::BOSS) finalDmg *= 1.8f;
-                                        if (player->HasArgument(4)) finalDmg += enemy->GetHp() * 0.03f * deltaTime;
-
-                                        enemy->TakeDamage(finalDmg);
-
-                                        if (popBeamText) {
-                                            float displayDmg = damageRate * 0.25f; // Sát thương tích lũy
-                                            if (isCrit) displayDmg *= (player->GetCritDamage() / 100.0f);
-                                            if (player->HasArgument(3) && enemy->role == EnemyRole::BOSS) displayDmg *= 1.8f;
-                                            
-                                            float offsetX = (float)GetRandomValue(-20, 20) + 20.0f;
-                                            float lifetime = isCrit ? 0.7f : 0.45f;
-                                            activeDamageTexts.push_back({{enemy->GetPosition().x + offsetX, enemy->GetPosition().y}, 
-                                                                        (int)displayDmg, isCrit, lifetime, lifetime});
-                                        }
-
-                                        if (!enemy->IsActive()) {
-                                            WaveManager::GetInstance()->AddKill();
-                                            AddScore(enemy->GetPointValue());
-                                            player->GainExp(enemy->GetPointValue() * 0.5f);
-                                            int coin = CoinManager::GetInstance()->GetKillCoin(enemy.get());
-                                            Notify(EventType::ENEMY_DIED, std::to_string(coin));
-                                            if (player->HasArgument(5)) player->AddPermanentDamage(2.0f);
-                                            if (player->HasArgument(6)) player->Heal(player->GetMaxHp() * 0.05f);
-                                            PlayExplosionSound();
-                                            auto meat = std::make_shared<Meat>(enemy->GetPosition(),
-                                                Vector2{(float)GetRandomValue(-100, 100), -200.0f});
-                                            activeItems.push_back(meat);
-
-                                            if (enemy->role != EnemyRole::BOSS) {
-                                                auto drop = ItemDropManager::GetInstance()->TryDrop(
-                                                    enemy.get(), player.get(), currentStage);
-                                                if (drop) activeItems.push_back(drop);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else if (!isBeamWeapon && IsKeyDown(KEY_SPACE)) {
-                        if (player->CanFire()) {
-                            player->Fire();
-                        }
-                    }
+                    ProcessBeamWeapon(player.get(), IsKeyDown(KEY_SPACE), autoLockTargetPos, beamTextTimer, isAutoLocked);
                 }
             }
 
@@ -869,11 +858,10 @@ void GameManager::Update(float deltaTime) {
                 Vector2 mousePos = GetMousePosition();
                 player2->SetPosition(mousePos);
                 
-                if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                    if (player2->CanFire()) {
-                        player2->Fire();
-                    }
+                if (!isBossCutscene) {
+                    ProcessBeamWeapon(player2.get(), IsMouseButtonDown(MOUSE_LEFT_BUTTON), autoLockTargetPos2, beamTextTimer2, isAutoLocked2);
                 }
+                
                 if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
                     player2->ActivateMana();
                 }
@@ -1628,6 +1616,9 @@ void GameManager::Draw() {
             if (player && player->IsActive()) {
                 player->Draw();
             }
+            if (player2 && player2->IsActive()) {
+                player2->Draw();
+            }
 
             if (waveTextAlpha > 1.0f) {
                 unsigned char wAlpha = (unsigned char)waveTextAlpha;
@@ -1662,16 +1653,19 @@ void GameManager::Draw() {
             }
 
             // --- VẼ HIỆU ỨNG ĐỘNG ĐẠN TIA (ADVANCED BEAM & LASER VFX ENGINE) ---
-            if (player && player->IsActive() && IsKeyDown(KEY_SPACE)) {
-                std::string weapon = player->GetWeapon();
-                Vector2 origin = { player->GetPosition().x, player->GetPosition().y - 25.0f };
-                Vector2 endPos = autoLockTargetPos;
+            auto DrawBeamVFX = [&](Spaceship* p, bool isFiring, const Vector2& lockTargetPos) {
+                if (!p || !p->IsActive() || !isFiring) return;
+                std::string weapon = p->GetWeapon();
+                if (weapon != "Lightning_Fryer" && weapon != "Plasma_Rifle" && weapon != "Laser_Cannon") return;
+
+                Vector2 origin = { p->GetPosition().x, p->GetPosition().y - 25.0f };
+                Vector2 endPos = lockTargetPos;
                 Vector2 diff = { endPos.x - origin.x, endPos.y - origin.y };
                 float len = sqrt(diff.x * diff.x + diff.y * diff.y);
                 float angleDeg = atan2(diff.y, diff.x) * 180.0f / 3.14159265f - 90.0f;
                 Vector2 dir = (len > 0.0f) ? Vector2{ diff.x / len, diff.y / len } : Vector2{ 0.0f, -1.0f };
                 float timeVal = (float)GetTime();
-                int level = player->GetLevel();
+                int level = p->GetLevel();
 
                 // Bật Blend Mode Additive để các dòng năng lượng phát vầng sáng thực tế
                 BeginBlendMode(BLEND_ADDITIVE);
@@ -1750,9 +1744,12 @@ void GameManager::Draw() {
                     }
                 }
 
-            // Trả về Blend Mode chuẩn cho các đối tượng khác
-            EndBlendMode();
-        }
+                // Trả về Blend Mode chuẩn cho các đối tượng khác
+                EndBlendMode();
+            };
+            
+            DrawBeamVFX(player.get(), IsKeyDown(KEY_SPACE), autoLockTargetPos);
+            DrawBeamVFX(player2.get(), IsMouseButtonDown(MOUSE_LEFT_BUTTON), autoLockTargetPos2);
 
         // Vẽ Enemies ĐÈ LÊN đạn và tia lade
         if (currentState == GameState::TEST_GAMEPLAY) {
@@ -1893,6 +1890,7 @@ void GameManager::Draw() {
                     if (player->IsActive()) {
                         float hpRatio = player->GetHp() / player->GetMaxHp();
                         if (hpRatio < 0.0f) hpRatio = 0.0f;
+                        if (hpRatio > 1.0f) hpRatio = 1.0f; // Fix HP bar going out of bounds
                         
                         DrawRectangle(20, 80, 200, 20, GRAY);
                         Color hpColor = (hpRatio > 0.5f) ? GREEN : ((hpRatio > 0.2f) ? YELLOW : RED);
@@ -1940,6 +1938,7 @@ void GameManager::Draw() {
                         
                         float hpRatio2 = player2->GetHp() / player2->GetMaxHp();
                         if (hpRatio2 < 0.0f) hpRatio2 = 0.0f;
+                        if (hpRatio2 > 1.0f) hpRatio2 = 1.0f; // Fix HP bar going out of bounds
                         
                         DrawRectangle((int)baseX, 80, 200, 20, GRAY);
                         Color hpColor2 = (hpRatio2 > 0.5f) ? GREEN : ((hpRatio2 > 0.2f) ? YELLOW : RED);
