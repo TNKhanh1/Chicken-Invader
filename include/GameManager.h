@@ -9,6 +9,8 @@
 #include <vector>
 #include <memory>
 
+class ShopUI;
+
 // (struct MeatItem đã được chuyển thành class Meat trong Item.h)
 
 // Singleton Pattern
@@ -18,6 +20,7 @@ private:
     static GameManager* instance;
     StatsPanel statsPanel;
     MenuManager* mainMenuUI = nullptr;
+    ShopUI* shopUI = nullptr;
 
     // Các biến trạng thái của trò chơi
     GameState currentState;
@@ -245,8 +248,7 @@ public:
     std::shared_ptr<class Spaceship> GetPlayer() const { return player; }
     
     // Custom Font handling
-    Font customFont;
-    Font GetCustomFont() const { return customFont; }
+    // customFont đã được thay thế bởi FontManager
     void DrawTextCustom(const char* text, int posX, int posY, int fontSize, Color color);
     int MeasureTextCustom(const char* text, int fontSize);
 

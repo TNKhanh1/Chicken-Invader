@@ -1,6 +1,7 @@
 #include "StatsPanel.h"
 #include "Spaceship.h"
 #include "GameManager.h" // for DrawTextCustom
+#include "FontManager.h"
 #include "raymath.h"
 #include <string>
 
@@ -44,8 +45,8 @@ void StatsPanel::Update(float deltaTime, bool tabHeld) {
 }
 
 void StatsPanel::DrawRow(float x, float& y, const char* label, const char* value, Color valueColor) const {
-    DrawText(label, (int)x, (int)y, 20, LIGHTGRAY);
-    DrawText(value, (int)(x + 130), (int)y, 20, valueColor);
+    FontManager::GetInstance()->DrawGameText(label, (int)x, (int)y, 20, LIGHTGRAY, "Modern");
+    FontManager::GetInstance()->DrawGameText(value, (int)(x + 130), (int)y, 20, valueColor, "Modern");
     y += 28.0f;
 }
 
@@ -67,7 +68,7 @@ void StatsPanel::Draw(const Spaceship* player, int screenHeight) const {
     float cy = panelY + 20.0f;
 
     // Header
-    DrawText("[ PLAYER STATS ]", (int)(slideX + 80), (int)cy, 24, YELLOW);
+    FontManager::GetInstance()->DrawGameText("[ PLAYER STATS ]", (int)(slideX + 80), (int)cy, 24, YELLOW, "Modern");
     cy += 40.0f;
 
     // --- CÁC CHỈ SỐ CƠ BẢN ---
@@ -122,14 +123,14 @@ void StatsPanel::Draw(const Spaceship* player, int screenHeight) const {
     // --- LÕI (ARGUMENTS) ---
     const auto& args = player->GetActiveArguments();
     snprintf(buf, sizeof(buf), "[ ARGUMENTS (%d owned) ]", (int)args.size());
-    DrawText(buf, (int)slideX + 20, (int)cy, 22, GOLD);
+    FontManager::GetInstance()->DrawGameText(buf, (int)slideX + 20, (int)cy, 22, GOLD, "Modern");
     cy += 35.0f;
 
     for (int argId : args) {
         if (argId >= 0 && argId < 10) {
-            DrawText(TextFormat("- %s", ARGUMENT_NAMES[argId]), (int)cx, (int)cy, 20, SKYBLUE);
-            cy += 24.0f;
-            DrawText(ARGUMENT_DESC[argId], (int)(cx + 20), (int)cy, 18, LIGHTGRAY);
+            FontManager::GetInstance()->DrawGameText(TextFormat("- %s", ARGUMENT_NAMES[argId]), (int)cx, (int)cy, 20, SKYBLUE, "Modern");
+            cy += 25;
+            FontManager::GetInstance()->DrawGameText(ARGUMENT_DESC[argId], (int)(cx + 20), (int)cy, 18, LIGHTGRAY, "Modern");
             cy += 30.0f;
         }
     }

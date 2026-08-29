@@ -1,5 +1,7 @@
 #include "UIManager.h"
 #include "GameManager.h"
+#include "FontManager.h"
+
 UIManager::UIManager() : playerHp(0), playerMaxHp(100), playerMana(0), playerMaxMana(100), playerLevel(1), playerExp(0) {}
 
 void UIManager::OnNotify(EventType event, const std::string& data) {
@@ -22,7 +24,7 @@ void UIManager::OnNotify(EventType event, const std::string& data) {
 }
 
 void UIManager::DrawUI() {
-    DrawText(TextFormat("Level: %d", playerLevel), 10, 10, 20, BLACK);
-    DrawText(TextFormat("Exp: %.1f", playerExp), 10, 40, 20, DARKBLUE);
-    DrawText(TextFormat("Mana: %.1f", playerMana), 10, 70, 20, BLUE);
+    FontManager::GetInstance()->DrawGameText(TextFormat("Level: %d", playerLevel), 10, 10, 20, BLACK, "Modern");
+    FontManager::GetInstance()->DrawGameText(TextFormat("Exp: %.1f", playerExp), 10, 40, 20, DARKBLUE, "Modern");
+    FontManager::GetInstance()->DrawGameText(TextFormat("Mana: %.1f", playerMana), 10, 70, 20, BLUE, "Modern");
 }

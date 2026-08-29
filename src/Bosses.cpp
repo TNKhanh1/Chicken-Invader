@@ -2,6 +2,7 @@
 #include "Item.h"
 #include "Meat.h"
 #include "Spaceship.h"
+#include "FontManager.h"
 #include <cmath>
 #include <raymath.h>
 
@@ -155,8 +156,8 @@ void Boss::Draw() {
                 int rem = charsToShow - (int)line1.length();
                 std::string disp2 = rem > 0 ? line2.substr(0, rem) : "";
                 
-                int w1 = MeasureText(line1.c_str(), 20);
-                int w2 = MeasureText(line2.c_str(), 20);
+                int w1 = FontManager::GetInstance()->MeasureGameText(line1, 20, "Modern").x;
+                int w2 = FontManager::GetInstance()->MeasureGameText(line2, 20, "Modern").x;
                 int maxW = std::max(w1, w2);
                 int totalH = line2.empty() ? 20 : 45;
                 
@@ -184,9 +185,9 @@ void Boss::Draw() {
                 DrawLineV(p3, p2, BLACK);
                 
                 // Draw text
-                DrawText(disp1.c_str(), bX, bY, 20, BLACK);
+                FontManager::GetInstance()->DrawGameText(disp1, bX, bY, 20, BLACK, "Modern");
                 if (!disp2.empty()) {
-                    DrawText(disp2.c_str(), bX, bY + 25, 20, BLACK);
+                    FontManager::GetInstance()->DrawGameText(disp2, bX, bY + 25, 20, BLACK, "Modern");
                 }
             }
         }
@@ -666,8 +667,8 @@ void FirePhoenixBoss::DrawBossHPBar() {
     // Phase text
     const char* phaseText = (currentPhase == Phase::PHASE_2) ? "PHASE 2" : "PHASE 1";
     if (currentPhase == Phase::TRANSITIONING) phaseText = "TRANSFORMING...";
-    int textW = MeasureText(phaseText, 16);
-    DrawText(phaseText, (int)(position.x - textW / 2), (int)(barY - 20), 16, WHITE);
+    int textW = FontManager::GetInstance()->MeasureGameText(phaseText, 16, "Retro").x;
+    FontManager::GetInstance()->DrawGameTextCentered(phaseText, position.x, (int)(barY - 20), 16, WHITE, "Retro");
 }
 
 // --- Main Update ---
@@ -894,8 +895,8 @@ void EggsecutionerBoss::DrawBossHPBar() {
     DrawRectangle((int)barX, (int)barY, (int)(barWidth * hpRatio), (int)barHeight, {255, 50, 50, 255}); // Đỏ tươi
     DrawRectangleLines((int)barX, (int)barY, (int)barWidth, (int)barHeight, WHITE);
 
-    int textW = MeasureText("THE EGG-SECUTIONER", 16);
-    DrawText("THE EGG-SECUTIONER", (int)(position.x - textW / 2), (int)(barY - 20), 16, WHITE);
+    int textW = FontManager::GetInstance()->MeasureGameText("THE EGG-SECUTIONER", 16, "Retro").x;
+    FontManager::GetInstance()->DrawGameTextCentered("THE EGG-SECUTIONER", position.x, (int)(barY - 20), 16, WHITE, "Retro");
 }
 
 void EggsecutionerBoss::Update(float deltaTime) {
@@ -1291,8 +1292,8 @@ void EskimoBoss::DrawBossHPBar() {
     DrawRectangle((int)barX, (int)barY, (int)(barWidth * hpPercent), (int)barHeight, hpColor);
     
     const char* phaseText = "BOSS 03";
-    int textW = MeasureText(phaseText, 10);
-    DrawText(phaseText, (int)(position.x - textW / 2.0f), (int)barY - 15, 10, WHITE);
+    int textW = FontManager::GetInstance()->MeasureGameText(phaseText, 10, "Retro").x;
+    FontManager::GetInstance()->DrawGameTextCentered(phaseText, position.x, (int)barY - 15, 10, WHITE, "Retro");
 }
 
 void EskimoBoss::Draw() {
@@ -1345,7 +1346,7 @@ void BomberBoss::DrawBossHPBar() {
     DrawRectangle(x, y, barWidth * hpPercent, barHeight, hpColor);
     DrawRectangleLines(x, y, barWidth, barHeight, WHITE);
     
-    DrawText("BOMBER CHICKEN", x + barWidth/2 - MeasureText("BOMBER CHICKEN", 10)/2, y - 15, 10, WHITE);
+    FontManager::GetInstance()->DrawGameTextCentered("BOMBER CHICKEN", x + barWidth/2, y - 15, 10, WHITE, "Retro");
 }
 
 void BomberBoss::FireVShape() {
@@ -1582,7 +1583,7 @@ void VoidChickenBoss::DrawBossHPBar() {
     DrawRectangle((int)x, (int)y, (int)(barW * pct), (int)barH, c);
     DrawRectangleLines((int)x, (int)y, (int)barW, (int)barH, WHITE);
     const char* name = "VOID CHICKEN";
-    DrawText(name, (int)(x + barW / 2.0f - MeasureText(name, 11) / 2.0f), (int)(y - 16), 11, WHITE);
+    FontManager::GetInstance()->DrawGameTextCentered(name, x + barW / 2.0f, (int)(y - 16), 11, WHITE, "Retro");
 }
 
 void VoidChickenBoss::Draw() {

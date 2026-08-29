@@ -23,6 +23,10 @@
 #include "../include/BeamWeapon.h"
 #include "../include/AllWeaponBehaviors.h"
 #include "../include/Bosses.h"
+#include "MenuManager.h"
+#include "FontManager.h"
+#include "ShopManager.h"
+#include "ShopUI.h"
 #include <iostream>
 #include <cmath>
 #include <algorithm>
@@ -305,16 +309,8 @@ void GameManager::Init(int width, int height, const char* title) {
     // Khởi tạo giao diện UI
     mainMenuUI = new MenuManager(screenWidth, screenHeight);
     
-    // Nạp Font hỗ trợ tiếng Việt
-    int codepoints[1000];
-    int count = 0;
-    for (int i = 32; i <= 126; i++) codepoints[count++] = i; // Basic Latin
-    for (int i = 161; i <= 255; i++) codepoints[count++] = i; // Latin-1 Supplement
-    for (int i = 0x0100; i <= 0x017F; i++) codepoints[count++] = i; // Latin Extended-A
-    for (int i = 0x0180; i <= 0x024F; i++) codepoints[count++] = i; // Latin Extended-B
-    for (int i = 0x1EA0; i <= 0x1EF9; i++) codepoints[count++] = i; // Latin Extended Additional (Tiếng Việt)
-    customFont = LoadFontEx("assets/FONT.ttf", 64, codepoints, count);
-    SetTextureFilter(customFont.texture, TEXTURE_FILTER_BILINEAR);
+    // Khởi tạo FontManager và tải fonts
+    FontManager::GetInstance()->LoadFonts();
 
     // Khởi tạo các textures
     // InitAudioDevice();
@@ -333,6 +329,8 @@ void GameManager::Init(int width, int height, const char* title) {
     CoinManager::GetInstance()->Load();
     AddObserver(CoinManager::GetInstance());
     CoinManager::GetInstance()->ResetSession();
+    
+    ShopManager::GetInstance()->Load();
     
     // Tải dữ liệu phi thuyền
     SpaceshipDataManager::GetInstance()->LoadCSV("assets/spaceship/spaceship.csv");
@@ -353,7 +351,9 @@ void GameManager::Init(int width, int height, const char* title) {
     
     texAsteroid1 = LoadTexture("assets/asteroidNormal.png");
     texAsteroid2 = LoadTexture("assets/asteroidFlame.png"); // asteroidFlame: 7680x2048 = 15col x 4row = 60 frames
-    texEnemyBullet = LoadTexture("assets/egg.png"); 
+    
+    std::string eggPath = ShopManager::GetInstance()->GetSelectedEggTexturePath();
+    texEnemyBullet = LoadTexture(eggPath.c_str()); 
     texMeat = LoadTexture("assets/meat.png");
     
     texSwordItem = LoadTexture("assets/SwordItem.png");
@@ -396,6 +396,14 @@ void GameManager::Init(int width, int height, const char* title) {
     printf("Setting shooting behavior...\n"); fflush(stdout);
     player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
     
+    std::string savedWeapon = ShopManager::GetInstance()->GetSelectedWeapon();
+    if (!savedWeapon.empty() && savedWeapon != "Hypergun") {
+        player->SetWeapon(savedWeapon);
+    }
+    
+    shopUI = new ShopUI(screenWidth, screenHeight);
+    shopUI->Init();
+
     printf("GameManager::Init finished.\n"); fflush(stdout);
     isRunning = true;
     currentState = GameState::MAIN_MENU;
@@ -434,8 +442,8 @@ bool GameManager::DrawButton(Rectangle bounds, const char* text) {
     DrawRectangleLinesEx(bounds, 2, BLACK);
     
     // Center text
-    int textWidth = MeasureText(text, 20);
-    DrawText(text, bounds.x + (bounds.width / 2) - (textWidth / 2), bounds.y + (bounds.height / 2) - 10, 20, textColor);
+    int textWidth = FontManager::GetInstance()->MeasureGameText(text, 20, "Modern").x;
+    FontManager::GetInstance()->DrawGameText(text, bounds.x + (bounds.width / 2) - (textWidth / 2), bounds.y + (bounds.height / 2) - 10, 20, textColor);
     
     return clicked;
 }
@@ -450,6 +458,10 @@ void GameManager::Update(float deltaTime) {
         case GameState::GAME_OVER:
         case GameState::SETTINGS:
             // Transition logic is handled in Draw() via DrawButton
+            break;
+            
+        case GameState::SHOP:
+            if (shopUI) shopUI->Update();
             break;
 
         case GameState::WAVE_INTRO:
@@ -1048,11 +1060,17 @@ void GameManager::Draw() {
                    {0, bgY - 2.0f * screenHeight, (float)screenWidth, (float)screenHeight}, {0,0}, 0.0f, WHITE);
 
     switch (currentState) {
+        case GameState::SHOP:
+            if (shopUI) shopUI->Draw();
+            break;
+            
         case GameState::MAIN_MENU:
         {
             if (mainMenuUI) {
                 int action = mainMenuUI->UpdateAndDraw(GetFrameTime());
-                if (action >= 1 && action <= 7) {
+                if (action == 100) {
+                    ChangeState(GameState::SHOP);
+                } else if (action >= 1 && action <= 7) {
                     currentStage = action;
                     currentWave = 1;
                     currentBatch = 1;
@@ -1109,8 +1127,8 @@ void GameManager::Draw() {
         
         case GameState::SETTINGS:
         {
-            DrawText("SETTINGS", screenWidth/2 - 80, 100, 40, DARKBLUE);
-            DrawText("Backgrounds:", screenWidth/2 - 350, 200, 25, GRAY);
+            FontManager::GetInstance()->DrawGameTextCentered("SETTINGS", screenWidth/2, 100, 40, DARKBLUE, "Modern");
+            FontManager::GetInstance()->DrawGameText("Backgrounds:", screenWidth/2 - 350, 200, 25, GRAY, "Modern");
             
             if (DrawButton({(float)screenWidth/2 - 350, 250, 150, 50}, "Default")) currentBgIndex = 0;
             if (DrawButton({(float)screenWidth/2 - 150, 250, 150, 50}, "Bg 1")) currentBgIndex = 1;
@@ -1134,7 +1152,7 @@ void GameManager::Draw() {
         
         case GameState::COMING_SOON:
         {
-            DrawText("PLAY MODE - COMING SOON!", screenWidth/2 - 200, screenHeight/2, 30, DARKGRAY);
+            FontManager::GetInstance()->DrawGameTextCentered("PLAY MODE - COMING SOON!", screenWidth/2, screenHeight/2, 30, DARKGRAY, "Modern");
             if (DrawButton({(float)screenWidth/2 - 100, (float)screenHeight/2 + 80, 200, 50}, "BACK")) {
                 currentState = GameState::MAIN_MENU;
             }
@@ -1143,15 +1161,15 @@ void GameManager::Draw() {
 
         case GameState::GAME_OVER:
         {
-            DrawText("GAME OVER!", screenWidth/2 - 120, 200, 40, RED);
-            DrawText(TextFormat("FINAL SCORE: %d", score), screenWidth/2 - 100, 260, 25, DARKGRAY);
+            FontManager::GetInstance()->DrawGameTextCentered("GAME OVER!", screenWidth/2, 200, 40, RED, "Retro");
+            FontManager::GetInstance()->DrawGameTextCentered(TextFormat("FINAL SCORE: %d", score), screenWidth/2, 260, 25, DARKGRAY, "Retro");
             
-            DrawText(TextFormat("COINS EARNED THIS RUN: %d + %d (stage bonus) = %d",
+            FontManager::GetInstance()->DrawGameTextCentered(TextFormat("COINS EARNED THIS RUN: %d + %d (stage bonus) = %d",
                 CoinManager::GetInstance()->GetSessionCoins(),
                 CoinManager::GetInstance()->GetStageBonusCoins(),
                 CoinManager::GetInstance()->GetSessionCoins() + CoinManager::GetInstance()->GetStageBonusCoins()),
                 screenWidth/2 - 270, 320, 20, GOLD);
-            DrawText(TextFormat("TOTAL COINS: %d", CoinManager::GetInstance()->GetTotalCoins()),
+            FontManager::GetInstance()->DrawGameTextCentered(TextFormat("TOTAL COINS: %d", CoinManager::GetInstance()->GetTotalCoins()),
                 screenWidth/2 - 120, 360, 22, YELLOW);
             DrawTextureEx(texCoin, {(float)screenWidth/2 - 160, 355}, 0.0f, 0.5f, WHITE);
             
@@ -1170,7 +1188,7 @@ void GameManager::Draw() {
 
         case GameState::TEST_MENU:
         {
-            DrawText("TEST MODE SELECTION", screenWidth/2 - 150, 150, 30, DARKBLUE);
+            FontManager::GetInstance()->DrawGameTextCentered("TEST MODE SELECTION", screenWidth/2, 150, 30, DARKBLUE, "Modern");
             
             if (DrawButton({(float)screenWidth/2 - 150, 250, 300, 50}, "TEST ENEMY")) {
                 currentState = GameState::TEST_ENEMY;
@@ -1204,16 +1222,16 @@ void GameManager::Draw() {
         }
 
         case GameState::WAVE_SELECTION: {
-            DrawText("TEST STAGE & WAVE", screenWidth/2 - MeasureText("TEST STAGE & WAVE", 40)/2, 120, 40, YELLOW);
+            FontManager::GetInstance()->DrawGameTextCentered("TEST STAGE & WAVE", screenWidth/2, 120, 40, YELLOW, "Modern");
             
             // Fix Out-of-Bounds Issue: Show warning if trying to start non-existent waves
             bool isValidSelection = (testConfig.stage == 1 && testConfig.wave <= 10) || (testConfig.stage == 2 && testConfig.wave <= 10) || (testConfig.stage == 3 && testConfig.wave <= 1) || (testConfig.stage == 4 && testConfig.wave <= 10) || (testConfig.stage == 5 && testConfig.wave <= 15) || (testConfig.stage == 6 && testConfig.wave <= 5) || (testConfig.stage == 7 && testConfig.wave == 1 && testConfig.batch == 1);
             if (!isValidSelection) {
-                DrawText("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2 - 200, 180, 20, RED);
+                FontManager::GetInstance()->DrawGameTextCentered("WARNING: WAVE NOT YET IMPLEMENTED", screenWidth/2, 180, 20, RED, "Modern");
             }
 
             // Buttons to select Stage
-            DrawText(TextFormat("STAGE: %d", testConfig.stage), screenWidth/2 - 70, 220, 30, WHITE);
+            FontManager::GetInstance()->DrawGameText(TextFormat("STAGE: %d", testConfig.stage), screenWidth/2 - 70, 220, 30, WHITE, "Modern");
             if (DrawButton({ (float)screenWidth/2 - 150, 210, 50, 50 }, "<")) {
                 if (testConfig.stage > 1) { testConfig.stage--; testConfig.wave = 1; testConfig.batch = 1; }
             }
@@ -1222,7 +1240,7 @@ void GameManager::Draw() {
             }
 
             // Buttons to select Wave
-            DrawText(TextFormat("WAVE: %d", testConfig.wave), screenWidth/2 - 70, 320, 30, WHITE);
+            FontManager::GetInstance()->DrawGameText(TextFormat("WAVE: %d", testConfig.wave), screenWidth/2 - 70, 320, 30, WHITE, "Modern");
             if (DrawButton({ (float)screenWidth/2 - 150, 310, 50, 50 }, "<")) {
                 if (testConfig.wave > 1) { testConfig.wave--; testConfig.batch = 1; }
             }
@@ -1232,7 +1250,7 @@ void GameManager::Draw() {
             }
 
             // Buttons to select Batch
-            DrawText(TextFormat("BATCH: %d", testConfig.batch), screenWidth/2 - 70, 420, 30, WHITE);
+            FontManager::GetInstance()->DrawGameText(TextFormat("BATCH: %d", testConfig.batch), screenWidth/2 - 70, 420, 30, WHITE, "Modern");
             if (DrawButton({ (float)screenWidth/2 - 150, 410, 50, 50 }, "<")) {
                 if (testConfig.batch > 1) testConfig.batch--;
             }
@@ -1331,13 +1349,16 @@ void GameManager::Draw() {
                 char waveStr[32];
                 snprintf(waveStr, sizeof(waveStr), "WAVE %d", currentWave);
                 int wFontSize = 90;
-                int wTw = MeasureText(waveStr, wFontSize);
-                int wCx = screenWidth / 2 - wTw / 2;
-                int wCy = screenHeight / 2 - 45;
-                DrawText(waveStr, wCx + 4, wCy + 4, wFontSize, {0, 0, 0, (unsigned char)((int)wAlpha / 2)});
-                int wTwG = MeasureText(waveStr, wFontSize + 6);
-                DrawText(waveStr, screenWidth/2 - wTwG/2, wCy - 3, wFontSize + 6, {80, 220, 255, (unsigned char)((int)wAlpha * 3 / 10)});
-                DrawText(waveStr, wCx, wCy, wFontSize, {255, 255, 255, wAlpha});
+                
+                int wTw = FontManager::GetInstance()->MeasureGameText(waveStr, wFontSize, "Retro").x;
+                int wCx = screenWidth/2 - wTw/2;
+                int wCy = screenHeight/2 - wFontSize/2;
+                
+                FontManager::GetInstance()->DrawGameText(waveStr, wCx + 4, wCy + 4, wFontSize, {0, 0, 0, (unsigned char)((int)wAlpha / 2)}, "Retro");
+                
+                int wTwG = FontManager::GetInstance()->MeasureGameText(waveStr, wFontSize + 6, "Retro").x;
+                FontManager::GetInstance()->DrawGameText(waveStr, screenWidth/2 - wTwG/2, wCy - 3, wFontSize + 6, {80, 220, 255, (unsigned char)((int)wAlpha * 3 / 10)}, "Retro");
+                FontManager::GetInstance()->DrawGameText(waveStr, wCx, wCy, wFontSize, {255, 255, 255, wAlpha}, "Retro");
             }
             break;
         }
@@ -1473,8 +1494,8 @@ void GameManager::Draw() {
             int fontSize = dt.isCrit ? 26 : 20; 
 
             const char* text = TextFormat("%d", dt.amount);
-            DrawText(text, (int)dt.position.x - 1, (int)dt.position.y - 1, fontSize, ColorAlpha(BLACK, alpha)); // Viền
-            DrawText(text, (int)dt.position.x, (int)dt.position.y, fontSize, color); // Chữ
+            FontManager::GetInstance()->DrawGameTextCentered(text, (int)dt.position.x - 1, (int)dt.position.y - 1, fontSize, ColorAlpha(BLACK, alpha), "Modern"); // Viền
+            FontManager::GetInstance()->DrawGameTextCentered(text, (int)dt.position.x, (int)dt.position.y, fontSize, color, "Modern"); // Chữ
         }
 
             // --- HÌNH ẢNH QUAN SÁT DEBUG HITBOX & CIRCLE HITBOXES (PHÍM H) ---
@@ -1482,7 +1503,7 @@ void GameManager::Draw() {
                 for (const auto& enemy : activeEnemies) {
                     if (enemy->IsActive()) {
                         DrawRectangleLinesEx(enemy->GetHitbox(), 2.0f, RED);
-                        DrawText("RECT HITBOX", (int)enemy->GetPosition().x - 35, (int)enemy->GetPosition().y - 45, 12, RED);
+                        FontManager::GetInstance()->DrawGameTextCentered("RECT HITBOX", (int)enemy->GetPosition().x, (int)enemy->GetPosition().y - 45, 12, RED, "Modern");
                     }
                 }
                 for (const auto& bullet : activeBullets) {
@@ -1511,8 +1532,8 @@ void GameManager::Draw() {
                 int wLv = player ? player->GetLevel() : 1;
                 const char* sboxStatus = debugSandboxMode ? "ON (Keys 1-8: Weapon, UP/DOWN: Level, F: Slow-Mo)" : "OFF [F1 to Enable Sandbox]";
                 const char* hStatus = showDebugHitboxes ? "ON [H]" : "OFF [H]";
-                DrawText(TextFormat("SANDBOX MODE: %s | Hitboxes: %s", sboxStatus, hStatus), 160, 18, 15, YELLOW);
-                DrawText(TextFormat("Vu khi hien tai: [ %s ] - Level: [ %d / 11 ]", wName, wLv), 160, 42, 16, GREEN);
+                FontManager::GetInstance()->DrawGameText(TextFormat("SANDBOX MODE: %s | Hitboxes: %s", sboxStatus, hStatus), 160, 18, 15, YELLOW, "Modern");
+                FontManager::GetInstance()->DrawGameText(TextFormat("Vu khi hien tai: [ %s ] - Level: [ %d / 11 ]", wName, wLv), 160, 42, 16, GREEN, "Modern");
             }
             
             // Nút BACK
@@ -1539,7 +1560,7 @@ void GameManager::Draw() {
             
             if (currentState == GameState::TEST_GAMEPLAY) {
                 if (isWaveTransitioning) {
-                    DrawText(TextFormat("WAVE %d - BATCH %d", currentWave, currentBatch), screenWidth/2 - 200, screenHeight/2, 50, YELLOW);
+                    FontManager::GetInstance()->DrawGameTextCentered(TextFormat("WAVE %d - BATCH %d", currentWave, currentBatch), screenWidth/2, screenHeight/2, 50, YELLOW, "Retro");
                 }
                 
                 if (currentStage == 7 && !isBossCutscene) {
@@ -1552,20 +1573,20 @@ void GameManager::Draw() {
                             DrawRectangle(screenWidth/2 - 300, barY, 600, 20, GRAY);
                             DrawRectangle(screenWidth/2 - 300, barY, 600 * hpRatio, 20, (barCount == 0) ? RED : ORANGE);
                             DrawRectangleLines(screenWidth/2 - 300, barY, 600, 20, WHITE);
-                            DrawText(enemy->visualId == 13 ? "SUPER CHICK" : "MILITARY CHICKEN", screenWidth/2 - 295, barY + 3, 14, WHITE);
-                            DrawText(TextFormat("%.2f%%", hpRatio * 100.0f), screenWidth/2 + 250, barY + 3, 14, WHITE);
+                            FontManager::GetInstance()->DrawGameText(enemy->visualId == 13 ? "SUPER CHICK" : "MILITARY CHICKEN", screenWidth/2 - 295, barY + 3, 14, WHITE, "Retro");
+                            FontManager::GetInstance()->DrawGameText(TextFormat("%.2f%%", hpRatio * 100.0f), screenWidth/2 + 250, barY + 3, 14, WHITE, "Modern");
                             barCount++;
                         }
                     }
                 }
                 
                 // Di chuyển Score sang bên trái một chút để tránh đè lên nút Setting
-                DrawText(TextFormat("Score: %d", score), screenWidth - 250, 40, 20, WHITE);
+                FontManager::GetInstance()->DrawGameText(TextFormat("Score: %d", score), screenWidth - 250, 40, 20, WHITE, "Retro");
                 
                 if (WaveManager::GetInstance()->IsContinuousStream()) {
                     int cKills = WaveManager::GetInstance()->GetCurrentKills();
                     int tKills = WaveManager::GetInstance()->GetTargetKills();
-                    DrawText(TextFormat("KILLS: %d / %d", cKills, tKills), screenWidth/2 - 100, 40, 24, ORANGE);
+                    FontManager::GetInstance()->DrawGameTextCentered(TextFormat("KILLS: %d / %d", cKills, tKills), screenWidth/2, 40, 24, ORANGE, "Retro");
                 }
 
                 if (player) {
@@ -1577,17 +1598,17 @@ void GameManager::Draw() {
                     DrawRectangle(20, 80, (int)(200 * hpRatio), 20, hpColor);
                     DrawRectangleLines(20, 80, 200, 20, DARKGRAY);
                     
-                    DrawText(TextFormat("HP: %.0f/%.0f", player->GetHp(), player->GetMaxHp()), 25, 82, 16, BLACK);
+                    FontManager::GetInstance()->DrawGameText(TextFormat("HP: %.0f/%.0f", player->GetHp(), player->GetMaxHp()), 25, 82, 16, BLACK, "Modern");
                     
                     float iconX = 230.0f;
                     if (player->HasSwordBuff()) {
                         DrawTexturePro(texSwordItem, {0, 0, (float)texSwordItem.width, (float)texSwordItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
-                        DrawText(TextFormat("%.0fs", player->GetSwordTimer()), (int)iconX, 108, 12, ORANGE);
+                        FontManager::GetInstance()->DrawGameText(TextFormat("%.0fs", player->GetSwordTimer()), (int)iconX, 108, 12, ORANGE, "Modern");
                         iconX += 40.0f;
                     }
                     if (player->HasShieldBuff()) {
                         DrawTexturePro(texShieldItem, {0, 0, (float)texShieldItem.width, (float)texShieldItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
-                        DrawText(TextFormat("%.0fs", player->GetShieldTimer()), (int)iconX, 108, 12, SKYBLUE);
+                        FontManager::GetInstance()->DrawGameText(TextFormat("%.0fs", player->GetShieldTimer()), (int)iconX, 108, 12, SKYBLUE, "Modern");
                     }
                     
                     // Draw EXP Bar
@@ -1596,7 +1617,7 @@ void GameManager::Draw() {
                     DrawRectangle(20, 110, 200, 15, GRAY);
                     DrawRectangle(20, 110, (int)(200 * expRatio), 15, BLUE);
                     DrawRectangleLines(20, 110, 200, 15, DARKGRAY);
-                    DrawText(TextFormat("LVL: %d  EXP: %.0f/%.0f", player->GetLevel(), player->GetCurrentExp(), player->GetMaxExp()), 25, 112, 12, WHITE);
+                    FontManager::GetInstance()->DrawGameText(TextFormat("LVL: %d  EXP: %.0f/%.0f", player->GetLevel(), player->GetCurrentExp(), player->GetMaxExp()), 25, 112, 12, WHITE, "Modern");
                     
                     // Draw Mana Bar
                     float manaRatio = player->GetCurrentMana() / player->GetMaxMana();
@@ -1611,7 +1632,7 @@ void GameManager::Draw() {
                     
                     DrawRectangle(20, 135, (int)(200 * manaRatio), 15, manaColor);
                     DrawRectangleLines(20, 135, 200, 15, DARKGRAY);
-                    DrawText(TextFormat("MANA: %.0f/%.0f%s", player->GetCurrentMana(), player->GetMaxMana(), player->IsManaActive() ? " (ACTIVE)" : ""), 25, 137, 12, WHITE);
+                    FontManager::GetInstance()->DrawGameText(TextFormat("MANA: %.0f/%.0f%s", player->GetCurrentMana(), player->GetMaxMana(), player->IsManaActive() ? " (ACTIVE)" : ""), 25, 137, 12, WHITE, "Modern");
                 }
                 // --- Stats Panel (Tab overlay) ---
                 statsPanel.Update(GetFrameTime(), IsKeyDown(KEY_TAB));
@@ -1652,16 +1673,13 @@ void GameManager::Draw() {
             bool isStat = (currentState == GameState::STAT_SELECTION);
             const char* titleText = isStat ? "CHOOSE A STAT UPGRADE" : "CHOOSE AN ARGUMENT";
             Color titleColor = isStat ? (Color){80, 200, 120, 255} : (Color){255, 180, 50, 255};
-            int titleW = MeasureText(titleText, 34);
-            // Vẽ bóng đổ nhẹ
-            DrawText(titleText, screenWidth/2 - titleW/2 + 2, (int)(cardY - 72), 34, {0, 0, 0, 120});
-            DrawText(titleText, screenWidth/2 - titleW/2, (int)(cardY - 74), 34, titleColor);
+            FontManager::GetInstance()->DrawGameTextCentered(titleText, screenWidth/2 + 2, (int)(cardY - 72), 34, {0, 0, 0, 120}, "Retro");
+            FontManager::GetInstance()->DrawGameTextCentered(titleText, screenWidth/2, (int)(cardY - 74), 34, titleColor, "Retro");
 
             // Phụ đề
             const char* subText = isStat ? "Choose 1 option to power up your spaceship"
                                          : "Choose a special Argument that will shape your journey";
-            int subW = MeasureText(subText, 16);
-            DrawText(subText, screenWidth/2 - subW/2, (int)(cardY - 38), 16, (Color){200, 200, 200, 200});
+            FontManager::GetInstance()->DrawGameTextCentered(subText, screenWidth/2, (int)(cardY - 38), 16, (Color){200, 200, 200, 200}, "Modern");
 
             // 5. Vẽ thẻ card
             Texture2D& cardTex = isStat ? texChiSo : texLoi;
@@ -1697,16 +1715,16 @@ void GameManager::Draw() {
                 const CardDef& def = isStat ? ALL_STATS[idx] : ALL_ARGUMENTS[idx];
 
                 // Số thứ tự card (góc trên trái nhỏ) - đưa vào trong một chút để không nằm ở vùng viền bị vát
-                DrawText(TextFormat("%d", i + 1), (int)(cx + 35), (int)(cardY + 35), 16, (Color){180, 180, 180, 180});
+                FontManager::GetInstance()->DrawGameText(TextFormat("%d", i + 1), (int)(cx + 35), (int)(cardY + 35), 16, (Color){180, 180, 180, 180}, "Modern");
 
                 // Tên card (dòng đầu, lớn, tô đậm bằng double draw)
                 int nameFontSize = 20; // Giảm lại font 20 theo yêu cầu
-                int nameW = MeasureText(def.name, nameFontSize);
+                int nameW = FontManager::GetInstance()->MeasureGameText(def.name, nameFontSize, "Modern").x;
                 float nameX = textArea.x + textArea.width / 2.0f - nameW / 2.0f;
                 float nameY = textArea.y + 10.0f;
-                DrawText(def.name, (int)nameX + 1, (int)nameY + 1, nameFontSize, {0, 0, 0, 100}); // shadow
-                DrawText(def.name, (int)nameX, (int)nameY, nameFontSize,
-                         isStat ? (Color){120, 240, 150, 255} : (Color){255, 210, 80, 255});
+                FontManager::GetInstance()->DrawGameText(def.name, (int)nameX + 1, (int)nameY + 1, nameFontSize, {0, 0, 0, 100}, "Modern"); // shadow
+                FontManager::GetInstance()->DrawGameText(def.name, (int)nameX, (int)nameY, nameFontSize,
+                         isStat ? (Color){120, 240, 150, 255} : (Color){255, 210, 80, 255}, "Modern");
 
                 // Đường phân cách
                 DrawLineEx(
@@ -1718,7 +1736,7 @@ void GameManager::Draw() {
 
                 // Mô tả (font nhỏ, nhiều dòng bằng \n trong chuỗi)
                 // Căn lề trái dịch sang phải (textArea.x + 35) để text gói trong khoảng 200px
-                DrawText(def.description, (int)(textArea.x + 35), (int)(nameY + 50), 18, (Color){220, 220, 220, 230});
+                FontManager::GetInstance()->DrawGameText(def.description, (int)(textArea.x + 35), (int)(nameY + 50), 18, (Color){220, 220, 220, 230}, "Modern");
 
                 // 5d. Hiệu ứng hover: viền vàng/xanh sáng
                 if (hovered) {
@@ -1726,9 +1744,8 @@ void GameManager::Draw() {
                         isStat ? (Color){80, 255, 130, 255} : (Color){255, 200, 50, 255});
                     // Text gợi ý bấm
                     const char* clickHint = "Click to select";
-                    int hintW = MeasureText(clickHint, 14);
-                    DrawText(clickHint, (int)(cx + CARD_W/2 - hintW/2), (int)(cardY + CARD_H - 28), 14,
-                             isStat ? (Color){80, 255, 130, 220} : (Color){255, 200, 50, 220});
+                    FontManager::GetInstance()->DrawGameTextCentered(clickHint, (int)(cx + CARD_W/2), (int)(cardY + CARD_H - 28), 14,
+                             isStat ? (Color){80, 255, 130, 220} : (Color){255, 200, 50, 220}, "Modern");
                 }
             }
             break;
@@ -1769,25 +1786,35 @@ void GameManager::CleanUp() {
         // UnloadSound(sfxPickup);
         // UnloadMusicStream(bgMusic);
         // CloseAudioDevice();
+    }
+    
+    if (shopUI) {
+        delete shopUI;
+        shopUI = nullptr;
+    }
+    
+    ShopManager::GetInstance()->Save();
+    ShopManager::DestroyInstance();
+
+    // Unload fonts
+    FontManager::GetInstance()->DestroyInstance();
         
+    if (mainMenuUI) {
+        delete mainMenuUI;
+        mainMenuUI = nullptr;
+    }
         
-        UnloadFont(customFont);
-        
-        if (mainMenuUI) {
-            delete mainMenuUI;
-            mainMenuUI = nullptr;
-        }
-        
+    if (IsWindowReady()) {
         CloseWindow();
     }
 }
 
 void GameManager::DrawTextCustom(const char* text, int posX, int posY, int fontSize, Color color) {
-    DrawTextEx(customFont, text, {(float)posX, (float)posY}, (float)fontSize, 1.0f, color);
+    FontManager::GetInstance()->DrawGameText(text, posX, posY, (float)fontSize, color, "Modern");
 }
 
 int GameManager::MeasureTextCustom(const char* text, int fontSize) {
-    Vector2 size = MeasureTextEx(customFont, text, (float)fontSize, 1.0f);
+    Vector2 size = FontManager::GetInstance()->MeasureGameText(text, (float)fontSize, "Modern");
     return (int)size.x;
 }
 
