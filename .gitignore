@@ -2,3 +2,7 @@
 *.dsym
 mainobj/
 *.o
+
+# Save files
+data/*.json
+data/*.dat

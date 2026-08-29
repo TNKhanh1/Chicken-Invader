@@ -26,6 +26,7 @@ public:
     virtual void Die() = 0;
 
     // Thay đổi máu
+    virtual void SetHp(float hp) { currentHp = hp; }
     virtual void MultiplyHp(float factor) { maxHp *= factor; currentHp = maxHp; }
 
     // Getters (Sử dụng virtual để Decorator Pattern có thể Override)

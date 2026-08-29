@@ -183,12 +183,30 @@ void Spaceship::Draw() {
     // -------------------------------------------------------------------------
 
     // Mặc định luôn vẽ Hypergun vì ảnh cũ đã bị xóa
-    Texture2D tex = GameManager::GetInstance()->GetTexSpaceshipHypergun();
-    if (tex.id != 0) {
-        DrawTexturePro(tex, {36.0f, 201.0f, 108.0f, 95.0f}, 
-                       {position.x, position.y + offsetY, drawWidth, drawHeight}, 
-                       {drawWidth / 2.0f, drawHeight / 2.0f}, 0.0f, WHITE);
+    Texture2D tex = hasCustomTexture ? customTexture : GameManager::GetInstance()->GetTexSpaceshipHypergun();
+
+    // Hỗ trợ vẽ texture đè nếu có Argument/Buff (VD: lõi khiên)
+    if (activeBuff.shieldActive) {
+        DrawCircleV(position, 50.0f, { 0, 200, 255, 100 });
     }
+
+    if (tex.id != 0) {
+        Rectangle sourceRec = hasCustomTexture ? 
+                              Rectangle{0, 0, (float)tex.width, (float)tex.height} : 
+                              Rectangle{36.0f, 201.0f, 108.0f, 95.0f};
+                              
+        DrawTexturePro(
+            tex, 
+            sourceRec, 
+            {position.x, position.y + offsetY, drawWidth, drawHeight}, 
+            {drawWidth/2, drawHeight/2}, 
+            0.0f, 
+            WHITE
+        );
+    }
+    
+    // Draw Level & Shield UI
+    FontManager::GetInstance()->DrawGameText(std::to_string(GetLevel()).c_str(), position.x - 5, position.y + 40, 15, YELLOW, "Modern");
 }
 // -------------------------------------------
 
@@ -295,6 +313,79 @@ bool GameManager::SpawnWaveBatch(int wave, int batch) {
     return WaveManager::GetInstance()->SpawnBatch(wave, batch);
 }
 
+void GameManager::StartStage(int stageId, GameMode mode) {
+    currentStage = stageId;
+    currentWave = 1;
+    currentBatch = 1;
+    currentGameMode = mode;
+    
+    if (currentStage != 7) {
+        WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
+    }
+    
+    waveTimer = 3.0f;
+    activeItems.clear();
+    extraStatSelectionsPending = 0;
+    pendingArgumentAfterStat = false;
+    score = 0;
+    CoinManager::GetInstance()->ResetSession();
+    
+    // Initialize Player 1
+    if (!player) {
+        player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
+        player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
+    } else {
+        player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
+        player->Heal(player->GetMaxHp());
+    }
+    
+    std::string savedWeapon = ShopManager::GetInstance()->GetSelectedWeapon();
+    if (!savedWeapon.empty()) {
+        player->SetWeapon(savedWeapon);
+    }
+    
+    // Initialize Player 2 if needed
+    if (mode == GameMode::TWO_PLAYERS || mode == GameMode::PLAYER_AND_AI) {
+        if (!player2) {
+            player2 = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2 + 80, (float)screenHeight - 100});
+            player2->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
+            player2->SetTextureOverride(texSpaceship2);
+        } else {
+            player2->SetPosition({(float)screenWidth/2 + 80, (float)screenHeight - 100});
+            player2->Heal(player2->GetMaxHp());
+        }
+        
+        if (!savedWeapon.empty()) {
+            player2->SetWeapon(savedWeapon);
+        }
+    } else {
+        if (player2) player2.reset();
+    }
+    
+    pendingEggSkinLoad = true;
+    
+    if (currentStage == 7) {
+        player->MultiplyHp(3.0f);
+        if (player2) player2->MultiplyHp(3.0f);
+    }
+    
+    if (currentStage == 6) {
+        EnterStatSelection(1);
+    } else {
+        StartWave(1);
+    }
+    
+    // Boss stage
+    if (currentStage == 7) {
+        isBossCutscene = true;
+        cutsceneTimer = 0.0f;
+        auto mcb = std::make_shared<MilitaryChickenBoss>(12, EnemyStats{150000.0f, 50.0f, 20.0f, 150.0f, 0.0f, 100}, Vector2{(float)screenWidth/2 - 150, -200.0f});
+        auto scb = std::make_shared<SuperChickBoss>(13, EnemyStats{150000.0f, 50.0f, 20.0f, 150.0f, 0.0f, 100}, Vector2{(float)screenWidth/2 + 150, -200.0f});
+        activeEnemies.push_back(mcb);
+        activeEnemies.push_back(scb);
+    }
+}
+
 void GameManager::Init(int width, int height, const char* title) {
     screenWidth = width;
     screenHeight = height;
@@ -337,6 +428,7 @@ void GameManager::Init(int width, int height, const char* title) {
     SpaceshipDataManager::GetInstance()->LoadJSON("Hypergun", "assets/spaceship/hypergun.json");
 
     texSpaceshipHypergun = LoadTexture("assets/spaceship/hypergun_spaceship.png");
+    texSpaceship2 = LoadTexture("assets/spaceship/spaceship2.png");
     texBulletStrong = LoadTexture("assets/spaceship/hypergun_strong.png");
     texBulletWeak = LoadTexture("assets/spaceship/hypergun_weak.png");
     
@@ -449,6 +541,13 @@ bool GameManager::DrawButton(Rectangle bounds, const char* text) {
 }
 
 void GameManager::Update(float deltaTime) {
+    if (pendingEggSkinLoad) {
+        std::string eggPath = ShopManager::GetInstance()->GetSelectedEggTexturePath();
+        if (texEnemyBullet.id != 0) UnloadTexture(texEnemyBullet);
+        texEnemyBullet = LoadTexture(eggPath.c_str());
+        pendingEggSkinLoad = false;
+    }
+
     // UpdateMusicStream(bgMusic);
 
     // Handle State Transitions and specific state logic
@@ -505,6 +604,11 @@ void GameManager::Update(float deltaTime) {
                 player->SetPosition(pPos);
                 
                 player->Update(deltaTime);
+            }
+            if (player2 && player2->IsActive()) {
+                Vector2 mousePos = GetMousePosition();
+                player2->SetPosition(mousePos);
+                player2->Update(deltaTime);
             }
 
             // --- Kết thúc intro: bắt đầu wave thật ---
@@ -583,6 +687,7 @@ void GameManager::Update(float deltaTime) {
                 player->SetPosition(pos);
 
                 player->Update(deltaTime);
+                
                 std::string weapon = player->GetWeapon();
                 bool isBeamWeapon = (weapon == "Lightning_Fryer" || weapon == "Plasma_Rifle" || weapon == "Laser_Cannon");
 
@@ -687,6 +792,50 @@ void GameManager::Update(float deltaTime) {
                         }
                     }
                 }
+            }
+
+            if (player2 && player2->IsActive()) {
+                Vector2 mousePos = GetMousePosition();
+                player2->SetPosition(mousePos);
+                
+                if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                    if (player2->CanFire()) {
+                        player2->Fire();
+                    }
+                }
+                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                    player2->ActivateMana();
+                }
+                
+                player2->Update(deltaTime);
+            }
+
+            // Sync Health System (Shared HP)
+            static float lastSharedHp = -1.0f;
+            if (player && player2 && player->IsActive() && player2->IsActive()) {
+                float hp1 = player->GetHp();
+                float hp2 = player2->GetHp();
+                if (lastSharedHp < 0.0f) lastSharedHp = hp1; // Khởi tạo ban đầu
+
+                if (hp1 != hp2) {
+                    if (hp1 != lastSharedHp && hp2 == lastSharedHp) {
+                        player2->SetHp(hp1);
+                        lastSharedHp = hp1;
+                    } else if (hp2 != lastSharedHp && hp1 == lastSharedHp) {
+                        player->SetHp(hp2);
+                        lastSharedHp = hp2;
+                    } else {
+                        // Cả hai cùng đổi (hoặc lỗi logic), ưu tiên máu thấp hơn (bị sát thương)
+                        float minHp = std::min(hp1, hp2);
+                        player->SetHp(minHp);
+                        player2->SetHp(minHp);
+                        lastSharedHp = minHp;
+                    }
+                } else {
+                    lastSharedHp = hp1;
+                }
+            } else {
+                lastSharedHp = -1.0f; // Reset khi không có đủ 2 người chơi
             }
 
             // Update Cutscene Timer if active
@@ -859,45 +1008,65 @@ void GameManager::Update(float deltaTime) {
                                 player->TakeDamage(bullet->GetDamage());
                             }
                         }
-                    }
-                }
-
-                // Va chạm trực tiếp quái và Player
-                for (auto& enemy : activeEnemies) {
-                    if (!enemy->IsActive() || !player || !player->IsActive()) continue;
-                    if (CheckCollisionRecs(player->GetHitbox(), enemy->GetHitbox())) {
-                        enemy->TakeDamage(100);
-                        player->TakeDamage(enemy->role == EnemyRole::ASTEROID ? 50 : 20);
-                    }
-                }
-
-                // Va chạm Item và Player
-                if (player && player->IsActive()) {
-                    for (auto& item : activeItems) {
-                        if (!item->IsActive()) continue;
-                        Rectangle itemRect = {item->GetPosition().x - 20, item->GetPosition().y - 20, 40, 40};
-                        if (CheckCollisionRecs(itemRect, player->GetHitbox())) {
-                            item->SetActive(false);
-                            if (item->GetType() == ItemType::DRUMSTICK) {
-                                AddScore(50);
-                                player->GainExp(10.0f);
-                                PlayPickupSound();
-                            } else if (item->GetType() == ItemType::SWORD ||
-                                       item->GetType() == ItemType::SHIELD ||
-                                       item->GetType() == ItemType::HEART_POWERUP) {
-                                auto* powerUp = dynamic_cast<PowerUpItem*>(item.get());
-                                if (powerUp) powerUp->OnPickup(player.get());
+                        if (player2 && player2->IsActive()) {
+                            if (CheckCollisionCircleRec(bullet->GetCenter(), bullet->GetRadius(), player2->GetHitbox())) {
+                                bullet->SetActive(false);
+                                player2->TakeDamage(bullet->GetDamage());
                             }
                         }
                     }
                 }
 
+                // Va chạm trực tiếp quái và Player
+                for (auto& enemy : activeEnemies) {
+                    if (!enemy->IsActive()) continue;
+                    if (player && player->IsActive() && CheckCollisionRecs(player->GetHitbox(), enemy->GetHitbox())) {
+                        enemy->TakeDamage(100);
+                        player->TakeDamage(enemy->role == EnemyRole::ASTEROID ? 50 : 20);
+                    }
+                    if (player2 && player2->IsActive() && CheckCollisionRecs(player2->GetHitbox(), enemy->GetHitbox())) {
+                        enemy->TakeDamage(100);
+                        player2->TakeDamage(enemy->role == EnemyRole::ASTEROID ? 50 : 20);
+                    }
+                }
+
+                // Va chạm Item và Player
+                for (auto& item : activeItems) {
+                    if (!item->IsActive()) continue;
+                    Rectangle itemRect = {item->GetPosition().x - 20, item->GetPosition().y - 20, 40, 40};
+                    bool pickedUp = false;
+                    Spaceship* whoPicked = nullptr;
+                    if (player && player->IsActive() && CheckCollisionRecs(itemRect, player->GetHitbox())) {
+                        pickedUp = true; whoPicked = player.get();
+                    } else if (player2 && player2->IsActive() && CheckCollisionRecs(itemRect, player2->GetHitbox())) {
+                        pickedUp = true; whoPicked = player2.get();
+                    }
+                    
+                    if (pickedUp && whoPicked) {
+                        item->SetActive(false);
+                        if (item->GetType() == ItemType::DRUMSTICK) {
+                            AddScore(50);
+                            whoPicked->GainExp(10.0f);
+                            PlayPickupSound();
+                        } else if (item->GetType() == ItemType::SWORD ||
+                                   item->GetType() == ItemType::SHIELD ||
+                                   item->GetType() == ItemType::HEART_POWERUP) {
+                            auto* powerUp = dynamic_cast<PowerUpItem*>(item.get());
+                            if (powerUp) powerUp->OnPickup(whoPicked);
+                        }
+                    }
+                }
+
                 // Game Over Check
-                if (player && player->GetHp() <= 0) {
+                bool p1Dead = !player || player->GetHp() <= 0;
+                bool p2Dead = (currentGameMode != GameMode::SINGLE_PLAYER) ? (!player2 || player2->GetHp() <= 0) : true;
+                
+                if (p1Dead && p2Dead) {
                     int totalW = WaveManager::GetInstance()->GetTotalWaves();
                     CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, false);
                     CoinManager::GetInstance()->CommitSessionCoins();
-                    player->ClearAllBuffs();
+                    if (player) player->ClearAllBuffs();
+                    if (player2) player2->ClearAllBuffs();
                     ProgressManager::GetInstance()->UnlockStage(currentStage + 1);
                     if (mainMenuUI) mainMenuUI->UpdateStageStatus();
                     currentState = GameState::GAME_OVER;
@@ -1071,49 +1240,8 @@ void GameManager::Draw() {
                 if (action == 100) {
                     ChangeState(GameState::SHOP);
                 } else if (action >= 1 && action <= 7) {
-                    currentStage = action;
-                    currentWave = 1;
-                    currentBatch = 1;
-                    
-                    if (currentStage != 7) {
-                        WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
-                    }
-                    
-                    waveTimer = 3.0f;
-                    activeItems.clear();
-                    extraStatSelectionsPending = 0;
-                    pendingArgumentAfterStat = false;
-                    score = 0;
-                    CoinManager::GetInstance()->ResetSession();
-                    
-                    if (!player) {
-                        player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
-                        player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
-                    } else {
-                        // Reset vị trí player về giữa màn hình
-                        player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
-                        player->Heal(player->GetMaxHp()); // Hồi đầy máu
-                    }
-                    
-                    if (currentStage == 7) {
-                        player->MultiplyHp(3.0f);
-                    }
-                    
-                    if (currentStage == 6) {
-                        EnterStatSelection(1);
-                    } else {
-                        StartWave(1);
-                    }
-                    
-                    // Khởi tạo Boss sau khi StartWave(1) đã clear activeEnemies
-                    if (currentStage == 7) {
-                        isBossCutscene = true;
-                        cutsceneTimer = 0.0f;
-                        auto mcb = std::make_shared<MilitaryChickenBoss>(12, EnemyStats{150000.0f, 50.0f, 20.0f, 150.0f, 0.0f, 100}, Vector2{(float)screenWidth/2 - 150, -200.0f});
-                        auto scb = std::make_shared<SuperChickBoss>(13, EnemyStats{150000.0f, 50.0f, 20.0f, 150.0f, 0.0f, 100}, Vector2{(float)screenWidth/2 + 150, -200.0f});
-                        activeEnemies.push_back(mcb);
-                        activeEnemies.push_back(scb);
-                    }
+                    pendingStageFromMenu = action;
+                    ChangeState(GameState::PLAYER_SELECT);
                 } else if (action == 100) {
                     // Mở Shop (hiện tại chuyển sang Coming Soon)
                     currentState = GameState::COMING_SOON;
@@ -1124,6 +1252,31 @@ void GameManager::Draw() {
             }
             break;
         }
+
+        case GameState::PLAYER_SELECT:
+        {
+            FontManager::GetInstance()->DrawGameTextCentered("CHOOSE GAME MODE", screenWidth/2, 100, 40, DARKBLUE, "Modern");
+
+            Rectangle singleBtn = { (float)screenWidth/2 - 350, (float)screenHeight/2 - 50, 200, 100 };
+            Rectangle doubleBtn = { (float)screenWidth/2 - 100, (float)screenHeight/2 - 50, 200, 100 };
+            Rectangle aiBtn     = { (float)screenWidth/2 + 150, (float)screenHeight/2 - 50, 200, 100 };
+            Rectangle backBtn   = { (float)screenWidth/2 - 100, (float)screenHeight - 150, 200, 50 };
+
+            if (DrawButton(singleBtn, "1 PLAYER")) {
+                StartStage(pendingStageFromMenu, GameMode::SINGLE_PLAYER);
+            }
+            if (DrawButton(doubleBtn, "2 PLAYERS")) {
+                StartStage(pendingStageFromMenu, GameMode::TWO_PLAYERS);
+            }
+            if (DrawButton(aiBtn, "1P + AI")) {
+                StartStage(pendingStageFromMenu, GameMode::PLAYER_AND_AI);
+            }
+            if (DrawButton(backBtn, "BACK")) {
+                ChangeState(GameState::MAIN_MENU);
+            }
+            break;
+        }
+
         
         case GameState::SETTINGS:
         {
@@ -1482,6 +1635,9 @@ void GameManager::Draw() {
         if (player && player->IsActive()) {
             player->Draw();
         }
+        if (player2 && player2->IsActive()) {
+            player2->Draw();
+        }
 
         // --- VẼ FLOATING DAMAGE TEXT ---
         for (const auto& dt : activeDamageTexts) {
@@ -1514,6 +1670,9 @@ void GameManager::Draw() {
                 }
                 if (player && player->IsActive()) {
                     DrawRectangleLinesEx(player->GetHitbox(), 2.0f, BLUE);
+                }
+                if (player2 && player2->IsActive()) {
+                    DrawRectangleLinesEx(player2->GetHitbox(), 2.0f, ORANGE);
                 }
             }
             
@@ -1590,49 +1749,97 @@ void GameManager::Draw() {
                 }
 
                 if (player) {
-                    float hpRatio = player->GetHp() / player->GetMaxHp();
-                    if (hpRatio < 0.0f) hpRatio = 0.0f;
-                    
-                    DrawRectangle(20, 80, 200, 20, GRAY);
-                    Color hpColor = (hpRatio > 0.5f) ? GREEN : ((hpRatio > 0.2f) ? YELLOW : RED);
-                    DrawRectangle(20, 80, (int)(200 * hpRatio), 20, hpColor);
-                    DrawRectangleLines(20, 80, 200, 20, DARKGRAY);
-                    
-                    FontManager::GetInstance()->DrawGameText(TextFormat("HP: %.0f/%.0f", player->GetHp(), player->GetMaxHp()), 25, 82, 16, BLACK, "Modern");
-                    
-                    float iconX = 230.0f;
-                    if (player->HasSwordBuff()) {
-                        DrawTexturePro(texSwordItem, {0, 0, (float)texSwordItem.width, (float)texSwordItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
-                        FontManager::GetInstance()->DrawGameText(TextFormat("%.0fs", player->GetSwordTimer()), (int)iconX, 108, 12, ORANGE, "Modern");
-                        iconX += 40.0f;
+                    // --- Draw HUD for Player 1 ---
+                    if (player->IsActive()) {
+                        float hpRatio = player->GetHp() / player->GetMaxHp();
+                        if (hpRatio < 0.0f) hpRatio = 0.0f;
+                        
+                        DrawRectangle(20, 80, 200, 20, GRAY);
+                        Color hpColor = (hpRatio > 0.5f) ? GREEN : ((hpRatio > 0.2f) ? YELLOW : RED);
+                        DrawRectangle(20, 80, (int)(200 * hpRatio), 20, hpColor);
+                        DrawRectangleLines(20, 80, 200, 20, DARKGRAY);
+                        FontManager::GetInstance()->DrawGameText(TextFormat("P1 HP: %.0f/%.0f", player->GetHp(), player->GetMaxHp()), 25, 82, 16, BLACK, "Modern");
+                        
+                        float iconX = 230.0f;
+                        if (player->HasSwordBuff()) {
+                            DrawTexturePro(texSwordItem, {0, 0, (float)texSwordItem.width, (float)texSwordItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
+                            FontManager::GetInstance()->DrawGameText(TextFormat("%.0fs", player->GetSwordTimer()), (int)iconX, 108, 12, ORANGE, "Modern");
+                            iconX += 40.0f;
+                        }
+                        if (player->HasShieldBuff()) {
+                            DrawTexturePro(texShieldItem, {0, 0, (float)texShieldItem.width, (float)texShieldItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
+                            FontManager::GetInstance()->DrawGameText(TextFormat("%.0fs", player->GetShieldTimer()), (int)iconX, 108, 12, SKYBLUE, "Modern");
+                        }
+                        
+                        // Draw EXP Bar
+                        float expRatio = player->GetCurrentExp() / player->GetMaxExp();
+                        if (expRatio > 1.0f) expRatio = 1.0f;
+                        DrawRectangle(20, 110, 200, 15, GRAY);
+                        DrawRectangle(20, 110, (int)(200 * expRatio), 15, BLUE);
+                        DrawRectangleLines(20, 110, 200, 15, DARKGRAY);
+                        FontManager::GetInstance()->DrawGameText(TextFormat("P1 LVL: %d  EXP: %.0f/%.0f", player->GetLevel(), player->GetCurrentExp(), player->GetMaxExp()), 25, 112, 12, WHITE, "Modern");
+                        
+                        // Draw Mana Bar
+                        float manaRatio = player->GetCurrentMana() / player->GetMaxMana();
+                        if (manaRatio > 1.0f) manaRatio = 1.0f;
+                        DrawRectangle(20, 135, 200, 15, GRAY);
+                        
+                        Color manaColor = PURPLE;
+                        if (player->IsManaActive()) {
+                            manaColor = (GetTime() * 10.0 - (int)(GetTime() * 10.0) > 0.5) ? MAGENTA : PURPLE;
+                        }
+                        
+                        DrawRectangle(20, 135, (int)(200 * manaRatio), 15, manaColor);
+                        DrawRectangleLines(20, 135, 200, 15, DARKGRAY);
+                        FontManager::GetInstance()->DrawGameText(TextFormat("MANA: %.0f/%.0f%s", player->GetCurrentMana(), player->GetMaxMana(), player->IsManaActive() ? " (ACTIVE)" : ""), 25, 137, 12, WHITE, "Modern");
                     }
-                    if (player->HasShieldBuff()) {
-                        DrawTexturePro(texShieldItem, {0, 0, (float)texShieldItem.width, (float)texShieldItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
-                        FontManager::GetInstance()->DrawGameText(TextFormat("%.0fs", player->GetShieldTimer()), (int)iconX, 108, 12, SKYBLUE, "Modern");
+                    
+                    // --- Draw HUD for Player 2 ---
+                    if (player2 && player2->IsActive()) {
+                        float baseX = screenWidth - 250.0f;
+                        
+                        float hpRatio2 = player2->GetHp() / player2->GetMaxHp();
+                        if (hpRatio2 < 0.0f) hpRatio2 = 0.0f;
+                        
+                        DrawRectangle((int)baseX, 80, 200, 20, GRAY);
+                        Color hpColor2 = (hpRatio2 > 0.5f) ? GREEN : ((hpRatio2 > 0.2f) ? YELLOW : RED);
+                        DrawRectangle((int)baseX, 80, (int)(200 * hpRatio2), 20, hpColor2);
+                        DrawRectangleLines((int)baseX, 80, 200, 20, DARKGRAY);
+                        FontManager::GetInstance()->DrawGameText(TextFormat("P2 HP: %.0f/%.0f", player2->GetHp(), player2->GetMaxHp()), (int)baseX + 5, 82, 16, BLACK, "Modern");
+                        
+                        float iconX = baseX - 40.0f;
+                        if (player2->HasSwordBuff()) {
+                            DrawTexturePro(texSwordItem, {0, 0, (float)texSwordItem.width, (float)texSwordItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
+                            FontManager::GetInstance()->DrawGameText(TextFormat("%.0fs", player2->GetSwordTimer()), (int)iconX, 108, 12, ORANGE, "Modern");
+                            iconX -= 40.0f;
+                        }
+                        if (player2->HasShieldBuff()) {
+                            DrawTexturePro(texShieldItem, {0, 0, (float)texShieldItem.width, (float)texShieldItem.height}, {iconX, 75.0f, 30.0f, 30.0f}, {0, 0}, 0.0f, WHITE);
+                            FontManager::GetInstance()->DrawGameText(TextFormat("%.0fs", player2->GetShieldTimer()), (int)iconX, 108, 12, SKYBLUE, "Modern");
+                        }
+                        
+                        // Draw EXP Bar
+                        float expRatio2 = player2->GetCurrentExp() / player2->GetMaxExp();
+                        if (expRatio2 > 1.0f) expRatio2 = 1.0f;
+                        DrawRectangle((int)baseX, 110, 200, 15, GRAY);
+                        DrawRectangle((int)baseX, 110, (int)(200 * expRatio2), 15, BLUE);
+                        DrawRectangleLines((int)baseX, 110, 200, 15, DARKGRAY);
+                        FontManager::GetInstance()->DrawGameText(TextFormat("P2 LVL: %d  EXP: %.0f/%.0f", player2->GetLevel(), player2->GetCurrentExp(), player2->GetMaxExp()), (int)baseX + 5, 112, 12, WHITE, "Modern");
+                        
+                        // Draw Mana Bar
+                        float manaRatio2 = player2->GetCurrentMana() / player2->GetMaxMana();
+                        if (manaRatio2 > 1.0f) manaRatio2 = 1.0f;
+                        DrawRectangle((int)baseX, 135, 200, 15, GRAY);
+                        
+                        Color manaColor2 = PURPLE;
+                        if (player2->IsManaActive()) {
+                            manaColor2 = (GetTime() * 10.0 - (int)(GetTime() * 10.0) > 0.5) ? MAGENTA : PURPLE;
+                        }
+                        
+                        DrawRectangle((int)baseX, 135, (int)(200 * manaRatio2), 15, manaColor2);
+                        DrawRectangleLines((int)baseX, 135, 200, 15, DARKGRAY);
+                        FontManager::GetInstance()->DrawGameText(TextFormat("MANA: %.0f/%.0f%s", player2->GetCurrentMana(), player2->GetMaxMana(), player2->IsManaActive() ? " (ACTIVE)" : ""), (int)baseX + 5, 137, 12, WHITE, "Modern");
                     }
-                    
-                    // Draw EXP Bar
-                    float expRatio = player->GetCurrentExp() / player->GetMaxExp();
-                    if (expRatio > 1.0f) expRatio = 1.0f;
-                    DrawRectangle(20, 110, 200, 15, GRAY);
-                    DrawRectangle(20, 110, (int)(200 * expRatio), 15, BLUE);
-                    DrawRectangleLines(20, 110, 200, 15, DARKGRAY);
-                    FontManager::GetInstance()->DrawGameText(TextFormat("LVL: %d  EXP: %.0f/%.0f", player->GetLevel(), player->GetCurrentExp(), player->GetMaxExp()), 25, 112, 12, WHITE, "Modern");
-                    
-                    // Draw Mana Bar
-                    float manaRatio = player->GetCurrentMana() / player->GetMaxMana();
-                    if (manaRatio > 1.0f) manaRatio = 1.0f;
-                    DrawRectangle(20, 135, 200, 15, GRAY);
-                    
-                    Color manaColor = PURPLE;
-                    if (player->IsManaActive()) {
-                        // Nhấp nháy màu sắc khi Mana đang active
-                        manaColor = (GetTime() * 10.0 - (int)(GetTime() * 10.0) > 0.5) ? MAGENTA : PURPLE;
-                    }
-                    
-                    DrawRectangle(20, 135, (int)(200 * manaRatio), 15, manaColor);
-                    DrawRectangleLines(20, 135, 200, 15, DARKGRAY);
-                    FontManager::GetInstance()->DrawGameText(TextFormat("MANA: %.0f/%.0f%s", player->GetCurrentMana(), player->GetMaxMana(), player->IsManaActive() ? " (ACTIVE)" : ""), 25, 137, 12, WHITE, "Modern");
                 }
                 // --- Stats Panel (Tab overlay) ---
                 statsPanel.Update(GetFrameTime(), IsKeyDown(KEY_TAB));
@@ -1765,6 +1972,7 @@ void GameManager::CleanUp() {
     if (IsWindowReady()) {
         UnloadTexture(texSettingIcon);
     UnloadTexture(texSpaceshipHypergun);
+    UnloadTexture(texSpaceship2);
     for (int i = 0; i < 20; i++) UnloadTexture(texEnemyAnims[i]);
     UnloadTexture(texAsteroid1);
     UnloadTexture(texAsteroid2);
@@ -1795,6 +2003,8 @@ void GameManager::CleanUp() {
     
     ShopManager::GetInstance()->Save();
     ShopManager::DestroyInstance();
+
+    if (player2) player2.reset();
 
     // Unload fonts
     FontManager::GetInstance()->DestroyInstance();

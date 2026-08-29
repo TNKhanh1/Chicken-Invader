@@ -56,6 +56,10 @@ private:
     // Observer Pattern
     std::vector<IObserver*> observers;
 
+    // Custom Texture for P2
+    Texture2D customTexture;
+    bool hasCustomTexture = false;
+
 public:
     Spaceship(std::string name, Vector2 pos, float hp, float dmg, float arm, float spd, 
               float critC, float critD, float mana, float atkSpd);
@@ -107,6 +111,8 @@ public:
     virtual void SetWeapon(const std::string& weaponName);
     virtual std::string GetWeapon() const { return currentWeapon; }
     virtual void ReloadStatsFromCSV();
+
+    virtual void SetTextureOverride(Texture2D tex) { customTexture = tex; hasCustomTexture = true; }
 
     // Hiệu ứng giật súng
     virtual void TriggerRecoil();

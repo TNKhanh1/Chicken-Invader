@@ -220,3 +220,21 @@ ShopManager::DestroyInstance();
 - Đang trang bị → hiện "EQUIPPED".
 - Dữ liệu mua sắm được lưu sau khi thoát game và khôi phục khi mở lại.
 - Tổng coin hiển thị chính xác và trừ đúng sau khi mua.
+
+---
+
+## 9. Các cập nhật bổ sung (Bug Fix & Hoàn thiện)
+
+- **Sửa lỗi nhòe chữ (Font Rendering)**:
+  - Cập nhật `FontManager::GetNearestFontSize` để tìm/tạo trước các kích thước chữ chuẩn.
+  - Tích hợp nội suy Filter cho Texture chữ và scale động trong `DrawGameText`, giúp font chữ hoàn toàn sắc nét.
+- **Sửa lỗi Load Ảnh Trứng (Bug Red Circles)**:
+  - Xử lý việc `LoadTexture` nằm sai vòng đời render (bên trong `BeginDrawing`). 
+  - Đã chuyển logic cập nhật Texture của trứng (`texEnemyBullet`) sang vòng lặp `GameManager::Update()` bằng cách dùng biến cờ báo `pendingEggSkinLoad`.
+- **Đồng bộ mã ID vũ khí (Weapon ID mismatch)**:
+  - Sửa lỗi súng luôn rớt về `Hypergun` do sai tên định danh.
+  - Cập nhật lại ID trong `ShopManager::BuildCatalog` (ví dụ từ `NeutronGun` thành `Neutron_Gun`, `PlasmaRifle` thành `Plasma_Rifle`) để map chính xác 100% với hàm khởi tạo behavior `CreateWeaponBehavior`.
+- **Quản lý Save Data bằng .gitignore**:
+  - Dời đường dẫn lưu data của Shop từ thư mục ảo `saves/shop.json` sang `data/shop.json`.
+  - Cập nhật file `.gitignore` bỏ qua (ignore) các thư mục và file cấu hình save local (`data/*.json` và `data/*.dat`). 
+  - Xóa theo dõi (untrack) các file save khỏi Git Cache, đảm bảo khi đẩy source lên Github, thông số của player tải về luôn mặc định ban đầu: (0 coin, progress: 1, súng & trứng default).

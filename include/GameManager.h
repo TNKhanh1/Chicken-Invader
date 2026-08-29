@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include "GameState.h"
+#include "GameMode.h"
 #include "Observer.h"
 #include "StatsPanel.h"
 #include "MenuManager.h"
@@ -103,6 +104,10 @@ private:
     std::vector<std::shared_ptr<class Item>> activeItems;
     std::vector<std::shared_ptr<class Item>> pendingItems;
     std::shared_ptr<class Spaceship> player;
+    std::shared_ptr<class Spaceship> player2; // For Player 2 or AI
+    Texture2D texSpaceship2;
+    GameMode currentGameMode = GameMode::SINGLE_PLAYER;
+    int pendingStageFromMenu = -1;
     
     // Wave variables
     int currentStage = 1;
@@ -123,6 +128,8 @@ private:
     bool isBossCutscene = false;
     float cutsceneTimer = 0.0f;
     float waveTextAlpha    = 0.0f;   // Alpha chữ WAVE X (0–255)
+
+    bool pendingEggSkinLoad = false;
 
     // Test selection configuration (Encapsulated)
     struct TestConfig {
@@ -172,6 +179,7 @@ public:
     void StartWave(int waveIndex);
     bool SpawnWaveBatch(int wave, int batch);
     void EnterStatSelection(int nextWave); // Chuyển vào màn hình chọn chỉ số
+    void StartStage(int stageId, GameMode mode);
 
     // Các hàm cho vòng lặp
     void Update(float deltaTime);
@@ -246,6 +254,7 @@ public:
     std::vector<std::shared_ptr<class Enemy>>& GetActiveEnemies() { return activeEnemies; }
     void AddItem(std::shared_ptr<class Item> item) { pendingItems.push_back(item); }
     std::shared_ptr<class Spaceship> GetPlayer() const { return player; }
+    std::shared_ptr<class Spaceship> GetPlayer2() const { return player2; }
     
     // Custom Font handling
     // customFont đã được thay thế bởi FontManager

@@ -22,7 +22,7 @@ void ShopManager::DestroyInstance() {
     }
 }
 
-ShopManager::ShopManager() : selectedWeapon("Hypergun"), selectedEggSkin(0), dataFilePath("saves/shop.json") {
+ShopManager::ShopManager() : selectedWeapon("Hypergun"), selectedEggSkin(0), dataFilePath("data/shop.json") {
     BuildCatalog();
     unlockedWeapons.insert("Hypergun");
     unlockedEggSkins.insert(0);
@@ -31,14 +31,13 @@ ShopManager::ShopManager() : selectedWeapon("Hypergun"), selectedEggSkin(0), dat
 void ShopManager::BuildCatalog() {
     // Vũ khí
     weaponItems.push_back({"Hypergun", "Hypergun", 0, ""});
-    weaponItems.push_back({"NeutronGun", "Neutron Gun", 300, ""});
+    weaponItems.push_back({"Neutron_Gun", "Neutron Gun", 300, ""});
     weaponItems.push_back({"Riddler", "Riddler", 500, ""});
-    weaponItems.push_back({"IonBlaster", "Ion Blaster", 700, ""});
-    weaponItems.push_back({"UtensilPoker", "Utensil Poker", 900, ""});
-    weaponItems.push_back({"SpreadShot", "Spread Shot", 1000, ""});
-    weaponItems.push_back({"PlasmaRifle", "Plasma Rifle", 1200, ""});
-    weaponItems.push_back({"LaserCannon", "Laser Cannon", 1500, ""});
-    weaponItems.push_back({"Beam", "Photon Swarm (Mana)", 2000, ""});
+    weaponItems.push_back({"Ion_Blaster", "Ion Blaster", 700, ""});
+    weaponItems.push_back({"Utensil_Poker", "Utensil Poker", 900, ""});
+    weaponItems.push_back({"Lightning_Fryer", "Lightning Fryer", 1000, ""});
+    weaponItems.push_back({"Plasma_Rifle", "Plasma Rifle", 1200, ""});
+    weaponItems.push_back({"Laser_Cannon", "Laser Cannon", 1500, ""});
 
     // Egg Skins
     eggItems.push_back({"egg0", "Default Egg", 0, "assets/egg.png"});
