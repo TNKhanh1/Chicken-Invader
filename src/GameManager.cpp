@@ -29,6 +29,7 @@
 #include "../include/CoinManager.h"
 #include "../include/ItemDropManager.h"
 #include "../include/PowerUpItem.h"
+#include "../include/ProgressManager.h"
 
 // ---------------------------------------------------------
 // Dữ liệu tĩnh cho màn hình chọn Argument (lõi) và Chỉ Số (stat)
@@ -297,6 +298,12 @@ void GameManager::Init(int width, int height, const char* title) {
     // Khởi tạo cửa sổ Raylib
     InitWindow(screenWidth, screenHeight, "CHICKEN INVADERS");
     SetTargetFPS(60); // Đặt tốc độ khung hình 60 FPS
+    
+    // Load progress
+    ProgressManager::GetInstance()->LoadProgress();
+
+    // Khởi tạo giao diện UI
+    mainMenuUI = new MenuManager(screenWidth, screenHeight);
     
     // Nạp Font hỗ trợ tiếng Việt
     int codepoints[1000];
@@ -717,7 +724,9 @@ void GameManager::Update(float deltaTime) {
                                     int totalW = WaveManager::GetInstance()->GetTotalWaves();
                                     CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, true);
                                     CoinManager::GetInstance()->CommitSessionCoins();
-                                    ChangeState(GameState::WAVE_SELECTION);
+                                    ProgressManager::GetInstance()->UnlockStage(currentStage + 1);
+                                    if (mainMenuUI) mainMenuUI->UpdateStageStatus();
+                                    ChangeState(GameState::MAIN_MENU);
                                     if (player) {
                                         player->Heal(player->GetMaxHp());
                                         player->ClearAllBuffs();
@@ -877,6 +886,8 @@ void GameManager::Update(float deltaTime) {
                     CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, false);
                     CoinManager::GetInstance()->CommitSessionCoins();
                     player->ClearAllBuffs();
+                    ProgressManager::GetInstance()->UnlockStage(currentStage + 1);
+                    if (mainMenuUI) mainMenuUI->UpdateStageStatus();
                     currentState = GameState::GAME_OVER;
                 }
             }
@@ -1039,23 +1050,56 @@ void GameManager::Draw() {
     switch (currentState) {
         case GameState::MAIN_MENU:
         {
-            int titleW = MeasureText("CHICKEN INVADERS", 40);
-            DrawText("CHICKEN INVADERS", screenWidth/2 - titleW/2, 150, 40, DARKBLUE);
-            
-            if (DrawButton({(float)screenWidth/2 - 100, 300, 200, 50}, "PLAY")) {
-                currentState = GameState::COMING_SOON;
-            }
-            
-            if (DrawButton({(float)screenWidth/2 - 100, 380, 200, 50}, "TEST")) {
-                currentState = GameState::TEST_MENU;
-            }
-            
-            // Nút Settings (góc trên phải)
-            Rectangle settingRect = {(float)screenWidth - 80, 20, 60, 60};
-            DrawTexturePro(texSettingIcon, {0, 0, (float)texSettingIcon.width, (float)texSettingIcon.height}, settingRect, {0,0}, 0.0f, WHITE);
-            if (CheckCollisionPointRec(GetMousePosition(), settingRect)) {
-                DrawRectangleLinesEx(settingRect, 2, RED);
-                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            if (mainMenuUI) {
+                int action = mainMenuUI->UpdateAndDraw(GetFrameTime());
+                if (action >= 1 && action <= 7) {
+                    currentStage = action;
+                    currentWave = 1;
+                    currentBatch = 1;
+                    
+                    if (currentStage != 7) {
+                        WaveManager::GetInstance()->LoadStage("data/stage" + std::to_string(currentStage) + ".json");
+                    }
+                    
+                    waveTimer = 3.0f;
+                    activeItems.clear();
+                    extraStatSelectionsPending = 0;
+                    pendingArgumentAfterStat = false;
+                    score = 0;
+                    CoinManager::GetInstance()->ResetSession();
+                    
+                    if (!player) {
+                        player = SpaceshipFactory::CreateSpaceship("Hypergun", 1, {(float)screenWidth/2, (float)screenHeight - 100});
+                        player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
+                    } else {
+                        // Reset vị trí player về giữa màn hình
+                        player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
+                        player->Heal(player->GetMaxHp()); // Hồi đầy máu
+                    }
+                    
+                    if (currentStage == 7) {
+                        player->MultiplyHp(3.0f);
+                    }
+                    
+                    if (currentStage == 6) {
+                        EnterStatSelection(1);
+                    } else {
+                        StartWave(1);
+                    }
+                    
+                    // Khởi tạo Boss sau khi StartWave(1) đã clear activeEnemies
+                    if (currentStage == 7) {
+                        isBossCutscene = true;
+                        cutsceneTimer = 0.0f;
+                        auto mcb = std::make_shared<MilitaryChickenBoss>(12, EnemyStats{150000.0f, 50.0f, 20.0f, 150.0f, 0.0f, 100}, Vector2{(float)screenWidth/2 - 150, -200.0f});
+                        auto scb = std::make_shared<SuperChickBoss>(13, EnemyStats{150000.0f, 50.0f, 20.0f, 150.0f, 0.0f, 100}, Vector2{(float)screenWidth/2 + 150, -200.0f});
+                        activeEnemies.push_back(mcb);
+                        activeEnemies.push_back(scb);
+                    }
+                } else if (action == 100) {
+                    // Mở Shop (hiện tại chuyển sang Coming Soon)
+                    currentState = GameState::COMING_SOON;
+                } else if (action == 101) {
                     previousState = currentState;
                     currentState = GameState::SETTINGS;
                 }
@@ -1726,7 +1770,14 @@ void GameManager::CleanUp() {
         // UnloadMusicStream(bgMusic);
         // CloseAudioDevice();
         
+        
         UnloadFont(customFont);
+        
+        if (mainMenuUI) {
+            delete mainMenuUI;
+            mainMenuUI = nullptr;
+        }
+        
         CloseWindow();
     }
 }

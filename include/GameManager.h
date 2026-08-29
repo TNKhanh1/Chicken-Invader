@@ -5,6 +5,7 @@
 #include "GameState.h"
 #include "Observer.h"
 #include "StatsPanel.h"
+#include "MenuManager.h"
 #include <vector>
 #include <memory>
 
@@ -16,6 +17,7 @@ private:
     // Instance duy nhất của game
     static GameManager* instance;
     StatsPanel statsPanel;
+    MenuManager* mainMenuUI = nullptr;
 
     // Các biến trạng thái của trò chơi
     GameState currentState;
