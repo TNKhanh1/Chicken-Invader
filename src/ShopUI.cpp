@@ -3,6 +3,7 @@
 #include "CoinManager.h"
 #include "FontManager.h"
 #include "GameManager.h"
+#include "SoundManager.h"
 
 ShopUI::ShopUI(int sw, int sh) : screenWidth(sw), screenHeight(sh), currentTab(ShopTab::WEAPONS), scrollOffset(0.0f) {
     weaponsTabBtn = { 50.0f, 100.0f, 200.0f, 50.0f };
@@ -39,18 +40,20 @@ Texture2D ShopUI::GetOrLoadTexture(const std::string& path) {
 void ShopUI::Update() {
     Vector2 mousePoint = GetMousePosition();
 
-    // Check Back button
     if (CheckCollisionPointRec(mousePoint, backBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        SoundManager::GetInstance()->PlayBeep();
         GameManager::GetInstance()->ChangeState(GameState::MAIN_MENU);
         return;
     }
 
     // Check Tabs
     if (CheckCollisionPointRec(mousePoint, weaponsTabBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        SoundManager::GetInstance()->PlayBeep();
         currentTab = ShopTab::WEAPONS;
         scrollOffset = 0.0f;
     }
     if (CheckCollisionPointRec(mousePoint, eggsTabBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        SoundManager::GetInstance()->PlayBeep();
         currentTab = ShopTab::EGGS;
         scrollOffset = 0.0f;
     }
@@ -90,9 +93,14 @@ void ShopUI::HandleWeaponInput() {
         
         if (CheckCollisionPointRec(mousePoint, itemRect) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             if (ShopManager::GetInstance()->IsWeaponUnlocked(weapons[i].id)) {
+                SoundManager::GetInstance()->PlayBeep();
                 ShopManager::GetInstance()->SelectWeapon(weapons[i].id);
             } else {
-                ShopManager::GetInstance()->BuyWeapon(weapons[i].id);
+                if (ShopManager::GetInstance()->BuyWeapon(weapons[i].id)) {
+                    SoundManager::GetInstance()->PlayCoin();
+                } else {
+                    SoundManager::GetInstance()->PlayBeep();
+                }
             }
         }
     }
@@ -126,9 +134,14 @@ void ShopUI::HandleEggInput() {
             }
             
             if (ShopManager::GetInstance()->IsEggSkinUnlocked(skinIndex)) {
+                SoundManager::GetInstance()->PlayBeep();
                 ShopManager::GetInstance()->SelectEggSkin(skinIndex);
             } else {
-                ShopManager::GetInstance()->BuyEggSkin(skinIndex);
+                if (ShopManager::GetInstance()->BuyEggSkin(skinIndex)) {
+                    SoundManager::GetInstance()->PlayCoin();
+                } else {
+                    SoundManager::GetInstance()->PlayBeep();
+                }
             }
         }
     }

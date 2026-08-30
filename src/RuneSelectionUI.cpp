@@ -2,6 +2,7 @@
 #include "RuneManager.h"
 #include "CoinManager.h"
 #include "FontManager.h"
+#include "SoundManager.h"
 #include <string>
 
 RuneSelectionUI::RuneSelectionUI(int w, int h) : screenW(w), screenH(h) {}
@@ -26,7 +27,11 @@ void RuneSelectionUI::Update(float deltaTime) {
         if (CheckCollisionPointRec(mousePos, rowRect)) {
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 // Try to upgrade
-                RuneManager::GetInstance()->UpgradeRune(i);
+                if (RuneManager::GetInstance()->UpgradeRune(i)) {
+                    SoundManager::GetInstance()->PlayCoin();
+                } else {
+                    SoundManager::GetInstance()->PlayBeep();
+                }
             }
         }
     }
@@ -34,12 +39,14 @@ void RuneSelectionUI::Update(float deltaTime) {
     // Check click on RESET button
     Rectangle resetBtn = { startX + 20, startY + panelH - 60, 160, 40 };
     if (CheckCollisionPointRec(mousePos, resetBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        SoundManager::GetInstance()->PlayBeep();
         RuneManager::GetInstance()->ResetAllAndRefund();
     }
 
     // Check click on START button
     Rectangle startBtn = { startX + panelW - 220, startY + panelH - 70, 200, 50 };
     if (CheckCollisionPointRec(mousePos, startBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        SoundManager::GetInstance()->PlayBeep();
         startRequested = true;
     }
 }

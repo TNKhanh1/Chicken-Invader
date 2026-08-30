@@ -30,6 +30,7 @@
 #include "RuneManager.h"
 #include "RuneSelectionUI.h"
 #include "SummaryScreen.h"
+#include "SoundManager.h"
 #include <iostream>
 #include <cmath>
 #include <algorithm>
@@ -433,6 +434,8 @@ void GameManager::Init(int width, int height, const char* title) {
     InitWindow(screenWidth, screenHeight, "CHICKEN INVADERS");
     SetTargetFPS(60); // Đặt tốc độ khung hình 60 FPS
     
+    SoundManager::GetInstance()->Init();
+    
     // Load progress
     ProgressManager::GetInstance()->LoadProgress();
 
@@ -598,6 +601,10 @@ void GameManager::EnterSummary(SummaryResult result) {
 }
 
 void GameManager::Update(float deltaTime) {
+    if (!isRunning) return;
+    
+    SoundManager::GetInstance()->UpdateMusic();
+
     if (pendingEggSkinLoad) {
         std::string eggPath = ShopManager::GetInstance()->GetSelectedEggTexturePath();
         if (texEnemyBullet.id != 0) UnloadTexture(texEnemyBullet);
@@ -862,10 +869,17 @@ case GameState::MAIN_MENU:
                 
                 std::string weapon = player->GetWeapon();
                 bool isBeamWeapon = (weapon == "Lightning_Fryer" || weapon == "Plasma_Rifle" || weapon == "Laser_Cannon");
+                bool isFiring = IsKeyDown(KEY_SPACE);
+                
+                if (!isBossCutscene && isBeamWeapon) {
+                    SoundManager::GetInstance()->UpdateBeamSound(weapon, isFiring);
+                } else {
+                    SoundManager::GetInstance()->UpdateBeamSound("", false);
+                }
 
                 isAutoLocked = false;
                 if (!isBossCutscene) {
-                    ProcessBeamWeapon(player.get(), IsKeyDown(KEY_SPACE), autoLockTargetPos, beamTextTimer, isAutoLocked);
+                    ProcessBeamWeapon(player.get(), isFiring, autoLockTargetPos, beamTextTimer, isAutoLocked);
                 }
             }
 
@@ -1432,12 +1446,41 @@ void GameManager::Draw() {
             FontManager::GetInstance()->DrawGameTextCentered("SETTINGS", screenWidth/2, 100, 40, DARKBLUE, "Modern");
             FontManager::GetInstance()->DrawGameText("Backgrounds:", screenWidth/2 - 350, 200, 25, GRAY, "Modern");
             
-            if (DrawButton({(float)screenWidth/2 - 350, 250, 150, 50}, "Default")) currentBgIndex = 0;
-            if (DrawButton({(float)screenWidth/2 - 150, 250, 150, 50}, "Bg 1")) currentBgIndex = 1;
-            if (DrawButton({(float)screenWidth/2 + 50, 250, 150, 50}, "Bg 2")) currentBgIndex = 2;
-            if (DrawButton({(float)screenWidth/2 + 250, 250, 150, 50}, "Bg 3")) currentBgIndex = 3;
+            if (DrawButton({(float)screenWidth/2 - 350, 250, 150, 50}, "Default")) {
+                currentBgIndex = 0;
+                SoundManager::GetInstance()->PlayBeep();
+            }
+            if (DrawButton({(float)screenWidth/2 - 150, 250, 150, 50}, "Bg 1")) {
+                currentBgIndex = 1;
+                SoundManager::GetInstance()->PlayBeep();
+            }
+            if (DrawButton({(float)screenWidth/2 + 50, 250, 150, 50}, "Bg 2")) {
+                currentBgIndex = 2;
+                SoundManager::GetInstance()->PlayBeep();
+            }
+            if (DrawButton({(float)screenWidth/2 + 250, 250, 150, 50}, "Bg 3")) {
+                currentBgIndex = 3;
+                SoundManager::GetInstance()->PlayBeep();
+            }
             
-            if (DrawButton({(float)screenWidth/2 - 100, 450, 200, 50}, "BACK")) {
+            // Toggles for Sound and Music
+            FontManager::GetInstance()->DrawGameText("Audio:", screenWidth/2 - 350, 350, 25, GRAY, "Modern");
+            bool soundOn = SoundManager::GetInstance()->IsSoundOn();
+            std::string soundText = soundOn ? "Sound: ON" : "Sound: OFF";
+            if (DrawButton({(float)screenWidth/2 - 350, 400, 200, 50}, soundText.c_str())) {
+                SoundManager::GetInstance()->ToggleSound(!soundOn);
+                SoundManager::GetInstance()->PlayBeep();
+            }
+            
+            bool musicOn = SoundManager::GetInstance()->IsMusicOn();
+            std::string musicText = musicOn ? "Music: ON" : "Music: OFF";
+            if (DrawButton({(float)screenWidth/2 - 100, 400, 200, 50}, musicText.c_str())) {
+                SoundManager::GetInstance()->ToggleMusic(!musicOn);
+                SoundManager::GetInstance()->PlayBeep();
+            }
+
+            if (DrawButton({(float)screenWidth/2 - 100, 550, 200, 50}, "BACK")) {
+                SoundManager::GetInstance()->PlayBeep();
                 currentState = previousState;
             }
             
@@ -2158,6 +2201,9 @@ void GameManager::Draw() {
 }
 
 void GameManager::CleanUp() {
+    SoundManager::GetInstance()->CleanUp();
+    SoundManager::DestroyInstance();
+
     for (int i = 0; i < 4; i++) {
         UnloadTexture(texBackgrounds[i]);
     }

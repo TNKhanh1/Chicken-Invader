@@ -2,6 +2,7 @@
 #include "raylib.h"
 #include "GameManager.h"
 #include "Bullet.h"
+#include "SoundManager.h"
 #include <algorithm>
 #include <cmath>
 
@@ -39,6 +40,12 @@ void Enemy::DropItem() {
 void Enemy::TakeDamage(float incomingDamage) {
     hitFlashTimer = 0.15f; 
     Character::TakeDamage(incomingDamage);
+    
+    if (role == EnemyRole::BOSS) {
+        SoundManager::GetInstance()->PlayBossHit();
+    } else {
+        SoundManager::GetInstance()->PlayChickenHit();
+    }
 }
 
 float Enemy::baseSizeForType() const {

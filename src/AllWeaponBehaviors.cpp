@@ -4,6 +4,7 @@
 #include "../include/GameManager.h"
 #include "../include/Bullet.h"
 #include "../include/BulletTrajectory.h"
+#include "../include/SoundManager.h"
 #include <algorithm>
 #include <iostream>
 #include <cmath>
@@ -36,7 +37,7 @@ void NeutronGunBehavior::Shoot(Spaceship* ship) {
         bullet->SetShooter(ship);
         gm->AddBullet(bullet);
     }
-    gm->PlayShootSound();
+    SoundManager::GetInstance()->PlayGunShot("Neutron_Gun");
 }
 
 void RiddlerBehavior::Shoot(Spaceship* ship) {
@@ -58,7 +59,7 @@ void RiddlerBehavior::Shoot(Spaceship* ship) {
         bullet->SetShooter(ship);
         gm->AddBullet(bullet);
     }
-    gm->PlayShootSound();
+    SoundManager::GetInstance()->PlayGunShot("Riddler");
 }
 
 void IonBlasterBehavior::Shoot(Spaceship* ship) {
@@ -81,7 +82,7 @@ void IonBlasterBehavior::Shoot(Spaceship* ship) {
         bullet->SetShooter(ship);
         gm->AddBullet(bullet);
     }
-    gm->PlayShootSound();
+    SoundManager::GetInstance()->PlayGunShot("Ion_Blaster");
 }
 
 void UtensilPokerBehavior::Shoot(Spaceship* ship) {
@@ -104,17 +105,15 @@ void UtensilPokerBehavior::Shoot(Spaceship* ship) {
         bullet->SetShooter(ship);
         gm->AddBullet(bullet);
     }
-    gm->PlayShootSound();
+    SoundManager::GetInstance()->PlayGunShot("Utensil_Poker");
 }
 
 void PlasmaRifleBehavior::Shoot(Spaceship* ship) {
     // Sát thương tia Plasma liên tục được tính trực tiếp ở vòng lặp update beam trong GameManager
-    GameManager::GetInstance()->PlayShootSound();
 }
 
 void LaserCannonBehavior::Shoot(Spaceship* ship) {
     // Sát thương tia Laser liên tục được tính trực tiếp ở vòng lặp update beam trong GameManager
-    GameManager::GetInstance()->PlayShootSound();
 }
 
 std::unique_ptr<IShootingBehavior> CreateWeaponBehavior(const std::string& weaponName) {

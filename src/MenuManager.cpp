@@ -1,6 +1,7 @@
 #include "../include/MenuManager.h"
 #include "../include/ProgressManager.h"
 #include "../include/FontManager.h"
+#include "../include/SoundManager.h"
 #include <iostream>
 #include <cmath>
 
@@ -170,5 +171,9 @@ int MenuManager::UpdateAndDraw(float deltaTime) {
     FontManager::GetInstance()->DrawGameTextCentered("SETTINGS", settingsButton.x + settingsButton.width/2, settingsButton.y + 15, 20, WHITE, "Modern");
     if (setHovered && mousePressed) clickedId = 101;
     
+    if (clickedId != -1) {
+        SoundManager::GetInstance()->PlayBeep();
+    }
+
     return clickedId;
 }

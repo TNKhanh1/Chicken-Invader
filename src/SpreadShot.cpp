@@ -2,6 +2,7 @@
 #include "Spaceship.h"
 #include "Bullet.h"
 #include "GameManager.h"
+#include "SoundManager.h"
 #include <memory>
 
 void SpreadShot::Shoot(Spaceship* ship) {
@@ -25,5 +26,5 @@ void SpreadShot::Shoot(Spaceship* ship) {
     gm->AddBullet(b1);
     gm->AddBullet(b2);
     gm->AddBullet(b3);
-    gm->PlayShootSound();
+    SoundManager::GetInstance()->PlayGunShot("Hypergun");
 }

@@ -2,6 +2,7 @@
 #include "Spaceship.h"
 #include "Bullet.h"
 #include "GameManager.h"
+#include "SoundManager.h"
 #include <memory>
 
 void SingleShot::Shoot(Spaceship* ship) {
@@ -9,5 +10,5 @@ void SingleShot::Shoot(Spaceship* ship) {
     auto bullet = std::make_shared<Bullet>(ship->GetPosition(), ship->GetDamage(), 480.0f, true);
     bullet->SetShooter(ship);
     GameManager::GetInstance()->AddBullet(bullet);
-    GameManager::GetInstance()->PlayShootSound();
+    SoundManager::GetInstance()->PlayGunShot("Hypergun");
 }

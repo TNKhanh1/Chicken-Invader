@@ -1,6 +1,7 @@
 #include "SummaryScreen.h"
 #include "FontManager.h"
 #include "GameManager.h"
+#include "SoundManager.h"
 
 SummaryScreen::SummaryScreen(int sw, int sh) : sw(sw), sh(sh) {
     Reset();
@@ -23,6 +24,7 @@ void SummaryScreen::Update() {
     Vector2 mousePos = GetMousePosition();
     Rectangle backBtn = { (float)sw/2 - 120, (float)sh/2 + 150, 240, 50 };
     if (CheckCollisionPointRec(mousePos, backBtn) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        SoundManager::GetInstance()->PlayBeep();
         backRequested = true;
     }
 }

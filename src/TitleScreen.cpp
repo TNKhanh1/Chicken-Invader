@@ -1,5 +1,6 @@
 #include "TitleScreen.h"
 #include "FontManager.h"
+#include "SoundManager.h"
 #include <cmath>
 
 TitleScreen::TitleScreen(int sw, int sh)
@@ -50,8 +51,10 @@ void TitleScreen::DrawButtons(TitleAction& outAction) {
         "CONTINUE", (int)(btnX + btnW/2), (int)(continueY + 15), 28,
         contHover ? BLACK : WHITE, "Modern"
     );
-    if (contHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    if (contHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        SoundManager::GetInstance()->PlayBeep();
         outAction = TitleAction::CONTINUE;
+    }
 
     // Nút NEW GAME
     Rectangle ngBtn = { btnX, newGameY, btnW, btnH };
@@ -62,8 +65,10 @@ void TitleScreen::DrawButtons(TitleAction& outAction) {
         "NEW GAME", (int)(btnX + btnW/2), (int)(newGameY + 15), 28,
         ngHover ? BLACK : WHITE, "Modern"
     );
-    if (ngHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+    if (ngHover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        SoundManager::GetInstance()->PlayBeep();
         outAction = TitleAction::NEW_GAME;
+    }
 }
 
 void TitleScreen::Reset() {

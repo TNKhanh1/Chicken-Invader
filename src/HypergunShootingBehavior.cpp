@@ -2,6 +2,7 @@
 #include "Spaceship.h"
 #include "Bullet.h"
 #include "GameManager.h"
+#include "SoundManager.h"
 #include "json.hpp"
 #include <fstream>
 #include <cmath>
@@ -178,5 +179,5 @@ void HypergunShootingBehavior::Shoot(Spaceship* ship) {
             break;
     }
     
-    gm->PlayShootSound();
+    SoundManager::GetInstance()->PlayGunShot("Hypergun");
 }
