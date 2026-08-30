@@ -219,7 +219,7 @@ void Spaceship::Draw() {
 // -------------------------------------------
 
 GameManager::GameManager() 
-    : currentState(GameState::MAIN_MENU), previousState(GameState::MAIN_MENU), screenWidth(1600), screenHeight(900), isRunning(false), score(0), currentWave(0), currentBatch(0), waveTimer(0.0f), isWaveTransitioning(false) {
+    : currentState(GameState::MAIN_MENU), nextState(GameState::MAIN_MENU), previousState(GameState::MAIN_MENU), screenWidth(1600), screenHeight(900), isRunning(false), score(0), currentWave(0), currentBatch(0), waveTimer(0.0f), isWaveTransitioning(false) {
     texSpaceship = {0};
     texSpaceshipHypergun = {0};
     texAsteroid1 = {0};
@@ -546,7 +546,7 @@ void GameManager::Init(int width, int height, const char* title) {
     printf("GameManager::Init finished.\n"); fflush(stdout);
     isRunning = true;
     titleScreen = new TitleScreen(screenWidth, screenHeight);
-    currentState = GameState::TITLE_SCREEN;
+    ChangeState(GameState::TITLE_SCREEN);
 }
 
 void GameManager::Run() {
@@ -602,6 +602,10 @@ void GameManager::EnterSummary(SummaryResult result) {
 
 void GameManager::Update(float deltaTime) {
     if (!isRunning) return;
+    
+    if (currentState != nextState) {
+        currentState = nextState;
+    }
     
     SoundManager::GetInstance()->UpdateMusic();
 
@@ -962,7 +966,7 @@ case GameState::MAIN_MENU:
                 } else if (activeEnemies.empty() && !WaveManager::GetInstance()->IsContinuousStream()) {
                     if (currentStage == 7) {
                         if (activeItems.empty()) {
-                            currentState = GameState::GAME_OVER; // Chiến thắng Stage 7
+                            ChangeState(GameState::GAME_OVER); // Chiến thắng Stage 7
                         }
                     } else {
                         int maxBatch = WaveManager::GetInstance()->GetMaxBatchForWave(currentWave);
@@ -1401,10 +1405,10 @@ void GameManager::Draw() {
                     ChangeState(GameState::PLAYER_SELECT);
                 } else if (action == 100) {
                     // Mở Shop (hiện tại chuyển sang Coming Soon)
-                    currentState = GameState::COMING_SOON;
+                    ChangeState(GameState::COMING_SOON);
                 } else if (action == 101) {
                     previousState = currentState;
-                    currentState = GameState::SETTINGS;
+                    ChangeState(GameState::SETTINGS);
                 }
             }
             break;
@@ -1481,7 +1485,7 @@ void GameManager::Draw() {
 
             if (DrawButton({(float)screenWidth/2 - 100, 550, 200, 50}, "BACK")) {
                 SoundManager::GetInstance()->PlayBeep();
-                currentState = previousState;
+                ChangeState(previousState);
             }
             
             // Vẽ border đỏ bao quanh nút đang chọn
@@ -1499,7 +1503,7 @@ void GameManager::Draw() {
         {
             FontManager::GetInstance()->DrawGameTextCentered("PLAY MODE - COMING SOON!", screenWidth/2, screenHeight/2, 30, DARKGRAY, "Modern");
             if (DrawButton({(float)screenWidth/2 - 100, (float)screenHeight/2 + 80, 200, 50}, "BACK")) {
-                currentState = GameState::MAIN_MENU;
+                ChangeState(GameState::MAIN_MENU);
             }
             break;
         }
@@ -1520,7 +1524,7 @@ void GameManager::Draw() {
             
             if (DrawButton({(float)screenWidth/2 - 120, 420, 240, 50}, "BACK TO MENU")) {
                 RuneManager::GetInstance()->ResetForNewStage();
-                currentState = GameState::MAIN_MENU;
+                ChangeState(GameState::MAIN_MENU);
                 // Reset Game
                 score = 0;
                 activeEnemies.clear();
@@ -1537,11 +1541,11 @@ void GameManager::Draw() {
             FontManager::GetInstance()->DrawGameTextCentered("TEST MODE SELECTION", screenWidth/2, 150, 30, DARKBLUE, "Modern");
             
             if (DrawButton({(float)screenWidth/2 - 150, 250, 300, 50}, "TEST ENEMY")) {
-                currentState = GameState::TEST_ENEMY;
+                ChangeState(GameState::TEST_ENEMY);
             }
             
             if (DrawButton({(float)screenWidth/2 - 320, 320, 300, 50}, "TEST SPACESHIP")) {
-                currentState = GameState::TEST_SPACESHIP;
+                ChangeState(GameState::TEST_SPACESHIP);
                 if (player) player->SetShootingBehavior(std::make_unique<HypergunShootingBehavior>());
             }
             
@@ -1550,7 +1554,7 @@ void GameManager::Draw() {
             }
             
             if (DrawButton({(float)screenWidth/2 - 150, 460, 300, 50}, "BACK TO MAIN")) {
-                currentState = GameState::MAIN_MENU;
+                ChangeState(GameState::MAIN_MENU);
             }
             
             // Nút Settings (góc trên phải) trong TEST_MENU
@@ -1560,7 +1564,7 @@ void GameManager::Draw() {
                 DrawRectangleLinesEx(settingRect, 2, RED);
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     previousState = currentState;
-                    currentState = GameState::SETTINGS;
+                    ChangeState(GameState::SETTINGS);
                 }
             }
             
@@ -1919,7 +1923,7 @@ void GameManager::Draw() {
             // Draw BACK button in playing state
             if (DrawButton({ 20, 20, 100, 40 }, "BACK")) {
                 if (isTestMode) {
-                    currentState = GameState::TEST_MENU;
+                    ChangeState(GameState::TEST_MENU);
                     activeEnemies.clear();
                     activeBullets.clear();
                     activeItems.clear();
@@ -1938,7 +1942,7 @@ void GameManager::Draw() {
                 DrawRectangleLinesEx(settingRect2, 2, RED);
                 if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                     previousState = currentState;
-                    currentState = GameState::SETTINGS;
+                    ChangeState(GameState::SETTINGS);
                 }
             }
             

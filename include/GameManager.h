@@ -33,6 +33,7 @@ private:
 
     // Các biến trạng thái của trò chơi
     GameState currentState;
+    GameState nextState;
     int screenWidth;
     int screenHeight;
     bool isRunning;
@@ -209,8 +210,10 @@ public:
 
     // Getter/Setter trạng thái
     void ChangeState(GameState newState) {
-        previousState = currentState;
-        currentState = newState;
+        if (nextState != newState) {
+            previousState = currentState;
+            nextState = newState;
+        }
     }
     GameState GetCurrentState() const { return currentState; }
 
