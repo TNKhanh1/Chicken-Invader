@@ -1244,8 +1244,8 @@ case GameState::MAIN_MENU:
                                 case 1: player->AddPermanentDamage(5.0f); if (player2) player2->AddPermanentDamage(5.0f); break;
                                 case 2: player->AddPermanentArmor(3.0f); if (player2) player2->AddPermanentArmor(3.0f); break;
                                 case 3: player->AddPermanentFireRate(0.10f); if (player2) player2->AddPermanentFireRate(0.10f); break;
-                                case 4: player->AddPermanentCritChance(0.10f); if (player2) player2->AddPermanentCritChance(0.10f); break;
-                                case 5: player->AddPermanentCritDamage(0.30f); if (player2) player2->AddPermanentCritDamage(0.30f); break;
+                                case 4: player->AddPermanentCritChance(10.0f); if (player2) player2->AddPermanentCritChance(10.0f); break;
+                                case 5: player->AddPermanentCritDamage(30.0f); if (player2) player2->AddPermanentCritDamage(30.0f); break;
                             }
                         }
                         if (extraStatSelectionsPending > 0) {
@@ -1912,7 +1912,8 @@ void GameManager::Draw() {
                 // Bảng Hướng dẫn Quan Sát Trực Quan & Sandbox HUD
                 DrawRectangle(150, 10, 960, 58, ColorAlpha(BLACK, 0.85f));
                 DrawRectangleLines(150, 10, 960, 58, GREEN);
-                const char* wName = player ? player->GetWeapon().c_str() : "Hypergun";
+                std::string wNameStr = player ? player->GetWeapon() : "Hypergun";
+                const char* wName = wNameStr.c_str();
                 int wLv = player ? player->GetLevel() : 1;
                 const char* sboxStatus = debugSandboxMode ? "ON (Keys 1-8: Weapon, UP/DOWN: Level, F: Slow-Mo)" : "OFF [F1 to Enable Sandbox]";
                 const char* hStatus = showDebugHitboxes ? "ON [H]" : "OFF [H]";

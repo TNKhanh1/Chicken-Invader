@@ -27,15 +27,32 @@ void Spaceship::Notify(EventType event, const std::string& data) {
     }
 }
 
-float Spaceship::GetCritChance() const { return critChance; }
+float Spaceship::GetCritChance() const { 
+    float crit = critChance;
+    if (isManaActive) {
+        if (currentWeapon == "Hypergun" || currentWeapon == "Absolver_Beam") crit += 20.0f;
+        else if (currentWeapon == "Neutron_Gun") crit += 10.0f;
+        else if (currentWeapon == "Riddler") crit += 30.0f;
+        else if (currentWeapon == "Utensil_Poker") crit += 25.0f;
+        else if (currentWeapon == "Lightning_Fryer") crit += 30.0f;
+        else if (currentWeapon == "Laser_Cannon") crit += 50.0f;
+    }
+    return std::min(crit, 100.0f);
+}
 float Spaceship::GetCritDamage() const { return critDamage; }
 float Spaceship::GetMaxMana() const { return maxMana; }
 float Spaceship::GetCurrentMana() const { return currentMana; }
 float Spaceship::GetAttackSpeed() const { 
-    // Giảm tốc bắn 15% toàn cục theo yêu cầu (Global Fire Rate Nerf)
-    return attackSpeed * 0.85f; 
+    float speed = attackSpeed;
+    if (isManaActive) {
+        if (currentWeapon == "Hypergun" || currentWeapon == "Absolver_Beam") speed *= 1.30f;
+        else if (currentWeapon == "Neutron_Gun") speed *= 1.60f;
+        else if (currentWeapon == "Ion_Blaster") speed *= 1.20f;
+        else if (currentWeapon == "Utensil_Poker") speed *= 1.50f;
+    }
+    return speed * 0.85f; 
 }
-int Spaceship::GetLevel() const { return isManaActive ? 11 : level; }
+int Spaceship::GetLevel() const { return level; }
 void Spaceship::SetLevel(int newLevel) {
     level = newLevel;
     if (level < 1) level = 1;
@@ -318,6 +335,16 @@ void Spaceship::ClearAllBuffs() {
 
 float Spaceship::GetDamage() const {
     float base = Character::GetDamage() + permanentDamageBonus;
+    
+    if (isManaActive) {
+        if (currentWeapon == "Hypergun" || currentWeapon == "Absolver_Beam") base *= 1.30f;
+        else if (currentWeapon == "Riddler") base *= 1.30f;
+        else if (currentWeapon == "Ion_Blaster") base *= 1.40f;
+        else if (currentWeapon == "Lightning_Fryer") base *= 1.40f;
+        else if (currentWeapon == "Plasma_Rifle") base *= 1.60f;
+        else if (currentWeapon == "Laser_Cannon") base *= 1.20f;
+    }
+    
     if (activeBuff.swordActive) {
         base *= 1.25f;
     }
