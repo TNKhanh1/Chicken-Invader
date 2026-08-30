@@ -1191,7 +1191,7 @@ case GameState::MAIN_MENU:
                         player2->ClearAllBuffs();
                     }
                     RuneManager::GetInstance()->ResetForNewStage();
-                    ChangeState(GameState::PLAYER_SELECT);
+                    ChangeState(GameState::MAIN_MENU);
                 }
             }
             break;
@@ -1475,9 +1475,9 @@ void GameManager::Draw() {
                 screenWidth/2 - 120, 360, 22, YELLOW);
             DrawTextureEx(texCoin, {(float)screenWidth/2 - 160, 355}, 0.0f, 0.5f, WHITE);
             
-            if (DrawButton({(float)screenWidth/2 - 120, 420, 240, 50}, "CHOOSE MODE")) {
+            if (DrawButton({(float)screenWidth/2 - 120, 420, 240, 50}, "BACK TO MENU")) {
                 RuneManager::GetInstance()->ResetForNewStage();
-                currentState = GameState::PLAYER_SELECT;
+                currentState = GameState::MAIN_MENU;
                 // Reset Game
                 score = 0;
                 activeEnemies.clear();

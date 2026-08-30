@@ -87,5 +87,5 @@ void SummaryScreen::Draw() {
     bool isHovered = CheckCollisionPointRec(GetMousePosition(), backBtn);
     DrawRectangleRounded(backBtn, 0.2f, 10, ColorAlpha(isHovered ? LIGHTGRAY : GRAY, alphaTimer));
     DrawRectangleRoundedLinesEx(backBtn, 0.2f, 10, 2, ColorAlpha(WHITE, alphaTimer));
-    FontManager::GetInstance()->DrawGameTextCentered("CHOOSE MODE", sw/2, startY + panelH - 65, 24, ColorAlpha(isHovered ? BLACK : DARKGRAY, alphaTimer), "Modern");
+    FontManager::GetInstance()->DrawGameTextCentered("BACK TO MENU", sw/2, startY + panelH - 65, 24, ColorAlpha(isHovered ? BLACK : DARKGRAY, alphaTimer), "Modern");
 }
