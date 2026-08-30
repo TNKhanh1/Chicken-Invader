@@ -14,6 +14,7 @@ class ShopUI;
 #include "RuneSelectionUI.h"
 #include "SummaryScreen.h"
 #include "TitleScreen.h"
+class AIController;
 
 // (struct MeatItem đã được chuyển thành class Meat trong Item.h)
 
@@ -22,6 +23,7 @@ class GameManager : public ISubject {
 private:
     // Instance duy nhất của game
     static GameManager* instance;
+    std::unique_ptr<AIController> aiController;
     StatsPanel statsPanel;
     MenuManager* mainMenuUI = nullptr;
     ShopUI* shopUI = nullptr;

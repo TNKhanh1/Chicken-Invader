@@ -17,6 +17,10 @@ void SpreadShot::Shoot(Spaceship* ship) {
     b2->SetVelocity(Vector2{-100.0f, -480.0f});
     b3->SetVelocity(Vector2{100.0f, -480.0f});
     
+    b1->SetShooter(ship);
+    b2->SetShooter(ship);
+    b3->SetShooter(ship);
+    
     auto gm = GameManager::GetInstance();
     gm->AddBullet(b1);
     gm->AddBullet(b2);

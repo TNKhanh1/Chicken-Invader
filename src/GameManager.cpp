@@ -37,6 +37,7 @@
 #include "../include/ItemDropManager.h"
 #include "../include/PowerUpItem.h"
 #include "../include/ProgressManager.h"
+#include "../include/AIController.h"
 
 // ---------------------------------------------------------
 // Dữ liệu tĩnh cho màn hình chọn Argument (lõi) và Chỉ Số (stat)
@@ -387,8 +388,15 @@ void GameManager::StartStage(int stageId, GameMode mode) {
         if (!savedWeapon.empty()) {
             player2->SetWeapon(savedWeapon);
         }
+        
+        if (mode == GameMode::PLAYER_AND_AI) {
+            aiController = std::make_unique<AIController>();
+        } else {
+            aiController.reset();
+        }
     } else {
         if (player2) player2.reset();
+        aiController.reset();
     }
     
     RuneManager::GetInstance()->ApplyAll(player.get(), player2 ? player2.get() : nullptr);
@@ -679,8 +687,12 @@ case GameState::MAIN_MENU:
                 player->Update(deltaTime);
             }
             if (player2 && player2->IsActive()) {
-                Vector2 mousePos = GetMousePosition();
-                player2->SetPosition(mousePos);
+                if (currentGameMode == GameMode::TWO_PLAYERS) {
+                    Vector2 mousePos = GetMousePosition();
+                    player2->SetPosition(mousePos);
+                } else if (currentGameMode == GameMode::PLAYER_AND_AI && aiController) {
+                    aiController->Update(player2.get(), deltaTime, activeBullets, activeEnemies, true, screenWidth, screenHeight);
+                }
                 player2->Update(deltaTime);
             }
 
@@ -690,11 +702,13 @@ case GameState::MAIN_MENU:
                 waveTextAlpha     = 0.0f;
                 isWaveTransitioning = false;
                 ChangeState(GameState::TEST_GAMEPLAY);
-                // Spawn batch đầu tiên của wave
-                bool spawned = SpawnWaveBatch(currentWave, currentBatch);
-                if (!spawned) {
-                    // Nếu wave không có enemy (cạn batch), chuyển thẳng sang chọn chỉ số
-                    EnterStatSelection(currentWave + 1);
+                if (currentStage != 7) {
+                    // Spawn batch đầu tiên của wave
+                    bool spawned = SpawnWaveBatch(currentWave, currentBatch);
+                    if (!spawned) {
+                        // Nếu wave không có enemy (cạn batch), chuyển thẳng sang chọn chỉ số
+                        EnterStatSelection(currentWave + 1);
+                    }
                 }
             }
             break;
@@ -856,17 +870,23 @@ case GameState::MAIN_MENU:
             }
 
             if (player2 && player2->IsActive()) {
-                Vector2 mousePos = GetMousePosition();
-                player2->SetPosition(mousePos);
-                
-                if (!isBossCutscene) {
-                    ProcessBeamWeapon(player2.get(), IsMouseButtonDown(MOUSE_LEFT_BUTTON), autoLockTargetPos2, beamTextTimer2, isAutoLocked2);
+                if (currentGameMode == GameMode::TWO_PLAYERS) {
+                    Vector2 mousePos = GetMousePosition();
+                    player2->SetPosition(mousePos);
+                    
+                    if (!isBossCutscene) {
+                        ProcessBeamWeapon(player2.get(), IsMouseButtonDown(MOUSE_LEFT_BUTTON), autoLockTargetPos2, beamTextTimer2, isAutoLocked2);
+                    }
+                    
+                    if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
+                        player2->ActivateMana();
+                    }
+                } else if (currentGameMode == GameMode::PLAYER_AND_AI && aiController) {
+                    aiController->Update(player2.get(), deltaTime, activeBullets, activeEnemies, isBossCutscene, screenWidth, screenHeight);
+                    if (!isBossCutscene) {
+                        ProcessBeamWeapon(player2.get(), aiController->HasValidTarget(), autoLockTargetPos2, beamTextTimer2, isAutoLocked2);
+                    }
                 }
-                
-                if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) {
-                    player2->ActivateMana();
-                }
-                
                 player2->Update(deltaTime);
             }
 
@@ -1768,7 +1788,13 @@ void GameManager::Draw() {
             };
             
             DrawBeamVFX(player.get(), IsKeyDown(KEY_SPACE), autoLockTargetPos);
-            DrawBeamVFX(player2.get(), IsMouseButtonDown(MOUSE_LEFT_BUTTON), autoLockTargetPos2);
+            bool p2FiringForVFX = false;
+            if (currentGameMode == GameMode::TWO_PLAYERS) {
+                p2FiringForVFX = IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+            } else if (currentGameMode == GameMode::PLAYER_AND_AI && aiController) {
+                p2FiringForVFX = aiController->HasValidTarget();
+            }
+            DrawBeamVFX(player2.get(), p2FiringForVFX, autoLockTargetPos2);
 
         // Vẽ Enemies ĐÈ LÊN đạn và tia lade
         if (currentState == GameState::TEST_GAMEPLAY) {
