@@ -81,7 +81,7 @@ void StatsPanel::Draw(const Spaceship* player, int screenHeight) const {
     // Damage
     float permDmg = player->GetPermanentDamageBonus();
     if (permDmg > 0) {
-        snprintf(buf, sizeof(buf), "%.0f (+%.0f bonus)", player->GetDamage() + permDmg, permDmg);
+        snprintf(buf, sizeof(buf), "%.0f (+%.0f bonus)", player->GetDamage(), permDmg);
     } else {
         snprintf(buf, sizeof(buf), "%.0f", player->GetDamage());
     }

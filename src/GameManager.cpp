@@ -758,7 +758,7 @@ case GameState::MAIN_MENU:
                 Vector2 origin = { p->GetPosition().x, p->GetPosition().y - 20.0f };
                 Vector2 endPos = { origin.x, -100.0f };
                 float beamWidth = 30.0f;
-                float damageRate = (p->GetDamage() + p->GetPermanentDamageBonus() + 40.0f) * 4.0f * 0.85f;
+                float damageRate = (p->GetDamage() + 40.0f) * 4.0f * 0.85f;
                 
                 isLocked = false;
                 if (wpn == "Lightning_Fryer") {
@@ -1064,7 +1064,7 @@ case GameState::MAIN_MENU:
                             if (hit) {
                                 Spaceship* shooter = bullet->GetShooter() ? bullet->GetShooter() : player.get();
                                 bool isCrit = (GetRandomValue(0, 100) < shooter->GetCritChance());
-                                float finalDamage = bullet->GetDamage() + shooter->GetPermanentDamageBonus();
+                                float finalDamage = bullet->GetDamage();
                                 if (isCrit) {
                                     finalDamage *= (shooter->GetCritDamage() / 100.0f);
                                 }

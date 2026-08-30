@@ -317,7 +317,7 @@ void Spaceship::ClearAllBuffs() {
 }
 
 float Spaceship::GetDamage() const {
-    float base = Character::GetDamage();
+    float base = Character::GetDamage() + permanentDamageBonus;
     if (activeBuff.swordActive) {
         base *= 1.25f;
     }

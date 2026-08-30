@@ -13,7 +13,7 @@ void NeutronGunBehavior::Shoot(Spaceship* ship) {
     if (!ship) return;
     GameManager* gm = GameManager::GetInstance();
     Vector2 pos = ship->GetPosition();
-    float dmg = ship->GetDamage() + ship->GetPermanentDamageBonus();
+    float dmg = ship->GetDamage();
     int lv = ship->GetLevel();
 
     int bulletType = (lv <= 3) ? 3 : ((lv <= 6) ? 4 : 5); // 3: Weak, 4: Medium, 5: Strong
@@ -44,7 +44,7 @@ void RiddlerBehavior::Shoot(Spaceship* ship) {
     if (!ship) return;
     GameManager* gm = GameManager::GetInstance();
     Vector2 pos = ship->GetPosition();
-    float dmg = (ship->GetDamage() + ship->GetPermanentDamageBonus()) * 0.8f;
+    float dmg = ship->GetDamage() * 0.8f;
     int lv = ship->GetLevel();
 
     int numBullets = std::min(13, 3 + lv);
@@ -66,7 +66,7 @@ void IonBlasterBehavior::Shoot(Spaceship* ship) {
     if (!ship) return;
     GameManager* gm = GameManager::GetInstance();
     Vector2 pos = ship->GetPosition();
-    float dmg = ship->GetDamage() + ship->GetPermanentDamageBonus();
+    float dmg = ship->GetDamage();
     int lv = ship->GetLevel();
 
     int bulletType = (lv < 5) ? 7 : 8; // 7: Ion Single, 8: Ion Double
@@ -89,7 +89,7 @@ void UtensilPokerBehavior::Shoot(Spaceship* ship) {
     if (!ship) return;
     GameManager* gm = GameManager::GetInstance();
     Vector2 pos = ship->GetPosition();
-    float dmg = ship->GetDamage() + ship->GetPermanentDamageBonus() + 15.0f;
+    float dmg = ship->GetDamage() + 15.0f;
     int lv = ship->GetLevel();
 
     // Type 9: Fork, Type 10: Carving Knife (xen kẽ hoặc nâng cấp)
