@@ -57,7 +57,7 @@ void MenuManager::CalculateLayout() {
     
     StageButton bossBtn;
     bossBtn.id = 7;
-    bossBtn.text = "BOSS STAGE";
+    bossBtn.text = "FINAL STAGE";
     bossBtn.rect = { bossStartX, bossStartY, bossWidth, bossHeight };
     bossBtn.isBossStage = true;
     bossBtn.hoverTime = 0.0f;
