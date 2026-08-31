@@ -1,35 +1,51 @@
 {
-    "stage": 3,
-    "name": "Stage 3 - Endless Waterfall",
-    "waves": [
+  "stage": 3,
+  "name": "Stage 3 - Endless Waterfall",
+  "waves": [
+    {
+      "wave_id": 1,
+      "batches": [
         {
-            "wave_id": 1,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 1,
-                    "role": "NORMAL",
-                    "stats": {
-                        "hp": 20.0,
-                        "damage": 5.0,
-                        "armor": 0.0,
-                        "speed": 80.0,
-                        "egg_rate": 3.0,
-                        "score": 10
-                    },
-                    "layout": {
-                        "type": "CONTINUOUS_STREAM",
-                        "target_kills": 200,
-                        "spawn_interval": 0.6,
-                        "phases": [
-                            { "spawn_count_threshold": 0,   "hp_multiplier": 1.0, "speed_multiplier": 1.0 },
-                            { "spawn_count_threshold": 50,  "hp_multiplier": 1.4, "speed_multiplier": 1.1 },
-                            { "spawn_count_threshold": 100, "hp_multiplier": 1.8, "speed_multiplier": 1.2 },
-                            { "spawn_count_threshold": 150, "hp_multiplier": 2.5, "speed_multiplier": 1.3 }
-                        ]
-                    }
-                }
+          "batch_id": 1,
+          "visual_id": 1,
+          "role": "NORMAL",
+          "stats": {
+            "hp": 80,
+            "damage": 22,
+            "armor": 0,
+            "speed": 100,
+            "egg_rate": 4.0,
+            "score": 12
+          },
+          "layout": {
+            "type": "CONTINUOUS_STREAM",
+            "target_kills": 200,
+            "spawn_interval": 0.6,
+            "phases": [
+              {
+                "spawn_count_threshold": 0,
+                "hp_multiplier": 1.0,
+                "speed_multiplier": 1.0
+              },
+              {
+                "spawn_count_threshold": 50,
+                "hp_multiplier": 1.5,
+                "speed_multiplier": 1.15
+              },
+              {
+                "spawn_count_threshold": 100,
+                "hp_multiplier": 2.2,
+                "speed_multiplier": 1.3
+              },
+              {
+                "spawn_count_threshold": 150,
+                "hp_multiplier": 3.2,
+                "speed_multiplier": 1.5
+              }
             ]
+          }
         }
-    ]
+      ]
+    }
+  ]
 }

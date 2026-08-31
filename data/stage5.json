@@ -25,8 +25,8 @@
             "drift": 150.0
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 280,
+            "damage": 32,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
@@ -52,8 +52,8 @@
             "drift": 120.0
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 280,
+            "damage": 32,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
@@ -79,12 +79,12 @@
             "drift": 120.0
           },
           "stats": {
-            "hp": 150,
-            "damage": 20,
+            "hp": 160,
+            "damage": 22,
             "armor": 0,
             "speed": 100,
             "egg_rate": 3.0,
-            "score": 10
+            "score": 12
           }
         }
       ]
@@ -110,12 +110,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 180,
-            "damage": 25,
+            "hp": 200,
+            "damage": 28,
             "armor": 0,
             "speed": 130,
             "egg_rate": 2.5,
-            "score": 20
+            "score": 22
           }
         },
         {
@@ -133,12 +133,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 280,
+            "damage": 32,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
-            "score": 30
+            "score": 32
           }
         },
         {
@@ -159,12 +159,12 @@
             "type": "STRAIGHT"
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 280,
+            "damage": 32,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
-            "score": 30
+            "score": 32
           }
         },
         {
@@ -213,8 +213,8 @@
             "wrap_around": false
           },
           "stats": {
-            "hp": 500,
-            "damage": 50,
+            "hp": 600,
+            "damage": 55,
             "armor": 0,
             "speed": 500,
             "egg_rate": 0.0,
@@ -240,12 +240,12 @@
             "drift": 150.0
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 280,
+            "damage": 32,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
-            "score": 30
+            "score": 32
           }
         }
       ]
@@ -268,12 +268,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 220,
-            "damage": 25,
+            "hp": 260,
+            "damage": 28,
             "armor": 0,
             "speed": 100,
             "egg_rate": 2.8,
-            "score": 25
+            "score": 28
           }
         },
         {
@@ -295,12 +295,12 @@
             "drift": 200.0
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 280,
+            "damage": 32,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
-            "score": 30
+            "score": 32
           }
         },
         {
@@ -322,12 +322,12 @@
             "drift": 100.0
           },
           "stats": {
-            "hp": 1200,
-            "damage": 40,
-            "armor": 10,
+            "hp": 1500,
+            "damage": 45,
+            "armor": 12,
             "speed": 80,
             "egg_rate": 2.0,
-            "score": 100
+            "score": 120
           }
         },
         {
@@ -345,12 +345,12 @@
             "wrap_around": true
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 280,
+            "damage": 32,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
-            "score": 30
+            "score": 32
           }
         }
       ]
@@ -373,12 +373,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 220,
-            "damage": 25,
+            "hp": 260,
+            "damage": 28,
             "armor": 0,
             "speed": 100,
             "egg_rate": 2.8,
-            "score": 25
+            "score": 28
           }
         },
         {
@@ -398,12 +398,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 280,
+            "damage": 32,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
-            "score": 30
+            "score": 32
           }
         }
       ]
@@ -430,12 +430,12 @@
             "drift": 100.0
           },
           "stats": {
-            "hp": 1200,
-            "damage": 40,
-            "armor": 10,
+            "hp": 1800,
+            "damage": 48,
+            "armor": 12,
             "speed": 80,
             "egg_rate": 2.0,
-            "score": 100
+            "score": 120
           }
         },
         {
@@ -457,12 +457,12 @@
             "drift": 100.0
           },
           "stats": {
-            "hp": 180,
-            "damage": 25,
+            "hp": 200,
+            "damage": 28,
             "armor": 0,
             "speed": 130,
             "egg_rate": 2.5,
-            "score": 20
+            "score": 22
           }
         },
         {
@@ -480,12 +480,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 300,
+            "damage": 34,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
-            "score": 30
+            "score": 35
           }
         }
       ]
@@ -512,12 +512,12 @@
             "drift": 150.0
           },
           "stats": {
-            "hp": 300,
-            "damage": 35,
-            "armor": 5,
+            "hp": 350,
+            "damage": 38,
+            "armor": 8,
             "speed": 110,
             "egg_rate": 2.5,
-            "score": 40
+            "score": 45
           }
         },
         {
@@ -535,12 +535,12 @@
             "wrap_around": false
           },
           "stats": {
-            "hp": 150,
-            "damage": 20,
+            "hp": 170,
+            "damage": 24,
             "armor": 0,
             "speed": 100,
             "egg_rate": 3.0,
-            "score": 10
+            "score": 12
           }
         }
       ]
@@ -567,12 +567,12 @@
             "drift": 80.0
           },
           "stats": {
-            "hp": 250,
-            "damage": 30,
+            "hp": 300,
+            "damage": 34,
             "armor": 5,
             "speed": 120,
             "egg_rate": 2.5,
-            "score": 30
+            "score": 35
           }
         },
         {
@@ -594,12 +594,12 @@
             "drift": 80.0
           },
           "stats": {
-            "hp": 300,
-            "damage": 35,
-            "armor": 5,
+            "hp": 360,
+            "damage": 40,
+            "armor": 8,
             "speed": 110,
             "egg_rate": 2.5,
-            "score": 40
+            "score": 48
           }
         },
         {
@@ -617,8 +617,8 @@
             "type": "METEOR_DIVE"
           },
           "stats": {
-            "hp": 500,
-            "damage": 50,
+            "hp": 600,
+            "damage": 55,
             "armor": 0,
             "speed": 400,
             "egg_rate": 0.0,
@@ -647,12 +647,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 300,
-            "damage": 35,
-            "armor": 5,
+            "hp": 360,
+            "damage": 40,
+            "armor": 8,
             "speed": 110,
             "egg_rate": 2.5,
-            "score": 40
+            "score": 45
           }
         },
         {
@@ -670,12 +670,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 1200,
-            "damage": 40,
-            "armor": 10,
+            "hp": 2000,
+            "damage": 50,
+            "armor": 15,
             "speed": 80,
-            "egg_rate": 2.0,
-            "score": 100
+            "egg_rate": 1.8,
+            "score": 150
           }
         }
       ]
@@ -702,12 +702,12 @@
             "drift": 0.0
           },
           "stats": {
-            "hp": 5000,
-            "damage": 40,
-            "armor": 15,
+            "hp": 18000,
+            "damage": 55,
+            "armor": 20,
             "speed": 100,
             "egg_rate": 0.0,
-            "score": 2000
+            "score": 3000
           }
         }
       ]
@@ -737,12 +737,12 @@
             "drift": 200.0
           },
           "stats": {
-            "hp": 100,
-            "damage": 38,
-            "armor": 6,
+            "hp": 380,
+            "damage": 42,
+            "armor": 8,
             "speed": 110,
             "egg_rate": 2.5,
-            "score": 40
+            "score": 45
           }
         },
         {
@@ -767,12 +767,12 @@
             "drift": 250.0
           },
           "stats": {
-            "hp": 50,
-            "damage": 25,
+            "hp": 100,
+            "damage": 30,
             "armor": 0,
             "speed": 160,
-            "egg_rate": 3.5,
-            "score": 20
+            "egg_rate": 8.0,
+            "score": 25
           }
         }
       ]
@@ -798,12 +798,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 200,
-            "damage": 45,
-            "armor": 15,
+            "hp": 2200,
+            "damage": 55,
+            "armor": 18,
             "speed": 80,
-            "egg_rate": 2.0,
-            "score": 100
+            "egg_rate": 1.5,
+            "score": 150
           }
         },
         {
@@ -826,12 +826,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 100,
-            "damage": 38,
-            "armor": 6,
+            "hp": 380,
+            "damage": 42,
+            "armor": 8,
             "speed": 110,
             "egg_rate": 2.5,
-            "score": 40
+            "score": 45
           }
         }
       ]
@@ -861,12 +861,12 @@
             "drift": 150.0
           },
           "stats": {
-            "hp": 100,
-            "damage": 38,
-            "armor": 6,
+            "hp": 400,
+            "damage": 45,
+            "armor": 10,
             "speed": 110,
             "egg_rate": 2.5,
-            "score": 40
+            "score": 50
           }
         },
         {
@@ -891,12 +891,12 @@
             "drift": 180.0
           },
           "stats": {
-            "hp": 200,
-            "damage": 45,
-            "armor": 15,
+            "hp": 2200,
+            "damage": 55,
+            "armor": 18,
             "speed": 80,
-            "egg_rate": 2.0,
-            "score": 100
+            "egg_rate": 1.5,
+            "score": 150
           }
         }
       ]
@@ -925,12 +925,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 50,
-            "damage": 25,
+            "hp": 100,
+            "damage": 30,
             "armor": 0,
             "speed": 160,
-            "egg_rate": 3.5,
-            "score": 20
+            "egg_rate": 8.0,
+            "score": 22
           }
         },
         {
@@ -952,12 +952,12 @@
             "type": "WAYPOINT"
           },
           "stats": {
-            "hp": 200,
-            "damage": 45,
-            "armor": 15,
+            "hp": 2200,
+            "damage": 55,
+            "armor": 18,
             "speed": 80,
-            "egg_rate": 2.0,
-            "score": 100
+            "egg_rate": 1.5,
+            "score": 150
           }
         }
       ]
@@ -978,12 +978,12 @@
             "type": "NONE"
           },
           "stats": {
-            "hp": 2000,
-            "damage": 50,
-            "armor": 30,
+            "hp": 35000,
+            "damage": 70,
+            "armor": 35,
             "speed": 100,
-            "egg_rate": 2.0,
-            "score": 1500,
+            "egg_rate": 0.0,
+            "score": 5000,
             "scale": 1.0
           }
         }

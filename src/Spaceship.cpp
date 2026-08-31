@@ -9,7 +9,7 @@ Spaceship::Spaceship(std::string n, Vector2 pos, float hp, float dmg, float arm,
                      float critC, float critD, float mana, float atkSpd)
     : Character(pos, hp, dmg, arm, spd), 
       critChance(critC), critDamage(critD), maxMana(mana), currentMana(0), attackSpeed(atkSpd),
-      level(1), currentExp(0), maxExp(100), name(n) {
+      level(1), currentExp(0), maxExp(500), name(n) {
     prevPosition = pos;
 }
 

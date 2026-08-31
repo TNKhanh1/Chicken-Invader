@@ -402,6 +402,18 @@ void GameManager::StartStage(int stageId, GameMode mode) {
     
     RuneManager::GetInstance()->ApplyAll(player.get(), player2 ? player2.get() : nullptr);
     
+    // Set starting level for boss-only stages (no leveling possible)
+    if (currentStage == 6) {
+        player->SetLevel(7);
+        player->ReloadStatsFromCSV();
+        if (player2) { player2->SetLevel(7); player2->ReloadStatsFromCSV(); }
+    }
+    if (currentStage == 7) {
+        player->SetLevel(10);
+        player->ReloadStatsFromCSV();
+        if (player2) { player2->SetLevel(10); player2->ReloadStatsFromCSV(); }
+    }
+    
     pendingEggSkinLoad = true;
     
     if (currentStage == 7) {
@@ -1151,6 +1163,7 @@ case GameState::MAIN_MENU:
                         item->SetActive(false);
                         if (item->GetType() == ItemType::DRUMSTICK) {
                             AddScore(50);
+                            whoPicked->Heal(50.0f);
                             whoPicked->GainExp(10.0f);
                             PlayPickupSound();
                         } else if (item->GetType() == ItemType::SWORD ||

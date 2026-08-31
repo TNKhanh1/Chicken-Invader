@@ -1,712 +1,712 @@
 {
-    "stage_id": 2,
-    "name": "Stage 2",
-    "waves": [
+  "stage_id": 2,
+  "name": "Stage 2",
+  "waves": [
+    {
+      "wave_id": 1,
+      "batches": [
         {
-            "wave_id": 1,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 2,
-                    "role": "NORMAL",
-                    "count": 10,
-                    "layout": {
-                        "type": "V_SHAPE",
-                        "layers": 1,
-                        "layer_spacing": 0.0,
-                        "spacing_x": 100.0,
-                        "spacing_y": 70.0,
-                        "start_y": -200.0,
-                        "target_base_y": 80.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 150.0
-                    },
-                    "stats": {
-                        "hp": 150,
-                        "damage": 20,
-                        "armor": 0,
-                        "speed": 120,
-                        "egg_rate": 3.0,
-                        "score": 15
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 2,
-                    "role": "NORMAL",
-                    "count": 15,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 3,
-                        "cols": 5,
-                        "spacing_x": 130.0,
-                        "spacing_y": 90.0,
-                        "start_y": -400.0,
-                        "target_base_y": 80.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 200.0
-                    },
-                    "stats": {
-                        "hp": 150,
-                        "damage": 20,
-                        "armor": 0,
-                        "speed": 120,
-                        "egg_rate": 2.5,
-                        "score": 15
-                    }
-                },
-                {
-                    "batch_id": 3,
-                    "visual_id": 2,
-                    "role": "SWARM",
-                    "count": 10,
-                    "layout": {
-                        "type": "INTERSECTING_V",
-                        "spacing_x": 110.0,
-                        "spacing_y": 90.0,
-                        "target_base_y": 60.0
-                    },
-                    "movement": {
-                        "type": "WAYPOINT"
-                    },
-                    "stats": {
-                        "hp": 80,
-                        "damage": 15,
-                        "armor": 0,
-                        "speed": 140,
-                        "egg_rate": 5.0,
-                        "score": 10
-                    }
-                }
-            ]
+          "batch_id": 1,
+          "visual_id": 2,
+          "role": "NORMAL",
+          "count": 10,
+          "layout": {
+            "type": "V_SHAPE",
+            "layers": 1,
+            "layer_spacing": 0.0,
+            "spacing_x": 100.0,
+            "spacing_y": 70.0,
+            "start_y": -200.0,
+            "target_base_y": 80.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 150.0
+          },
+          "stats": {
+            "hp": 160,
+            "damage": 22,
+            "armor": 0,
+            "speed": 120,
+            "egg_rate": 2.5,
+            "score": 15
+          }
         },
         {
-            "wave_id": 2,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 2,
-                    "role": "NORMAL",
-                    "count": 16,
-                    "layout": {
-                        "type": "SWEEP_TO_GRID",
-                        "rows": 4,
-                        "cols_per_side": 2,
-                        "spacing_x": 140.0,
-                        "spacing_y": 110.0,
-                        "target_base_y": 70.0
-                    },
-                    "movement": {
-                        "type": "WAYPOINT"
-                    },
-                    "stats": {
-                        "hp": 180,
-                        "damage": 25,
-                        "armor": 0,
-                        "speed": 110,
-                        "egg_rate": 2.5,
-                        "score": 20
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 2,
-                    "role": "NORMAL",
-                    "count": 8,
-                    "layout": {
-                        "type": "V_SHAPE",
-                        "layers": 2,
-                        "layer_spacing": 100.0,
-                        "spacing_x": 110.0,
-                        "spacing_y": 70.0,
-                        "start_y": -200.0,
-                        "target_base_y": 100.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 200,
-                        "damage": 25,
-                        "armor": 0,
-                        "speed": 110,
-                        "egg_rate": 2.0,
-                        "score": 20
-                    }
-                },
-                {
-                    "batch_id": 3,
-                    "visual_id": 2,
-                    "role": "NORMAL",
-                    "count": 10,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 2,
-                        "cols": 5,
-                        "spacing_x": 140.0,
-                        "spacing_y": 90.0,
-                        "start_y": -300.0,
-                        "target_base_y": 120.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 250.0
-                    },
-                    "stats": {
-                        "hp": 180,
-                        "damage": 25,
-                        "armor": 0,
-                        "speed": 130,
-                        "egg_rate": 2.0,
-                        "score": 20
-                    }
-                }
-            ]
+          "batch_id": 2,
+          "visual_id": 2,
+          "role": "NORMAL",
+          "count": 15,
+          "layout": {
+            "type": "GRID",
+            "rows": 3,
+            "cols": 5,
+            "spacing_x": 130.0,
+            "spacing_y": 90.0,
+            "start_y": -400.0,
+            "target_base_y": 80.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 200.0
+          },
+          "stats": {
+            "hp": 160,
+            "damage": 22,
+            "armor": 0,
+            "speed": 120,
+            "egg_rate": 2.0,
+            "score": 15
+          }
         },
         {
-            "wave_id": 3,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 1,
-                    "role": "ASTEROID",
-                    "count": 25,
-                    "layout": {
-                        "type": "RANDOM_RAIN",
-                        "duration": 10.0,
-                        "start_y": -100.0,
-                        "asteroid_variant": 1
-                    },
-                    "movement": {
-                        "type": "METEOR_DIVE"
-                    },
-                    "stats": {
-                        "hp": 500,
-                        "damage": 50,
-                        "armor": 0,
-                        "speed": 350,
-                        "egg_rate": 0.0,
-                        "score": 5
-                    }
-                },
-                {
-                    "batch_id": 1,
-                    "visual_id": 1,
-                    "role": "ASTEROID",
-                    "count": 25,
-                    "layout": {
-                        "type": "RANDOM_RAIN",
-                        "duration": 10.0,
-                        "start_y": -100.0,
-                        "asteroid_variant": 2
-                    },
-                    "movement": {
-                        "type": "METEOR_DIVE"
-                    },
-                    "stats": {
-                        "hp": 500,
-                        "damage": 50,
-                        "armor": 0,
-                        "speed": 400,
-                        "egg_rate": 0.0,
-                        "score": 5
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 2,
-                    "role": "NORMAL",
-                    "count": 20,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 4,
-                        "cols": 5,
-                        "spacing_x": 120.0,
-                        "spacing_y": 90.0,
-                        "start_y": -400.0,
-                        "target_base_y": 80.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 100.0
-                    },
-                    "stats": {
-                        "hp": 200,
-                        "damage": 25,
-                        "armor": 0,
-                        "speed": 100,
-                        "egg_rate": 2.0,
-                        "score": 20
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 4,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 2,
-                    "role": "NORMAL",
-                    "count": 12,
-                    "layout": {
-                        "type": "V_SHAPE",
-                        "layers": 2,
-                        "layer_spacing": 120.0,
-                        "spacing_x": 100.0,
-                        "spacing_y": 80.0,
-                        "start_y": -200.0,
-                        "target_base_y": 80.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 250,
-                        "damage": 30,
-                        "armor": 5,
-                        "speed": 100,
-                        "egg_rate": 1.5,
-                        "score": 30
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 2,
-                    "role": "TANK",
-                    "count": 12,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 6,
-                        "spacing_x": 300.0,
-                        "spacing_y": 0.0,
-                        "start_y": -150.0,
-                        "target_base_y": 120.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 150.0
-                    },
-                    "stats": {
-                        "hp": 1200,
-                        "damage": 50,
-                        "armor": 10,
-                        "speed": 80,
-                        "egg_rate": 1.0,
-                        "score": 120
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 1,
-                    "role": "ASTEROID",
-                    "count": 12,
-                    "layout": {
-                        "type": "TARGETED_PLAYER",
-                        "start_y": -100.0,
-                        "asteroid_variant": 2,
-                        "spawn_delay": 3.0
-                    },
-                    "movement": {
-                        "type": "METEOR_DIVE"
-                    },
-                    "stats": {
-                        "hp": 500,
-                        "damage": 50,
-                        "armor": 0,
-                        "speed": 400,
-                        "egg_rate": 0.0,
-                        "score": 5
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 1,
-                    "role": "ASTEROID",
-                    "count": 12,
-                    "layout": {
-                        "type": "TARGETED_PLAYER",
-                        "start_y": -100.0,
-                        "asteroid_variant": 2,
-                        "spawn_delay": 6.0
-                    },
-                    "movement": {
-                        "type": "METEOR_DIVE"
-                    },
-                    "stats": {
-                        "hp": 500,
-                        "damage": 50,
-                        "armor": 0,
-                        "speed": 400,
-                        "egg_rate": 0.0,
-                        "score": 5
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 1,
-                    "role": "ASTEROID",
-                    "count": 12,
-                    "layout": {
-                        "type": "TARGETED_PLAYER",
-                        "start_y": -100.0,
-                        "asteroid_variant": 2,
-                        "spawn_delay": 9.0
-                    },
-                    "movement": {
-                        "type": "METEOR_DIVE"
-                    },
-                    "stats": {
-                        "hp": 500,
-                        "damage": 50,
-                        "armor": 0,
-                        "speed": 400,
-                        "egg_rate": 0.0,
-                        "score": 5
-                    }
-                },
-                {
-                    "batch_id": 3,
-                    "visual_id": 2,
-                    "role": "NORMAL",
-                    "count": 10,
-                    "layout": {
-                        "type": "INTERSECTING_V",
-                        "spacing_x": 120.0,
-                        "spacing_y": 100.0,
-                        "target_base_y": 80.0
-                    },
-                    "movement": {
-                        "type": "WAYPOINT"
-                    },
-                    "stats": {
-                        "hp": 200,
-                        "damage": 25,
-                        "armor": 0,
-                        "speed": 120,
-                        "egg_rate": 2.0,
-                        "score": 25
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 5,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 11,
-                    "role": "BOSS",
-                    "count": 1,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 1,
-                        "spacing_x": 0,
-                        "spacing_y": 0,
-                        "start_y": -200.0,
-                        "target_base_y": 150.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 40000,
-                        "damage": 50,
-                        "armor": 15,
-                        "speed": 180,
-                        "egg_rate": 0.0,
-                        "score": 5000
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 6,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 11,
-                    "layout": {
-                        "type": "V_SHAPE",
-                        "spacing_x": 100.0,
-                        "spacing_y": 110.0,
-                        "start_y": -200.0,
-                        "target_base_y": 100.0,
-                        "layers": 1,
-                        "layer_spacing": 0.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 100.0
-                    },
-                    "stats": {
-                        "hp": 200,
-                        "damage": 25,
-                        "armor": 0,
-                        "speed": 100,
-                        "egg_rate": 2.5,
-                        "score": 20
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 10,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 2,
-                        "cols": 5,
-                        "spacing_x": 150.0,
-                        "spacing_y": 120.0,
-                        "start_y": -150.0,
-                        "target_base_y": 80.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 180,
-                        "damage": 30,
-                        "armor": 0,
-                        "speed": 150,
-                        "egg_rate": 1.5,
-                        "score": 25
-                    }
-                },
-                {
-                    "batch_id": 3,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 8,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 8,
-                        "spacing_x": 150.0,
-                        "spacing_y": 0.0,
-                        "start_y": 700.0,
-                        "target_base_y": 400.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_SWEEP"
-                    },
-                    "stats": {
-                        "hp": 150,
-                        "damage": 30,
-                        "armor": 0,
-                        "speed": 200,
-                        "egg_rate": 1.0,
-                        "score": 25
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 7,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 9,
-                    "layout": {
-                        "type": "V_SHAPE",
-                        "spacing_x": 100.0,
-                        "spacing_y": 100.0,
-                        "start_y": -100.0,
-                        "target_base_y": 150.0,
-                        "layers": 1,
-                        "layer_spacing": 0.0
-                    },
-                    "movement": {
-                        "type": "VERTICAL_ZIGZAG"
-                    },
-                    "stats": {
-                        "hp": 200,
-                        "damage": 30,
-                        "armor": 0,
-                        "speed": 150.0,
-                        "egg_rate": 2.0,
-                        "score": 25
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 21,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 3,
-                        "cols": 7,
-                        "spacing_x": 120.0,
-                        "spacing_y": 120.0,
-                        "start_y": -100.0,
-                        "target_base_y": 100.0
-                    },
-                    "movement": {
-                        "type": "STRAIGHT",
-                        "wrap_around": false
-                    },
-                    "stats": {
-                        "hp": 180,
-                        "damage": 30,
-                        "armor": 0,
-                        "speed": 125.0,
-                        "egg_rate": 2.0,
-                        "score": 25
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 8,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 12,
-                    "layout": {
-                        "type": "RING",
-                        "radius": 250.0,
-                        "center_y": 350.0
-                    },
-                    "movement": {
-                        "type": "WAYPOINT"
-                    },
-                    "stats": {
-                        "hp": 250,
-                        "damage": 30,
-                        "armor": 0,
-                        "speed": 150,
-                        "egg_rate": 2.5,
-                        "score": 30
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 11,
-                    "layout": {
-                        "type": "V_SHAPE",
-                        "spacing_x": 100.0,
-                        "spacing_y": 100.0,
-                        "start_y": -400.0,
-                        "target_base_y": 170.0,
-                        "layers": 1,
-                        "layer_spacing": 0.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 200,
-                        "damage": 35,
-                        "armor": 0,
-                        "speed": 250,
-                        "egg_rate": 3.0,
-                        "score": 30
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 9,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 15,
-                    "layout": {
-                        "type": "RANDOM_RAIN",
-                        "duration": 2.0,
-                        "start_y": -100.0
-                    },
-                    "movement": {
-                        "type": "STRAIGHT",
-                        "wrap_around": true
-                    },
-                    "stats": {
-                        "hp": 100,
-                        "damage": 20,
-                        "armor": 0,
-                        "speed": 350,
-                        "egg_rate": 1.0,
-                        "score": 15
-                    }
-                },
-                {
-                    "batch_id": 2,
-                    "visual_id": 3,
-                    "role": "NORMAL",
-                    "count": 12,
-                    "layout": {
-                        "type": "INTERSECTING_V",
-                        "spacing_x": 150.0,
-                        "spacing_y": 150.0,
-                        "target_base_y": 150.0
-                    },
-                    "movement": {
-                        "type": "WAYPOINT"
-                    },
-                    "stats": {
-                        "hp": 220,
-                        "damage": 35,
-                        "armor": 0,
-                        "speed": 80,
-                        "egg_rate": 3.5,
-                        "score": 40
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 10,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 11,
-                    "role": "BOSS",
-                    "count": 2,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 2,
-                        "spacing_x": 600,
-                        "spacing_y": 0,
-                        "start_y": -200.0,
-                        "target_base_y": 150.0
-                    },
-                    "movement": {
-                        "type": "NONE"
-                    },
-                    "stats": {
-                        "hp": 30000,
-                        "damage": 50,
-                        "armor": 15,
-                        "speed": 180,
-                        "egg_rate": 0.0,
-                        "score": 5000
-                    }
-                }
-            ]
+          "batch_id": 3,
+          "visual_id": 2,
+          "role": "SWARM",
+          "count": 10,
+          "layout": {
+            "type": "INTERSECTING_V",
+            "spacing_x": 110.0,
+            "spacing_y": 90.0,
+            "target_base_y": 60.0
+          },
+          "movement": {
+            "type": "WAYPOINT"
+          },
+          "stats": {
+            "hp": 80,
+            "damage": 14,
+            "armor": 0,
+            "speed": 140,
+            "egg_rate": 8.0,
+            "score": 10
+          }
         }
-    ]
+      ]
+    },
+    {
+      "wave_id": 2,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 2,
+          "role": "NORMAL",
+          "count": 16,
+          "layout": {
+            "type": "SWEEP_TO_GRID",
+            "rows": 4,
+            "cols_per_side": 2,
+            "spacing_x": 140.0,
+            "spacing_y": 110.0,
+            "target_base_y": 70.0
+          },
+          "movement": {
+            "type": "WAYPOINT"
+          },
+          "stats": {
+            "hp": 190,
+            "damage": 26,
+            "armor": 0,
+            "speed": 110,
+            "egg_rate": 2.0,
+            "score": 20
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 2,
+          "role": "NORMAL",
+          "count": 8,
+          "layout": {
+            "type": "V_SHAPE",
+            "layers": 2,
+            "layer_spacing": 100.0,
+            "spacing_x": 110.0,
+            "spacing_y": 70.0,
+            "start_y": -200.0,
+            "target_base_y": 100.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 200,
+            "damage": 26,
+            "armor": 0,
+            "speed": 110,
+            "egg_rate": 1.8,
+            "score": 20
+          }
+        },
+        {
+          "batch_id": 3,
+          "visual_id": 2,
+          "role": "NORMAL",
+          "count": 10,
+          "layout": {
+            "type": "GRID",
+            "rows": 2,
+            "cols": 5,
+            "spacing_x": 140.0,
+            "spacing_y": 90.0,
+            "start_y": -300.0,
+            "target_base_y": 120.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 250.0
+          },
+          "stats": {
+            "hp": 180,
+            "damage": 26,
+            "armor": 0,
+            "speed": 130,
+            "egg_rate": 2.0,
+            "score": 20
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 3,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 1,
+          "role": "ASTEROID",
+          "count": 25,
+          "layout": {
+            "type": "RANDOM_RAIN",
+            "duration": 10.0,
+            "start_y": -100.0,
+            "asteroid_variant": 1
+          },
+          "movement": {
+            "type": "METEOR_DIVE"
+          },
+          "stats": {
+            "hp": 600,
+            "damage": 55,
+            "armor": 0,
+            "speed": 350,
+            "egg_rate": 0.0,
+            "score": 5
+          }
+        },
+        {
+          "batch_id": 1,
+          "visual_id": 1,
+          "role": "ASTEROID",
+          "count": 25,
+          "layout": {
+            "type": "RANDOM_RAIN",
+            "duration": 10.0,
+            "start_y": -100.0,
+            "asteroid_variant": 2
+          },
+          "movement": {
+            "type": "METEOR_DIVE"
+          },
+          "stats": {
+            "hp": 600,
+            "damage": 60,
+            "armor": 0,
+            "speed": 400,
+            "egg_rate": 0.0,
+            "score": 5
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 2,
+          "role": "NORMAL",
+          "count": 20,
+          "layout": {
+            "type": "GRID",
+            "rows": 4,
+            "cols": 5,
+            "spacing_x": 120.0,
+            "spacing_y": 90.0,
+            "start_y": -400.0,
+            "target_base_y": 80.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 100.0
+          },
+          "stats": {
+            "hp": 210,
+            "damage": 28,
+            "armor": 0,
+            "speed": 100,
+            "egg_rate": 2.0,
+            "score": 22
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 4,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 2,
+          "role": "NORMAL",
+          "count": 12,
+          "layout": {
+            "type": "V_SHAPE",
+            "layers": 2,
+            "layer_spacing": 120.0,
+            "spacing_x": 100.0,
+            "spacing_y": 80.0,
+            "start_y": -200.0,
+            "target_base_y": 80.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 260,
+            "damage": 32,
+            "armor": 5,
+            "speed": 100,
+            "egg_rate": 1.5,
+            "score": 30
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 2,
+          "role": "TANK",
+          "count": 12,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 6,
+            "spacing_x": 300.0,
+            "spacing_y": 0.0,
+            "start_y": -150.0,
+            "target_base_y": 120.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 150.0
+          },
+          "stats": {
+            "hp": 650,
+            "damage": 55,
+            "armor": 12,
+            "speed": 80,
+            "egg_rate": 0.8,
+            "score": 140
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 1,
+          "role": "ASTEROID",
+          "count": 12,
+          "layout": {
+            "type": "TARGETED_PLAYER",
+            "start_y": -100.0,
+            "asteroid_variant": 2,
+            "spawn_delay": 3.0
+          },
+          "movement": {
+            "type": "METEOR_DIVE"
+          },
+          "stats": {
+            "hp": 600,
+            "damage": 60,
+            "armor": 0,
+            "speed": 400,
+            "egg_rate": 0.0,
+            "score": 5
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 1,
+          "role": "ASTEROID",
+          "count": 12,
+          "layout": {
+            "type": "TARGETED_PLAYER",
+            "start_y": -100.0,
+            "asteroid_variant": 2,
+            "spawn_delay": 6.0
+          },
+          "movement": {
+            "type": "METEOR_DIVE"
+          },
+          "stats": {
+            "hp": 600,
+            "damage": 60,
+            "armor": 0,
+            "speed": 400,
+            "egg_rate": 0.0,
+            "score": 5
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 1,
+          "role": "ASTEROID",
+          "count": 12,
+          "layout": {
+            "type": "TARGETED_PLAYER",
+            "start_y": -100.0,
+            "asteroid_variant": 2,
+            "spawn_delay": 9.0
+          },
+          "movement": {
+            "type": "METEOR_DIVE"
+          },
+          "stats": {
+            "hp": 600,
+            "damage": 60,
+            "armor": 0,
+            "speed": 400,
+            "egg_rate": 0.0,
+            "score": 5
+          }
+        },
+        {
+          "batch_id": 3,
+          "visual_id": 2,
+          "role": "NORMAL",
+          "count": 10,
+          "layout": {
+            "type": "INTERSECTING_V",
+            "spacing_x": 120.0,
+            "spacing_y": 100.0,
+            "target_base_y": 80.0
+          },
+          "movement": {
+            "type": "WAYPOINT"
+          },
+          "stats": {
+            "hp": 210,
+            "damage": 28,
+            "armor": 0,
+            "speed": 120,
+            "egg_rate": 2.0,
+            "score": 25
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 5,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 11,
+          "role": "BOSS",
+          "count": 1,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 1,
+            "spacing_x": 0,
+            "spacing_y": 0,
+            "start_y": -200.0,
+            "target_base_y": 150.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 45000,
+            "damage": 55,
+            "armor": 18,
+            "speed": 180,
+            "egg_rate": 0.0,
+            "score": 5000
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 6,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 11,
+          "layout": {
+            "type": "V_SHAPE",
+            "spacing_x": 100.0,
+            "spacing_y": 110.0,
+            "start_y": -200.0,
+            "target_base_y": 100.0,
+            "layers": 1,
+            "layer_spacing": 0.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 100.0
+          },
+          "stats": {
+            "hp": 200,
+            "damage": 28,
+            "armor": 0,
+            "speed": 100,
+            "egg_rate": 2.0,
+            "score": 20
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 10,
+          "layout": {
+            "type": "GRID",
+            "rows": 2,
+            "cols": 5,
+            "spacing_x": 150.0,
+            "spacing_y": 120.0,
+            "start_y": -150.0,
+            "target_base_y": 80.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 200,
+            "damage": 32,
+            "armor": 0,
+            "speed": 150,
+            "egg_rate": 1.5,
+            "score": 25
+          }
+        },
+        {
+          "batch_id": 3,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 8,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 8,
+            "spacing_x": 150.0,
+            "spacing_y": 0.0,
+            "start_y": 700.0,
+            "target_base_y": 400.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_SWEEP"
+          },
+          "stats": {
+            "hp": 180,
+            "damage": 32,
+            "armor": 0,
+            "speed": 200,
+            "egg_rate": 1.0,
+            "score": 25
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 7,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 9,
+          "layout": {
+            "type": "V_SHAPE",
+            "spacing_x": 100.0,
+            "spacing_y": 100.0,
+            "start_y": -100.0,
+            "target_base_y": 150.0,
+            "layers": 1,
+            "layer_spacing": 0.0
+          },
+          "movement": {
+            "type": "VERTICAL_ZIGZAG"
+          },
+          "stats": {
+            "hp": 210,
+            "damage": 32,
+            "armor": 0,
+            "speed": 150.0,
+            "egg_rate": 2.0,
+            "score": 25
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 21,
+          "layout": {
+            "type": "GRID",
+            "rows": 3,
+            "cols": 7,
+            "spacing_x": 120.0,
+            "spacing_y": 120.0,
+            "start_y": -100.0,
+            "target_base_y": 100.0
+          },
+          "movement": {
+            "type": "STRAIGHT",
+            "wrap_around": false
+          },
+          "stats": {
+            "hp": 190,
+            "damage": 32,
+            "armor": 0,
+            "speed": 125.0,
+            "egg_rate": 2.0,
+            "score": 25
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 8,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 12,
+          "layout": {
+            "type": "RING",
+            "radius": 250.0,
+            "center_y": 350.0
+          },
+          "movement": {
+            "type": "WAYPOINT"
+          },
+          "stats": {
+            "hp": 260,
+            "damage": 32,
+            "armor": 0,
+            "speed": 150,
+            "egg_rate": 2.5,
+            "score": 30
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 11,
+          "layout": {
+            "type": "V_SHAPE",
+            "spacing_x": 100.0,
+            "spacing_y": 100.0,
+            "start_y": -400.0,
+            "target_base_y": 170.0,
+            "layers": 1,
+            "layer_spacing": 0.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 220,
+            "damage": 36,
+            "armor": 0,
+            "speed": 250,
+            "egg_rate": 2.5,
+            "score": 30
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 9,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 15,
+          "layout": {
+            "type": "RANDOM_RAIN",
+            "duration": 2.0,
+            "start_y": -100.0
+          },
+          "movement": {
+            "type": "STRAIGHT",
+            "wrap_around": true
+          },
+          "stats": {
+            "hp": 110,
+            "damage": 22,
+            "armor": 0,
+            "speed": 350,
+            "egg_rate": 1.0,
+            "score": 15
+          }
+        },
+        {
+          "batch_id": 2,
+          "visual_id": 3,
+          "role": "NORMAL",
+          "count": 12,
+          "layout": {
+            "type": "INTERSECTING_V",
+            "spacing_x": 150.0,
+            "spacing_y": 150.0,
+            "target_base_y": 150.0
+          },
+          "movement": {
+            "type": "WAYPOINT"
+          },
+          "stats": {
+            "hp": 230,
+            "damage": 36,
+            "armor": 0,
+            "speed": 80,
+            "egg_rate": 3.5,
+            "score": 40
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 10,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 11,
+          "role": "BOSS",
+          "count": 2,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 2,
+            "spacing_x": 600,
+            "spacing_y": 0,
+            "start_y": -200.0,
+            "target_base_y": 150.0
+          },
+          "movement": {
+            "type": "NONE"
+          },
+          "stats": {
+            "hp": 35000,
+            "damage": 55,
+            "armor": 18,
+            "speed": 180,
+            "egg_rate": 0.0,
+            "score": 5000
+          }
+        }
+      ]
+    }
+  ]
 }

@@ -1,166 +1,166 @@
 {
-    "stage_id": 6,
-    "name": "Stage 6 - Boss Rush",
-    "waves": [
+  "stage_id": 6,
+  "name": "Stage 6 - Boss Rush",
+  "waves": [
+    {
+      "wave_id": 1,
+      "batches": [
         {
-            "wave_id": 1,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 10,
-                    "role": "BOSS",
-                    "count": 1,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 1,
-                        "spacing_x": 0,
-                        "spacing_y": 0,
-                        "start_y": -200.0,
-                        "target_base_y": 150.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 5000,
-                        "damage": 50,
-                        "armor": 20,
-                        "speed": 130,
-                        "egg_rate": 0.0,
-                        "score": 1000
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 2,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 11,
-                    "role": "BOSS",
-                    "count": 1,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 1,
-                        "spacing_x": 0,
-                        "spacing_y": 0,
-                        "start_y": -200.0,
-                        "target_base_y": 150.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 4000,
-                        "damage": 40,
-                        "armor": 25,
-                        "speed": 130,
-                        "egg_rate": 0.0,
-                        "score": 1000
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 3,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 8,
-                    "role": "BOSS",
-                    "count": 1,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 1,
-                        "spacing_x": 0,
-                        "spacing_y": 0,
-                        "start_y": -200.0,
-                        "target_base_y": 150.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 10000,
-                        "damage": 60,
-                        "armor": 20,
-                        "speed": 140,
-                        "egg_rate": 0.0,
-                        "score": 1000
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 4,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 7,
-                    "role": "BOSS",
-                    "count": 1,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 1,
-                        "spacing_x": 0,
-                        "spacing_y": 0,
-                        "start_y": -200.0,
-                        "target_base_y": 150.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 12000,
-                        "damage": 60,
-                        "armor": 30,
-                        "speed": 110,
-                        "egg_rate": 0.0,
-                        "score": 1000
-                    }
-                }
-            ]
-        },
-        {
-            "wave_id": 5,
-            "batches": [
-                {
-                    "batch_id": 1,
-                    "visual_id": 14,
-                    "role": "BOSS",
-                    "count": 1,
-                    "layout": {
-                        "type": "GRID",
-                        "rows": 1,
-                        "cols": 1,
-                        "spacing_x": 0,
-                        "spacing_y": 0,
-                        "start_y": -200.0,
-                        "target_base_y": 150.0
-                    },
-                    "movement": {
-                        "type": "HORIZONTAL_BOUNCE",
-                        "drift": 0.0
-                    },
-                    "stats": {
-                        "hp": 15000,
-                        "damage": 80,
-                        "armor": 35,
-                        "speed": 140,
-                        "egg_rate": 0.0,
-                        "score": 1000
-                    }
-                }
-            ]
+          "batch_id": 1,
+          "visual_id": 10,
+          "role": "BOSS",
+          "count": 1,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 1,
+            "spacing_x": 0,
+            "spacing_y": 0,
+            "start_y": -200.0,
+            "target_base_y": 150.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 9000,
+            "damage": 50,
+            "armor": 24,
+            "speed": 130,
+            "egg_rate": 0.0,
+            "score": 1000
+          }
         }
-    ]
+      ]
+    },
+    {
+      "wave_id": 2,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 11,
+          "role": "BOSS",
+          "count": 1,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 1,
+            "spacing_x": 0,
+            "spacing_y": 0,
+            "start_y": -200.0,
+            "target_base_y": 150.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 13000,
+            "damage": 48,
+            "armor": 28,
+            "speed": 130,
+            "egg_rate": 0.0,
+            "score": 1000
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 3,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 8,
+          "role": "BOSS",
+          "count": 1,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 1,
+            "spacing_x": 0,
+            "spacing_y": 0,
+            "start_y": -200.0,
+            "target_base_y": 150.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 18000,
+            "damage": 68,
+            "armor": 24,
+            "speed": 140,
+            "egg_rate": 0.0,
+            "score": 1500
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 4,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 7,
+          "role": "BOSS",
+          "count": 1,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 1,
+            "spacing_x": 0,
+            "spacing_y": 0,
+            "start_y": -200.0,
+            "target_base_y": 150.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 24000,
+            "damage": 72,
+            "armor": 34,
+            "speed": 110,
+            "egg_rate": 0.0,
+            "score": 2000
+          }
+        }
+      ]
+    },
+    {
+      "wave_id": 5,
+      "batches": [
+        {
+          "batch_id": 1,
+          "visual_id": 14,
+          "role": "BOSS",
+          "count": 1,
+          "layout": {
+            "type": "GRID",
+            "rows": 1,
+            "cols": 1,
+            "spacing_x": 0,
+            "spacing_y": 0,
+            "start_y": -200.0,
+            "target_base_y": 150.0
+          },
+          "movement": {
+            "type": "HORIZONTAL_BOUNCE",
+            "drift": 0.0
+          },
+          "stats": {
+            "hp": 32000,
+            "damage": 88,
+            "armor": 40,
+            "speed": 140,
+            "egg_rate": 0.0,
+            "score": 3000
+          }
+        }
+      ]
+    }
+  ]
 }
