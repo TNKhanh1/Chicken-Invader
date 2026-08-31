@@ -1221,6 +1221,24 @@ case GameState::MAIN_MENU:
             selectionAnimTimer += deltaTime;
             if (selectionAnimTimer > 0.4f) selectionAnimTimer = 0.4f;
 
+            if (currentNumChoices == 0) {
+                if (extraStatSelectionsPending > 0) {
+                    extraStatSelectionsPending--;
+                    GenerateSelectionPool(true);
+                    isStatSelection = true;
+                    selectionAnimTimer = 0.0f;
+                    ChangeState(GameState::STAT_SELECTION);
+                } else if (pendingArgumentAfterStat) {
+                    isStatSelection = false;
+                    selectionAnimTimer = 0.0f;
+                    GenerateSelectionPool(false);
+                    ChangeState(GameState::ARGUMENT_SELECTION);
+                } else {
+                    StartWave(nextWaveAfterSelection);
+                }
+                break;
+            }
+
             int numChoices = (player && player->HasArgument(2)) ? 4 : 3;
             const float CARD_W   = 320.0f;
             const float CARD_H   = 490.0f;
@@ -1233,7 +1251,7 @@ case GameState::MAIN_MENU:
             float cardY = finalY + (1.0f - t) * 350.0f;
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                for (int i = 0; i < numChoices; i++) {
+                for (int i = 0; i < currentNumChoices; i++) {
                     Rectangle cardRect = { startX + i * (CARD_W + GAP), cardY, CARD_W, CARD_H };
                     if (CheckCollisionPointRec(GetMousePosition(), cardRect)) {
                         // Áp dụng chỉ số
@@ -1275,6 +1293,11 @@ case GameState::MAIN_MENU:
             selectionAnimTimer += deltaTime;
             if (selectionAnimTimer > 0.4f) selectionAnimTimer = 0.4f;
 
+            if (currentNumChoices == 0) {
+                StartWave(nextWaveAfterSelection);
+                break;
+            }
+
             int numChoices = (player && player->HasArgument(2)) ? 4 : 3;
             const float CARD_W = 320.0f;
             const float CARD_H = 490.0f;
@@ -1287,7 +1310,7 @@ case GameState::MAIN_MENU:
             float cardY = finalY + (1.0f - t) * 350.0f;
 
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                for (int i = 0; i < numChoices; i++) {
+                for (int i = 0; i < currentNumChoices; i++) {
                     Rectangle cardRect = { startX + i * (CARD_W + GAP), cardY, CARD_W, CARD_H };
                     if (CheckCollisionPointRec(GetMousePosition(), cardRect)) {
                         int argId = shownCardIndices[i];
@@ -2109,7 +2132,7 @@ void GameManager::Draw() {
             float cardY = finalY + (1.0f - t) * 350.0f;
 
             // 4. Tiêu đề màn hình
-            bool isStat = (currentState == GameState::STAT_SELECTION);
+            bool isStat = isStatSelection;
             const char* titleText = isStat ? "CHOOSE A STAT UPGRADE" : "CHOOSE AN ARGUMENT";
             Color titleColor = isStat ? (Color){80, 200, 120, 255} : (Color){255, 180, 50, 255};
             FontManager::GetInstance()->DrawGameTextCentered(titleText, screenWidth/2 + 2, (int)(cardY - 72), 34, {0, 0, 0, 120}, "Retro");
