@@ -11,6 +11,7 @@ enum class GameState {
     ENCYCLOPEDIA, // Sách bách khoa toàn thư
     GAME_OVER,
     SUMMARY,
+    TUTORIAL,
     
     // Test states
     TEST_MENU,

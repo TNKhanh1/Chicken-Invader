@@ -27,6 +27,8 @@
 #include "FontManager.h"
 #include "ShopManager.h"
 #include "ShopUI.h"
+#include "TutorialUI.h"
+#include "TitleScreen.h"
 #include "RuneManager.h"
 #include "RuneSelectionUI.h"
 #include "SummaryScreen.h"
@@ -454,6 +456,7 @@ void GameManager::Init(int width, int height, const char* title) {
     // Khởi tạo giao diện UI
     mainMenuUI = new MenuManager(screenWidth, screenHeight);
     shopUI = new ShopUI(screenWidth, screenHeight);
+    tutorialUI = new TutorialUI(screenWidth, screenHeight);
     runeUI = new RuneSelectionUI(screenWidth, screenHeight);
     summaryScreen = new SummaryScreen(screenWidth, screenHeight);
     
@@ -659,6 +662,13 @@ case GameState::MAIN_MENU:
         case GameState::SHOP:
             if (shopUI) shopUI->Update();
             break;
+            
+        case GameState::TUTORIAL:
+            tutorialUI->Update();
+            if (tutorialUI->IsBackRequested()) {
+                ChangeState(GameState::MAIN_MENU);
+            }
+            break;
 
         case GameState::RUNE_SELECTION:
         {
@@ -849,23 +859,25 @@ case GameState::MAIN_MENU:
 
             // --- Player Logic ---
             // --- WEAPON SANDBOX CONTROLS & PLAYER LOGIC ---
-            if (IsKeyPressed(KEY_F1)) debugSandboxMode = !debugSandboxMode; // Bật / tắt sandbox
-            if (debugSandboxMode && player && player->IsActive()) {
-                if (IsKeyPressed(KEY_ONE))   player->SetWeapon("Hypergun");
-                if (IsKeyPressed(KEY_TWO))   player->SetWeapon("Plasma_Rifle");
-                if (IsKeyPressed(KEY_THREE)) player->SetWeapon("Absolver_Beam");
-                if (IsKeyPressed(KEY_FOUR))  player->SetWeapon("Neutron_Gun");
-                if (IsKeyPressed(KEY_FIVE))  player->SetWeapon("Riddler");
-                if (IsKeyPressed(KEY_SIX))   player->SetWeapon("Lightning_Fryer");
-                if (IsKeyPressed(KEY_SEVEN)) player->SetWeapon("Ion_Blaster");
-                if (IsKeyPressed(KEY_EIGHT)) player->SetWeapon("Utensil_Poker");
-                if (IsKeyPressed(KEY_NINE))  player->SetWeapon("Laser_Cannon");
+            if (enableDevTools) {
+                if (IsKeyPressed(KEY_F1)) debugSandboxMode = !debugSandboxMode; // Bật / tắt sandbox
+                if (debugSandboxMode && player && player->IsActive()) {
+                    if (IsKeyPressed(KEY_ONE))   player->SetWeapon("Hypergun");
+                    if (IsKeyPressed(KEY_TWO))   player->SetWeapon("Plasma_Rifle");
+                    if (IsKeyPressed(KEY_THREE)) player->SetWeapon("Absolver_Beam");
+                    if (IsKeyPressed(KEY_FOUR))  player->SetWeapon("Neutron_Gun");
+                    if (IsKeyPressed(KEY_FIVE))  player->SetWeapon("Riddler");
+                    if (IsKeyPressed(KEY_SIX))   player->SetWeapon("Lightning_Fryer");
+                    if (IsKeyPressed(KEY_SEVEN)) player->SetWeapon("Ion_Blaster");
+                    if (IsKeyPressed(KEY_EIGHT)) player->SetWeapon("Utensil_Poker");
+                    if (IsKeyPressed(KEY_NINE))  player->SetWeapon("Laser_Cannon");
 
-                if (IsKeyPressed(KEY_UP))    player->SetLevel(std::min(player->GetLevel() + 1, 11));
-                if (IsKeyPressed(KEY_DOWN))  player->SetLevel(std::max(player->GetLevel() - 1, 1));
-                
-                if (IsKeyPressed(KEY_H))     showDebugHitboxes = !showDebugHitboxes;
-                if (IsKeyDown(KEY_F))        deltaTime *= 0.1f; // Slow-motion
+                    if (IsKeyPressed(KEY_UP))    player->SetLevel(std::min(player->GetLevel() + 1, 11));
+                    if (IsKeyPressed(KEY_DOWN))  player->SetLevel(std::max(player->GetLevel() - 1, 1));
+                    
+                    if (IsKeyPressed(KEY_H))     showDebugHitboxes = !showDebugHitboxes;
+                    if (IsKeyDown(KEY_F))        deltaTime *= 0.1f; // Slow-motion
+                }
             }
 
             if (player && player->IsActive()) {
@@ -877,8 +889,10 @@ case GameState::MAIN_MENU:
                 
                 if (IsKeyPressed(KEY_M)) player->ActivateMana();
                 
-                if (IsKeyPressed(KEY_L)) player->LevelUp();
-                if (IsKeyPressed(KEY_H) && !debugSandboxMode) showDebugHitboxes = !showDebugHitboxes;
+                if (enableDevTools) {
+                    if (IsKeyPressed(KEY_L)) player->LevelUp();
+                    if (IsKeyPressed(KEY_H) && !debugSandboxMode) showDebugHitboxes = !showDebugHitboxes;
+                }
                 
                 if (pos.x < 0) pos.x = 0;
                 if (pos.x > screenWidth) pos.x = screenWidth;
@@ -1411,6 +1425,10 @@ void GameManager::Draw() {
             if (shopUI) shopUI->Draw();
             break;
             
+        case GameState::TUTORIAL:
+            if (tutorialUI) tutorialUI->Draw();
+            break;
+
         case GameState::RUNE_SELECTION:
         {
             if (runeUI) runeUI->Draw();
@@ -1438,18 +1456,18 @@ void GameManager::Draw() {
         case GameState::MAIN_MENU:
         {
             if (mainMenuUI) {
-                int action = mainMenuUI->UpdateAndDraw(GetFrameTime());
-                if (action == 100) {
+                int clickedId = mainMenuUI->UpdateAndDraw(GetFrameTime());
+                if (clickedId == 100) {
                     ChangeState(GameState::SHOP);
-                } else if (action >= 1 && action <= 7) {
-                    pendingStageFromMenu = action;
-                    ChangeState(GameState::PLAYER_SELECT);
-                } else if (action == 100) {
-                    // Mở Shop (hiện tại chuyển sang Coming Soon)
-                    ChangeState(GameState::COMING_SOON);
-                } else if (action == 101) {
+                } else if (clickedId == 101) {
                     previousState = currentState;
                     ChangeState(GameState::SETTINGS);
+                } else if (clickedId == 102) {
+                    tutorialUI->Init();
+                    ChangeState(GameState::TUTORIAL);
+                } else if (clickedId >= 1 && clickedId <= 7) {
+                    pendingStageFromMenu = clickedId;
+                    ChangeState(GameState::PLAYER_SELECT);
                 }
             }
             break;
@@ -1951,29 +1969,33 @@ void GameManager::Draw() {
                 }
                 
                 // Bảng Hướng dẫn Quan Sát Trực Quan & Sandbox HUD
-                DrawRectangle(150, 10, 960, 58, ColorAlpha(BLACK, 0.85f));
-                DrawRectangleLines(150, 10, 960, 58, GREEN);
-                std::string wNameStr = player ? player->GetWeapon() : "Hypergun";
-                const char* wName = wNameStr.c_str();
-                int wLv = player ? player->GetLevel() : 1;
-                const char* sboxStatus = debugSandboxMode ? "ON (Keys 1-8: Weapon, UP/DOWN: Level, F: Slow-Mo)" : "OFF [F1 to Enable Sandbox]";
-                const char* hStatus = showDebugHitboxes ? "ON [H]" : "OFF [H]";
-                FontManager::GetInstance()->DrawGameText(TextFormat("SANDBOX MODE: %s | Hitboxes: %s", sboxStatus, hStatus), 160, 18, 15, YELLOW, "Modern");
-                FontManager::GetInstance()->DrawGameText(TextFormat("Vu khi hien tai: [ %s ] - Level: [ %d / 11 ]", wName, wLv), 160, 42, 16, GREEN, "Modern");
+                if (enableDevTools) {
+                    DrawRectangle(150, 10, 960, 58, ColorAlpha(BLACK, 0.85f));
+                    DrawRectangleLines(150, 10, 960, 58, GREEN);
+                    std::string wNameStr = player ? player->GetWeapon() : "Hypergun";
+                    const char* wName = wNameStr.c_str();
+                    int wLv = player ? player->GetLevel() : 1;
+                    const char* sboxStatus = debugSandboxMode ? "ON (Keys 1-8: Weapon, UP/DOWN: Level, F: Slow-Mo)" : "OFF [F1 to Enable Sandbox]";
+                    const char* hStatus = showDebugHitboxes ? "ON [H]" : "OFF [H]";
+                    FontManager::GetInstance()->DrawGameText(TextFormat("SANDBOX MODE: %s | Hitboxes: %s", sboxStatus, hStatus), 160, 18, 15, YELLOW, "Modern");
+                    FontManager::GetInstance()->DrawGameText(TextFormat("Vu khi hien tai: [ %s ] - Level: [ %d / 11 ]", wName, wLv), 160, 42, 16, GREEN, "Modern");
+                }
             }
             
-            // Draw BACK button in playing state
-            if (DrawButton({ 20, 20, 100, 40 }, "BACK")) {
-                if (isTestMode) {
-                    ChangeState(GameState::TEST_MENU);
-                    activeEnemies.clear();
-                    activeBullets.clear();
-                    activeItems.clear();
-                    if (player) {
-                        player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
+            // Draw BACK button in playing state (only in TEST_GAMEPLAY or when dev tools are enabled)
+            if ((currentState == GameState::TEST_GAMEPLAY) || enableDevTools) {
+                if (DrawButton({ 20, 20, 100, 40 }, "BACK")) {
+                    if (isTestMode) {
+                        ChangeState(GameState::TEST_MENU);
+                        activeEnemies.clear();
+                        activeBullets.clear();
+                        activeItems.clear();
+                        if (player) {
+                            player->SetPosition({(float)screenWidth/2, (float)screenHeight - 100});
+                        }
+                    } else {
+                        EnterSummary(SummaryResult::QUIT);
                     }
-                } else {
-                    EnterSummary(SummaryResult::QUIT);
                 }
             }
             
@@ -2261,14 +2283,9 @@ void GameManager::CleanUp() {
         delete mainMenuUI;
         mainMenuUI = nullptr;
     }
-    if (shopUI) {
-        delete shopUI;
-        shopUI = nullptr;
-    }
-    if (runeUI) {
-        delete runeUI;
-        runeUI = nullptr;
-    }
+    if (shopUI) { delete shopUI; shopUI = nullptr; }
+    if (tutorialUI) { delete tutorialUI; tutorialUI = nullptr; }
+    if (runeUI) { delete runeUI; runeUI = nullptr; }
     if (summaryScreen) {
         delete summaryScreen;
         summaryScreen = nullptr;

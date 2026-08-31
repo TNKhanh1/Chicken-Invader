@@ -11,6 +11,7 @@
 #include <memory>
 
 class ShopUI;
+class TutorialUI;
 #include "RuneSelectionUI.h"
 #include "SummaryScreen.h"
 #include "TitleScreen.h"
@@ -27,6 +28,7 @@ private:
     StatsPanel statsPanel;
     MenuManager* mainMenuUI = nullptr;
     ShopUI* shopUI = nullptr;
+    TutorialUI* tutorialUI = nullptr;
     RuneSelectionUI* runeUI = nullptr;
     SummaryScreen* summaryScreen = nullptr;
     TitleScreen* titleScreen = nullptr;
@@ -160,6 +162,7 @@ struct DamageText {
 };
 
     // Debug & Weapon Sandbox Observation
+    bool enableDevTools = false;
     bool showDebugHitboxes = false;
     bool debugSandboxMode = false;
     int currentWeaponType = 1; // 1: Hypergun, etc.

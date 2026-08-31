@@ -63,11 +63,12 @@ void MenuManager::CalculateLayout() {
     bossBtn.hoverTime = 0.0f;
     stageButtons.push_back(bossBtn);
     
-    // Nút Shop và Settings ở góc trên phải
-    float topBtnWidth = 120.0f;
+    // Nút Shop, Settings, Tutorial ở góc trên phải
+    float topBtnWidth = 140.0f;
     float topBtnHeight = 50.0f;
-    shopButton = { (float)screenWidth - 300.0f, 40.0f, topBtnWidth, topBtnHeight };
-    settingsButton = { (float)screenWidth - 160.0f, 40.0f, topBtnWidth, topBtnHeight };
+    tutorialButton = { (float)screenWidth - 470.0f, 40.0f, topBtnWidth, topBtnHeight };
+    shopButton = { (float)screenWidth - 310.0f, 40.0f, topBtnWidth, topBtnHeight };
+    settingsButton = { (float)screenWidth - 150.0f, 40.0f, topBtnWidth, topBtnHeight };
 }
 
 void MenuManager::UpdateStageStatus() {
@@ -163,6 +164,13 @@ int MenuManager::UpdateAndDraw(float deltaTime) {
     DrawRectangleRoundedLinesEx(shopButton, 0.2f, 8, 2.0f, shopHovered ? WHITE : GRAY);
     FontManager::GetInstance()->DrawGameTextCentered("SHOP", shopButton.x + shopButton.width/2, shopButton.y + 15, 20, WHITE, "Modern");
     if (shopHovered && mousePressed) clickedId = 100;
+    
+    // Xử lý nút Tutorial
+    bool tutHovered = CheckCollisionPointRec(mousePos, tutorialButton);
+    DrawRectangleRounded(tutorialButton, 0.2f, 8, tutHovered ? (Color){60, 60, 60, 200} : (Color){40, 40, 40, 180});
+    DrawRectangleRoundedLinesEx(tutorialButton, 0.2f, 8, 2.0f, tutHovered ? WHITE : GRAY);
+    FontManager::GetInstance()->DrawGameTextCentered("TUTORIAL", tutorialButton.x + tutorialButton.width/2, tutorialButton.y + 15, 20, WHITE, "Modern");
+    if (tutHovered && mousePressed) clickedId = 102;
     
     // Xử lý nút Settings
     bool setHovered = CheckCollisionPointRec(mousePos, settingsButton);

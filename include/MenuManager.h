@@ -23,6 +23,7 @@ private:
     std::vector<StageButton> stageButtons;
     Rectangle shopButton;
     Rectangle settingsButton;
+    Rectangle tutorialButton;
     
     int screenWidth;
     int screenHeight;
