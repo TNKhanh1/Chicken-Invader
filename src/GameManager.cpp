@@ -604,10 +604,15 @@ void GameManager::EnterSummary(SummaryResult result) {
     int totalW = WaveManager::GetInstance()->GetTotalWaves();
     bool isWin = (result == SummaryResult::WIN);
     CoinManager::GetInstance()->CalculateStageBonus(currentWave, totalW, isWin);
+    // Fetch values BEFORE committing (since Commit resets them to 0)
+    int sessionCoins = CoinManager::GetInstance()->GetSessionCoins();
+    int bonusCoins = CoinManager::GetInstance()->GetStageBonusCoins();
+    
     CoinManager::GetInstance()->CommitSessionCoins();
+    
     summaryScreen->Show(result, score,
-        CoinManager::GetInstance()->GetSessionCoins(),
-        CoinManager::GetInstance()->GetStageBonusCoins(),
+        sessionCoins,
+        bonusCoins,
         CoinManager::GetInstance()->GetTotalCoins());
     ChangeState(GameState::SUMMARY);
 }
