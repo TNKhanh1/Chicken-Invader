@@ -241,10 +241,18 @@ void Spaceship::GainExp(float amount) {
         amount *= 1.5f;
     }
     currentExp += amount;
-    Notify(EventType::PLAYER_EXP_GAINED, std::to_string(currentExp));
-    if (currentExp >= maxExp) {
+    
+    // Sử dụng vòng lặp trong trường hợp lượng exp nhận được đủ để lên nhiều cấp
+    while (level < 10 && currentExp >= maxExp) {
+        currentExp -= maxExp;
         LevelUp();
     }
+    
+    if (level >= 10) {
+        currentExp = 0; // Đặt exp về 0 khi max level
+    }
+
+    Notify(EventType::PLAYER_EXP_GAINED, std::to_string(currentExp));
 }
 
 void Spaceship::GainMana(float amount) {
@@ -271,7 +279,6 @@ void Spaceship::DeactivateMana() {
 void Spaceship::LevelUp() {
     if (level >= 10) return; // Đã đạt max level
     level++;
-    currentExp -= maxExp;
     maxExp *= 1.2f;
     
     // Tái đồng bộ chỉ số từ CSV theo nguyên tắc OOP Data-Driven và DRY
