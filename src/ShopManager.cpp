@@ -119,6 +119,16 @@ void ShopManager::Save() const {
     }
 }
 
+void ShopManager::ResetAllProgress() {
+    selectedWeapon = "Hypergun";
+    selectedEggSkin = 0;
+    unlockedWeapons.clear();
+    unlockedEggSkins.clear();
+    unlockedWeapons.insert("Hypergun");
+    unlockedEggSkins.insert(0);
+    Save();
+}
+
 bool ShopManager::BuyWeapon(const std::string& weaponId) {
     if (IsWeaponUnlocked(weaponId)) return false;
 

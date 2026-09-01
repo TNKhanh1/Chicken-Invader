@@ -623,6 +623,16 @@ void GameManager::EnterSummary(SummaryResult result) {
 void GameManager::Update(float deltaTime) {
     if (!isRunning) return;
     
+    // Toggle Settings via 'P'
+    if (IsKeyPressed(KEY_P)) {
+        if (currentState == GameState::SETTINGS) {
+            ChangeState(previousState);
+        } else if (currentState == GameState::TEST_GAMEPLAY) {
+            previousState = currentState;
+            ChangeState(GameState::SETTINGS);
+        }
+    }
+    
     if (currentState != nextState) {
         currentState = nextState;
     }
@@ -1445,6 +1455,7 @@ void GameManager::Draw() {
                 } else if (action == TitleAction::NEW_GAME) {
                     CoinManager::GetInstance()->ResetAllProgress();
                     ProgressManager::GetInstance()->ResetAllProgress();
+                    ShopManager::GetInstance()->ResetAllProgress();
                     if (mainMenuUI) mainMenuUI->UpdateStageStatus();
                     titleScreen->Reset();
                     ChangeState(GameState::MAIN_MENU);

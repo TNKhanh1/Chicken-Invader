@@ -39,6 +39,7 @@ public:
 
     void Load();
     void Save() const;
+    void ResetAllProgress();
 
     bool BuyWeapon(const std::string& weaponId);
     bool BuyEggSkin(int skinIndex);
