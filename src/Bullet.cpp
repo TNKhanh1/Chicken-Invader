@@ -5,7 +5,7 @@
 Bullet::Bullet(Vector2 startPos, float dmg, float spd, bool playerBullet, int type, float r) 
     : GameObject(startPos), damage(dmg), speed(spd), isPlayerBullet(playerBullet), 
       hasCustomVelocity(false), velocity({0.0f, 0.0f}), prevPosition(startPos), 
-      bulletType(type), radius(r), activeTimer(0.0f), maxLifetime(0.0f), shooter(nullptr) {
+      bulletType(type), radius(r), angle(0.0f), activeTimer(0.0f), maxLifetime(0.0f), shooter(nullptr) {
     
     trajectory = nullptr; // Mặc định không có quỹ đạo
 }
@@ -13,6 +13,12 @@ Bullet::Bullet(Vector2 startPos, float dmg, float spd, bool playerBullet, int ty
 void Bullet::SetVelocity(Vector2 vel) {
     velocity = vel;
     hasCustomVelocity = true;
+    // Tính góc quay sprite dựa trên hướng velocity (0° = hướng lên trên)
+    if (vel.x != 0.0f || vel.y != 0.0f) {
+        angle = atan2f(vel.x, -vel.y) * (180.0f / PI);
+    } else {
+        angle = 0.0f;
+    }
 }
 
 void Bullet::SetTrajectory(std::shared_ptr<IBulletTrajectory> traj) {
@@ -29,6 +35,7 @@ void Bullet::Reset(Vector2 startPos, float dmg, float spd, bool playerBullet, in
     velocity = {0.0f, 0.0f};
     bulletType = type;
     radius = r;
+    angle = 0.0f;
     isActive = true;
     activeTimer = 0.0f;
     maxLifetime = 0.0f;
